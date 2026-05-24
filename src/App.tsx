@@ -24,7 +24,6 @@ export default function App() {
   const [tab, setTab] = useState<"dashboard" | "log">("dashboard");
   const [logDate, setLogDate] = useState(todayK());
   const [slideDir, setSlideDir] = useState<"left" | "right">("left");
-  const [transKey, setTransKey] = useState(0);
   const prevTab = useRef<"dashboard" | "log">("dashboard");
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
@@ -104,8 +103,8 @@ export default function App() {
     save(nh, nl, nu, nc);
   }, [save]);
 
-  const switchTab = useCallback((t: "dashboard" | "log") => { if (t === tab) return; setSlideDir(t === "log" ? "left" : "right"); setTransKey((k) => k + 1); prevTab.current = tab; setTab(t); }, [tab]);
-  const navToLog = useCallback((dateKey: string) => { setLogDate(dateKey); setSlideDir("left"); setTransKey((k) => k + 1); prevTab.current = "dashboard"; setTab("log"); }, []);
+  const switchTab = useCallback((t: "dashboard" | "log") => { if (t === tab) return; setSlideDir(t === "log" ? "left" : "right"); prevTab.current = tab; setTab(t); }, [tab]);
+  const navToLog = useCallback((dateKey: string) => { setLogDate(dateKey); setSlideDir("left"); prevTab.current = "dashboard"; setTab("log"); }, []);
   const tKey = todayK();
   const completed = habits.filter((h) => logActive(h, logs[h.id]?.[tKey], units)).length;
 
@@ -137,23 +136,36 @@ export default function App() {
             <button key={t.id} onClick={() => switchTab(t.id)} style={{ flex: 1, padding: "10px 16px", borderRadius: 7, border: "none", background: tab === t.id ? C.bg : "transparent", color: tab === t.id ? C.text : C.muted, cursor: "pointer", fontSize: 13, fontFamily: F, fontWeight: tab === t.id ? 600 : 400, transition: "all .35s cubic-bezier(.16,1,.3,1)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,.3)" : "none", transform: tab === t.id ? "scale(1)" : "scale(.98)" }}><span style={{ fontSize: 14 }}>{t.icon}</span>{t.label}</button>))}
         </div>
 
-        {/* Content */}
-        <div key={transKey} className={slideDir === "left" ? "panel-slide-left" : "panel-slide-right"} style={{ minHeight: 200 }}>
-          {tab === "dashboard" && (habits.length === 0 ? (
-            <div style={{ background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, padding: "60px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-              <div style={{ fontSize: 16, color: C.muted, marginBottom: 8 }}>No habits yet</div>
-              <div style={{ fontSize: 12, color: C.dim }}>Click "New Habit" to start</div>
-            </div>
-          ) : (
-            <StaggeredList keyProp={`d-${transKey}`}>
-              {habits.map((h) => (
-                <div key={h.id}>
-                  <D3Calendar habit={h} logs={logs[h.id] || {}} units={units} onCellClick={navToLog} onEdit={() => setEditHabit(h)} onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)} onQuickReset={(mId) => quickReset(h.id, mId)} onAddSet={(mId, set) => quickAddSet(h.id, mId, set)} onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)} timers={timers} onStartTimer={(mId) => startTimer(h.id, mId)} onStopTimer={(mId) => stopTimer(h.id, mId)} habitId={h.id} appConfig={appConfig} />
-                </div>
-              ))}
-            </StaggeredList>))}
-          {tab === "log" && <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} />}
+        {/* Content — both panels stay mounted and we toggle visibility, so
+            switching tabs doesn't unmount/rebuild the d3 calendars. The slide
+            class is applied only to the active panel, replaying on each switch. */}
+        <div style={{ minHeight: 200 }}>
+          <div
+            style={{ display: tab === "dashboard" ? "block" : "none" }}
+            className={tab === "dashboard" ? (slideDir === "left" ? "panel-slide-left" : "panel-slide-right") : undefined}
+          >
+            {habits.length === 0 ? (
+              <div style={{ background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, padding: "60px 20px", textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+                <div style={{ fontSize: 16, color: C.muted, marginBottom: 8 }}>No habits yet</div>
+                <div style={{ fontSize: 12, color: C.dim }}>Click "New Habit" to start</div>
+              </div>
+            ) : (
+              <StaggeredList keyProp="dashboard">
+                {habits.map((h) => (
+                  <div key={h.id}>
+                    <D3Calendar habit={h} logs={logs[h.id] || {}} units={units} onCellClick={navToLog} onEdit={() => setEditHabit(h)} onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)} onQuickReset={(mId) => quickReset(h.id, mId)} onAddSet={(mId, set) => quickAddSet(h.id, mId, set)} onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)} timers={timers} onStartTimer={(mId) => startTimer(h.id, mId)} onStopTimer={(mId) => stopTimer(h.id, mId)} habitId={h.id} appConfig={appConfig} />
+                  </div>
+                ))}
+              </StaggeredList>
+            )}
+          </div>
+          <div
+            style={{ display: tab === "log" ? "block" : "none" }}
+            className={tab === "log" ? (slideDir === "left" ? "panel-slide-left" : "panel-slide-right") : undefined}
+          >
+            <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} />
+          </div>
         </div>
 
         <div className="stagger-child" style={{ textAlign: "center", marginTop: 32, fontSize: 11, color: C.dim, animationDelay: "500ms" }}>

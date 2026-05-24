@@ -64,9 +64,13 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
   useEffect(() => {
     const el = cRef.current;
     if (!el) return;
-    const obs = new ResizeObserver((e) => { for (const en of e) setCw(en.contentRect.width); });
+    // Ignore zero widths: when the panel is hidden (display:none) the width
+    // reports 0; keeping the last real width means becoming visible again does
+    // not change cw and so doesn't re-run the (expensive) d3 build.
+    const obs = new ResizeObserver((e) => { for (const en of e) { const w = en.contentRect.width; if (w > 0) setCw(w); } });
     obs.observe(el);
-    setCw(el.getBoundingClientRect().width);
+    const w0 = el.getBoundingClientRect().width;
+    if (w0 > 0) setCw(w0);
     return () => obs.disconnect();
   }, []);
 
