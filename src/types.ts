@@ -28,6 +28,9 @@ export type Habit = {
   thresholds?: number[];
 };
 
+/** A named color palette (5 shades from empty → max intensity). */
+export type Palette = { name: string; shades: string[] };
+
 /** A configurable measurement unit with quick-add buttons + intensity thresholds. */
 export type Unit = {
   id: string;
