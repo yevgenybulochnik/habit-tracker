@@ -10,6 +10,28 @@ async function createHabit(page: Page, name: string) {
   await expect(page.getByRole("heading", { name, level: 3 })).toBeVisible();
 }
 
+test("a running timer survives a page reload", async ({ page }) => {
+  await page.goto("/");
+  // Create a habit whose metric uses the "min" unit (timers only show for minutes)
+  await page.getByRole("button", { name: /New Habit/i }).click();
+  await page.getByPlaceholder(/Morning Workout/i).fill("Meditate");
+  await page.getByPlaceholder(/Metric name/i).fill("Minutes");
+  await page.getByRole("combobox").selectOption("min");
+  await page.getByRole("button", { name: /^\+ Add$/ }).click();
+  await page.getByRole("button", { name: /^Create$/ }).click();
+  await expect(page.getByRole("heading", { name: "Meditate", level: 3 })).toBeVisible();
+
+  // Start the timer → it shows "Stop"
+  await page.getByRole("button", { name: /Timer/ }).click();
+  await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
+  await page.waitForTimeout(300); // let the IndexedDB write flush
+
+  // Reload → the timer is still running (rehydrated from persisted start timestamp)
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Meditate", level: 3 })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
+});
+
 test("smoke: app shell and PWA assets load", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /habits/i, level: 1 })).toBeVisible();

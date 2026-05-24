@@ -25,6 +25,12 @@ describe("saveState / loadState", () => {
   it("returns null when nothing is stored", async () => {
     expect(await loadState()).toBeNull();
   });
+
+  it("round-trips running timers so they survive a reload", async () => {
+    const withTimers = { ...sample, timers: { "h1:m1": 1_716_500_000_000 } };
+    await saveState(withTimers);
+    expect((await loadState())?.timers).toEqual({ "h1:m1": 1_716_500_000_000 });
+  });
 });
 
 describe("v2 → v3 migration", () => {

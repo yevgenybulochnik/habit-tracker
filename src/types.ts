@@ -59,4 +59,6 @@ export type PersistedState = {
   logs: Logs;
   units: Unit[];
   config: AppConfig;
+  /** Running timers (absolute start timestamps) so they survive a reload. */
+  timers?: Timers;
 };

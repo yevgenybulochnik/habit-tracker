@@ -27,6 +27,10 @@ export default function App() {
   const [transKey, setTransKey] = useState(0);
   const prevTab = useRef<"dashboard" | "log">("dashboard");
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
+  // Mirror timers in a ref so save() always serializes the latest value without
+  // every mutator having to thread it through (timers change only on start/stop).
+  const timersRef = useRef<Timers>({});
+  useEffect(() => { timersRef.current = timers; }, [timers]);
 
   useEffect(() => {
     (async () => {
@@ -38,6 +42,7 @@ export default function App() {
           setLogs(p.logs || {});
           if (p.units) setUnits(p.units);
           if (p.config) setAppConfig((c) => ({ ...c, ...p.config }));
+          if (p.timers) { setTimers(p.timers); timersRef.current = p.timers; }
         }
       } catch (e) {
         console.log("Fresh", e);
@@ -48,7 +53,7 @@ export default function App() {
 
   const save = useCallback(async (h: Habit[], l: Logs, u: Unit[], c: AppConfig) => {
     try {
-      await saveState({ habits: h, logs: l, units: u, config: c });
+      await saveState({ habits: h, logs: l, units: u, config: c, timers: timersRef.current });
     } catch (e) {
       console.error(e);
     }
@@ -67,14 +72,25 @@ export default function App() {
   const quickReset = useCallback((hId: string, mId: string) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: 0 } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
   const quickAddSet = useCallback((hId: string, mId: string, set: SetEntry) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const curSets = Array.isArray(prevDay[mId]) ? (prevDay[mId] as SetEntry[]) : []; const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: [...curSets, set] } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
   const quickRemoveSet = useCallback((hId: string, mId: string, idx: number) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const curSets = Array.isArray(prevDay[mId]) ? [...(prevDay[mId] as SetEntry[])] : []; curSets.splice(idx, 1); const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: curSets } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
-  const startTimer = useCallback((hId: string, mId: string) => { setTimers((p) => ({ ...p, [`${hId}:${mId}`]: Date.now() })); }, []);
-  const stopTimer = useCallback((hId: string, mId: string) => { const key = `${hId}:${mId}`; const start = timers[key]; if (!start) return; const mins = Math.max(1, Math.round((Date.now() - start) / 60000)); setTimers((p) => { const nt = { ...p }; delete nt[key]; return nt; }); quickLog(hId, mId, mins); }, [timers, quickLog]);
+  const startTimer = useCallback((hId: string, mId: string) => {
+    const nt = { ...timersRef.current, [`${hId}:${mId}`]: Date.now() };
+    timersRef.current = nt; setTimers(nt);
+    save(habits, logs, units, appConfig); // persist so the timer survives a reload
+  }, [habits, logs, units, appConfig, save]);
+  const stopTimer = useCallback((hId: string, mId: string) => {
+    const key = `${hId}:${mId}`; const start = timersRef.current[key]; if (!start) return;
+    const mins = Math.max(1, Math.round((Date.now() - start) / 60000));
+    const nt = { ...timersRef.current }; delete nt[key];
+    timersRef.current = nt; setTimers(nt);
+    quickLog(hId, mId, mins); // logs the minutes and persists (incl. the cleared timer)
+  }, [quickLog]);
 
   const replaceAll = useCallback((state: PersistedState) => {
     const nh = state.habits || [];
     const nl = state.logs || {};
     const nu = state.units && state.units.length ? state.units : BUILTIN_UNITS;
     const nc = { ...DEFAULT_CONFIG, ...(state.config || {}) };
+    timersRef.current = {}; setTimers({}); // don't resurrect stale timers from a backup
     setHabits(nh); setLogs(nl); setUnits(nu); setAppConfig(nc);
     save(nh, nl, nu, nc);
   }, [save]);
