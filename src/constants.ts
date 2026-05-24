@@ -103,6 +103,9 @@ export const CSS = `
 .date-shift-left{animation:dateShiftLeft .45s cubic-bezier(.16,1,.3,1) both}
 .date-shift-right{animation:dateShiftRight .45s cubic-bezier(.16,1,.3,1) both}
 .save-pulse{animation:pulseGlow 1s ease}
+/* >=16px keeps iOS Safari from auto-zooming when an input is focused.
+   !important overrides the smaller inline font sizes on individual fields. */
+input,select,textarea{font-size:16px !important}
 `;
 
 export const inpS: CSSProperties = {width:"100%",padding:"10px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:C.bg,color:C.text,fontSize:14,fontFamily:F,outline:"none",boxSizing:"border-box"};

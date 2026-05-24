@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { THEMES, THEME_CSS, DEFAULT_CONFIG, resolvePalette } from "./constants";
+import { THEMES, THEME_CSS, DEFAULT_CONFIG, resolvePalette, CSS } from "./constants";
 
 const lum = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
@@ -22,6 +22,13 @@ describe("themes", () => {
 
   it("defaults to the dark theme", () => {
     expect(DEFAULT_CONFIG.theme).toBe("dark");
+  });
+});
+
+describe("input zoom prevention", () => {
+  it("forces form controls to >=16px so iOS Safari doesn't auto-zoom on focus", () => {
+    expect(CSS).toContain("font-size:16px !important");
+    expect(CSS).toMatch(/input\s*,\s*select\s*,\s*textarea/);
   });
 });
 
