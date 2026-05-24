@@ -2,6 +2,7 @@ node_modules
 dist
 dev-dist
 *.local
+*.tsbuildinfo
 .DS_Store
 
 # test / tooling output
