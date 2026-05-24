@@ -1,16 +1,45 @@
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
-import type { AppConfig, Unit } from "./types";
+import type { AppConfig, ThemeName, Unit } from "./types";
 
 export const STORAGE_KEY = "habit-tracker-v3";
 
-export const C = {
-  bg: "#0d1117", surface: "#161b22", surfaceLight: "#1c2128",
-  border: "#30363d", borderLight: "#484f58",
-  text: "#e6edf3", muted: "#8b949e", dim: "#484f58",
-  accent: "#58a6ff", accentDim: "rgba(88,166,255,0.12)",
-  danger: "#f85149", success: "#39d353", successDim: "rgba(57,211,83,0.12)", green4: "#39d353",
+// Concrete hex per theme. `emptyCell`/`cellStroke`/`futureCell` are used by the
+// d3 SVG (where CSS vars can't reach) — the rest also back the CSS variables below.
+export const THEMES: Record<ThemeName, Record<string, string>> = {
+  dark: {
+    bg: "#0d1117", surface: "#161b22", surfaceLight: "#1c2128",
+    border: "#30363d", borderLight: "#484f58",
+    text: "#e6edf3", muted: "#8b949e", dim: "#484f58",
+    accent: "#58a6ff", accentDim: "rgba(88,166,255,0.12)",
+    danger: "#f85149", success: "#39d353", successDim: "rgba(57,211,83,0.12)", green4: "#39d353",
+    emptyCell: "#161b22", cellStroke: "rgba(255,255,255,0.06)", futureCell: "#1c2128",
+  },
+  light: {
+    bg: "#ffffff", surface: "#f6f8fa", surfaceLight: "#eaeef2",
+    border: "#d0d7de", borderLight: "#afb8c1",
+    text: "#1f2328", muted: "#656d76", dim: "#8c959f",
+    accent: "#0969da", accentDim: "rgba(9,105,218,0.12)",
+    danger: "#cf222e", success: "#1a7f37", successDim: "rgba(26,127,55,0.12)", green4: "#2da44e",
+    emptyCell: "#ebedf0", cellStroke: "rgba(27,31,36,0.10)", futureCell: "#f0f2f4",
+  },
 };
+
+// UI chrome tokens. Each is a CSS variable so components keep using `C.bg` etc.
+// unchanged while the value swaps with the active theme (see THEME_CSS).
+const C_KEYS = [
+  "bg", "surface", "surfaceLight", "border", "borderLight",
+  "text", "muted", "dim", "accent", "accentDim",
+  "danger", "success", "successDim", "green4",
+] as const;
+export const C = Object.fromEntries(
+  C_KEYS.map((k) => [k, `var(--c-${k})`]),
+) as Record<(typeof C_KEYS)[number], string>;
+
+// :root holds the dark defaults (so vars resolve even before a theme is set, and
+// on the loading screen); [data-theme="light"] overrides them.
+const declFor = (t: ThemeName) => C_KEYS.map((k) => `--c-${k}:${THEMES[t][k]}`).join(";");
+export const THEME_CSS = `:root{${declFor("dark")}}[data-theme="light"]{${declFor("light")}}`;
 
 export const PALETTES = [
   { name: "Green", shades: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"] },
@@ -57,4 +86,4 @@ export const CSS = `
 export const inpS: CSSProperties = {width:"100%",padding:"10px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:C.bg,color:C.text,fontSize:14,fontFamily:F,outline:"none",boxSizing:"border-box"};
 export const lbl: CSSProperties = {display:"block",fontSize:11,color:C.muted,fontFamily:F,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"};
 
-export const DEFAULT_CONFIG: AppConfig = { numMonths: 4, monthGap: 5 };
+export const DEFAULT_CONFIG: AppConfig = { numMonths: 4, monthGap: 5, theme: "dark" };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
-import { C, F, MONTHS, WK_FULL, PALETTES, DEFAULT_CONFIG, D3E } from "../constants";
+import { C, F, MONTHS, WK_FULL, PALETTES, THEMES, DEFAULT_CONFIG, D3E } from "../constants";
 import { getUnit } from "../lib/metrics";
 import { logLevel, logSummary, habitStats } from "../lib/stats";
 import { todayK } from "../lib/dates";
@@ -80,7 +80,10 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     const cs = zoomed
       ? Math.min((svgAvail - 2 * lp - 6 * cg) / 7, 36)
       : fitCellSize(days, svgAvail, view, cg, lp, mg);
-    const sh = pal.shades, DUR = 700;
+    // d3 sets SVG presentation attributes, where CSS vars don't resolve — use
+    // concrete theme hex here. The empty (level-0) cell is theme-specific.
+    const Tc = THEMES[cfg.theme === "light" ? "light" : "dark"];
+    const sh = [Tc.emptyCell, ...pal.shades.slice(1)], DUR = 700;
     svg.selectAll("*").interrupt();
 
     const { cells: layout, mLabels } = view === "heatmap"
@@ -108,10 +111,10 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     const wkFontSz = zoomed ? 10 : Math.max(7, Math.round(cs * 0.65));
     const cellR = zoomed ? 6 : Math.max(2, Math.round(cs * 0.2));
 
-    const greyFill = "#1c2128";
+    const greyFill = Tc.futureCell;
     const cellFill = (d: any) => d.future ? greyFill : sh[logLevel(habit, logs[d.key], units)];
     const cellOp = (d: any) => d.future ? 0.35 : 1;
-    const cellStroke = (d: any) => d.key === tKey ? C.accent : "rgba(255,255,255,0.06)";
+    const cellStroke = (d: any) => d.key === tKey ? Tc.accent : Tc.cellStroke;
     const cellStrokeW = (d: any) => d.key === tKey ? 1.5 : 1;
 
     const cells = svg.selectAll(".dc").data(layout, (d: any) => d.key);
@@ -137,7 +140,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     const mls = svg.selectAll(".ml").data(mLabels, (d: any) => d.key);
     mls.exit().transition("mle").duration(DUR / 3).ease(D3E).style("opacity", 0).remove();
     const mlEn = mls.enter().append("text").attr("class", "ml").attr("x", (d: any) => d.x).attr("y", (d: any) => d.y)
-      .attr("fill", C.muted).attr("font-size", mlFontSz).attr("font-family", F).attr("font-weight", 600)
+      .attr("fill", Tc.muted).attr("font-size", mlFontSz).attr("font-family", F).attr("font-weight", 600)
       .attr("text-anchor", (d: any) => d.anchor || "start").style("opacity", 0).text((d: any) => d.label);
     mlEn.transition("mlen").delay(DUR / 3).duration(DUR / 2).ease(D3E).style("opacity", 1);
     mls.merge(mlEn).transition("mlup").delay(DUR * .3).duration(DUR / 2).ease(D3E)
@@ -152,13 +155,13 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     const dns = svg.selectAll(".dn").data(dayNums, (d: any) => d.key);
     dns.exit().each(function (this: any, d: any) { d3.select(this).transition("dne").delay(stag({ x: d._x, y: d._y })).duration(DUR / 3).ease(D3E).style("opacity", 0).remove(); });
     const dnEn = dns.enter().append("text").attr("class", "dn").attr("x", (d: any) => d.x).attr("y", (d: any) => d.y)
-      .attr("fill", (d: any) => d.future ? C.dim : d.level > 0 ? "#fff" : C.muted)
+      .attr("fill", (d: any) => d.future ? Tc.dim : d.level > 0 ? "#fff" : Tc.muted)
       .attr("font-size", dnFontSz).attr("font-family", F).attr("font-weight", (d: any) => d.key === `dn-${tKey}` ? 700 : 400)
       .attr("text-anchor", "middle").style("pointer-events", "none").style("opacity", 0).text((d: any) => d.label);
     dnEn.each(function (this: any, d: any) { d3.select(this).transition("dnen").delay(DUR * .5 + stag({ x: d._x, y: d._y })).duration(DUR / 2).ease(D3E).style("opacity", 1); });
     dns.merge(dnEn).each(function (this: any, d: any) {
       d3.select(this).transition("dnup").delay(DUR * .3 + stag({ x: d._x, y: d._y })).duration(DUR / 2).ease(D3E)
-        .attr("x", d.x).attr("y", d.y).attr("fill", d.future ? C.dim : d.level > 0 ? "#fff" : C.muted).style("opacity", 1);
+        .attr("x", d.x).attr("y", d.y).attr("fill", d.future ? Tc.dim : d.level > 0 ? "#fff" : Tc.muted).style("opacity", 1);
     });
 
     // Weekday headers in cal view — one set per month block
@@ -179,7 +182,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     const wks = svg.selectAll(".wk").data(wkLabels, (d: any) => d.key);
     wks.exit().transition("wke").duration(DUR / 3).ease(D3E).style("opacity", 0).remove();
     const wkEn = wks.enter().append("text").attr("class", "wk").attr("x", (d: any) => d.x).attr("y", (d: any) => d.y)
-      .attr("fill", C.dim).attr("font-size", wkFontSz).attr("font-family", F).attr("text-anchor", "middle")
+      .attr("fill", Tc.dim).attr("font-size", wkFontSz).attr("font-family", F).attr("text-anchor", "middle")
       .style("opacity", 0).text((d: any) => d.label);
     wkEn.transition("wken").delay(DUR / 3).duration(DUR / 2).ease(D3E).style("opacity", 1);
     wks.merge(wkEn).transition("wkup").delay(DUR * .3).duration(DUR / 2).ease(D3E)
@@ -225,7 +228,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
       {/* Legend */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5, marginTop: 8 }}>
         <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>Less</span>
-        {pal.shades.map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />)}
+        {[THEMES[cfg.theme === "light" ? "light" : "dark"].emptyCell, ...pal.shades.slice(1)].map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />)}
         <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>More</span>
       </div>
 
@@ -234,7 +237,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
 
       {/* Tooltip */}
       {tip && (
-        <div style={{ position: "absolute", top: 8, right: 16, pointerEvents: "none", background: "#1c2128", border: `1px solid ${C.borderLight}`, borderRadius: 6, padding: "5px 9px", fontSize: 10, color: C.text, fontFamily: F, boxShadow: "0 4px 12px rgba(0,0,0,.4)", zIndex: 10, maxWidth: 260 }}>
+        <div style={{ position: "absolute", top: 8, right: 16, pointerEvents: "none", background: C.surfaceLight, border: `1px solid ${C.borderLight}`, borderRadius: 6, padding: "5px 9px", fontSize: 10, color: C.text, fontFamily: F, boxShadow: "0 4px 12px rgba(0,0,0,.4)", zIndex: 10, maxWidth: 260 }}>
           <div>{tip.label}</div><div style={{ fontSize: 9, color: C.muted, marginTop: 1 }}>{tip.date}</div>
         </div>
       )}

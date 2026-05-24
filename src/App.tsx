@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { C, F, CSS, BUILTIN_UNITS, DEFAULT_CONFIG } from "./constants";
+import { C, F, CSS, THEME_CSS, THEMES, BUILTIN_UNITS, DEFAULT_CONFIG } from "./constants";
 import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
@@ -31,6 +31,15 @@ export default function App() {
   // every mutator having to thread it through (timers change only on start/stop).
   const timersRef = useRef<Timers>({});
   useEffect(() => { timersRef.current = timers; }, [timers]);
+
+  // Keep the page background and iOS status-bar color in sync with the theme
+  // (body and the <meta> tag live outside the themed root element).
+  const theme = appConfig.theme === "light" ? "light" : "dark";
+  useEffect(() => {
+    const bg = THEMES[theme].bg;
+    document.body.style.background = bg;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
+  }, [theme]);
 
   useEffect(() => {
     (async () => {
@@ -103,8 +112,8 @@ export default function App() {
   if (loading) return (<div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ color: C.muted, fontFamily: F, fontSize: 14, animation: "fadeIn .5s ease" }}>Loading...</div></div>);
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F }}>
-      <style>{CSS}</style>
+    <div data-theme={theme} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F }}>
+      <style>{CSS + THEME_CSS}</style>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))" }}>
         {/* Header */}
         <div className="stagger-child" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>

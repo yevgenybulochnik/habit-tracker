@@ -48,7 +48,9 @@ export type HabitLogs = Record<string, DayLog>;
 /** All logs: habitId → dateKey → DayLog. */
 export type Logs = Record<string, HabitLogs>;
 
-export type AppConfig = { numMonths: number; monthGap: number };
+export type ThemeName = "dark" | "light";
+
+export type AppConfig = { numMonths: number; monthGap: number; theme?: ThemeName };
 
 /** Running timers keyed by "habitId:metricId" → start timestamp (ms). */
 export type Timers = Record<string, number>;

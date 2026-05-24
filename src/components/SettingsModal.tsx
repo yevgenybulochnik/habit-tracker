@@ -76,6 +76,27 @@ export default function SettingsModal({ units, habits, logs, onUpdateUnit, onDel
     <ModalShell onClose={hClose} closing={closing} width={520}>
       <h2 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 600, color: C.text, fontFamily: F }}>Settings</h2>
 
+      {/* ── Appearance ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: C.accent, fontFamily: F, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>Appearance</div>
+        <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: F }}>Theme</div>
+            <div style={{ fontSize: 9, color: C.dim, fontFamily: F, marginTop: 2 }}>Light or dark appearance</div>
+          </div>
+          <div style={{ display: "flex", background: C.surface, borderRadius: 6, border: `1px solid ${C.border}`, padding: 2, gap: 2 }}>
+            {(["dark", "light"] as const).map((t) => {
+              const active = (cfg.theme || "dark") === t;
+              return (
+                <button key={t} onClick={() => onUpdateConfig({ ...cfg, theme: t })} style={{ padding: "5px 14px", borderRadius: 4, border: "none", background: active ? C.accentDim : "transparent", color: active ? C.accent : C.muted, cursor: "pointer", fontSize: 11, fontFamily: F, fontWeight: active ? 600 : 400, transition: "all .15s" }}>
+                  {t === "dark" ? "Dark" : "Light"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Calendar Display ── */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 11, color: C.accent, fontFamily: F, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>Calendar Display</div>

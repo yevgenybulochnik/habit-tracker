@@ -64,3 +64,20 @@ describe("SettingsModal — Data backup", () => {
     expect(onImportState).not.toHaveBeenCalled();
   });
 });
+
+describe("SettingsModal — theme", () => {
+  it("switches theme when a theme button is clicked", async () => {
+    const user = userEvent.setup();
+    const onUpdateConfig = vi.fn();
+    render(
+      <SettingsModal
+        units={BUILTIN_UNITS} habits={sample.habits} logs={sample.logs}
+        onUpdateUnit={vi.fn()} onDeleteUnit={vi.fn()} onAddUnit={vi.fn()}
+        appConfig={DEFAULT_CONFIG} onUpdateConfig={onUpdateConfig}
+        onImportState={vi.fn()} onClose={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Light" }));
+    expect(onUpdateConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" }));
+  });
+});

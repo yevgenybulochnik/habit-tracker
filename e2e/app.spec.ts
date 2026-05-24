@@ -32,6 +32,15 @@ test("a running timer survives a page reload", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
 });
 
+test("switching to the light theme updates the appearance", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTitle("Settings").click();
+  await page.getByRole("button", { name: "Light" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  // The root applies data-theme=light; the CSS variable resolves to white.
+  await expect(page.locator('div[data-theme="light"]')).toHaveCSS("background-color", "rgb(255, 255, 255)");
+});
+
 test("smoke: app shell and PWA assets load", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /habits/i, level: 1 })).toBeVisible();
