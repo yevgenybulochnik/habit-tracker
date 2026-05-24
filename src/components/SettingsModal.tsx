@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { C, F, inpS, BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
-import { todayK } from "../lib/dates";
+import { downloadBackup, setLastBackup } from "../lib/backup";
 import ModalShell from "./ModalShell";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
 
@@ -42,16 +42,8 @@ export default function SettingsModal({ units, habits, logs, onUpdateUnit, onDel
   const addNew = () => { const id = newId.trim().toLowerCase().replace(/\s+/g, "_"); if (id && newLabel.trim() && !units.find((u) => u.id === id)) { const qa = parseNums(newQA), thr = parseNums(newThr); if (qa.length && thr.length) { onAddUnit({ id, label: newLabel.trim(), quickAdd: qa.slice(0, 3), thresholds: thr.slice(0, 3) }); setNewId(""); setNewLabel(""); setNewQA("1, 5, 10"); setNewThr("1, 3, 5"); } } };
 
   const doExport = () => {
-    const state: PersistedState = { habits, logs, units, config: cfg };
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `habit-tracker-backup-${todayK()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBackup({ habits, logs, units, config: cfg });
+    void setLastBackup(new Date().toISOString()); // counts as today's backup
   };
   const doImport = (file: File) => {
     const reader = new FileReader();
@@ -174,6 +166,19 @@ export default function SettingsModal({ units, habits, logs, onUpdateUnit, onDel
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = ""; }}
               />
             </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: F }}>Daily auto-backup</div>
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: F, marginTop: 2 }}>Saves a backup once a day, on your first tap after opening</div>
+            </div>
+            <button
+              onClick={() => onUpdateConfig({ ...cfg, autoBackup: cfg.autoBackup === false })}
+              role="switch"
+              aria-checked={cfg.autoBackup !== false}
+              aria-label="Daily auto-backup"
+              style={{ padding: "5px 14px", borderRadius: 5, fontSize: 11, fontFamily: F, fontWeight: 600, cursor: "pointer", border: `1px solid ${cfg.autoBackup !== false ? C.accent : C.border}`, background: cfg.autoBackup !== false ? C.accentDim : "transparent", color: cfg.autoBackup !== false ? C.accent : C.muted, transition: "all .15s", minWidth: 52 }}
+            >{cfg.autoBackup !== false ? "On" : "Off"}</button>
           </div>
           {importErr && <div style={{ fontSize: 11, color: C.danger, fontFamily: F, marginTop: 10 }}>{importErr}</div>}
         </div>
