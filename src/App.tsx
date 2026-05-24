@@ -3,7 +3,6 @@ import { C, F, CSS, BUILTIN_UNITS, DEFAULT_CONFIG } from "./constants";
 import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
-import { getLastBackup, setLastBackup, isBackupDue, downloadBackup } from "./lib/backup";
 import StaggeredList from "./components/StaggeredList";
 import D3Calendar from "./components/D3Calendar";
 import LogEntry from "./components/LogEntry";
@@ -46,38 +45,6 @@ export default function App() {
       setLoading(false);
     })();
   }, []);
-
-  // Daily auto-backup. Browsers block a download without a user gesture, so when
-  // a backup is due we fire it on the first interaction after opening (still
-  // automatic — no button to find), once per session.
-  const autoBackupRan = useRef(false);
-  useEffect(() => {
-    if (loading || autoBackupRan.current || appConfig.autoBackup === false) return;
-    let cancelled = false;
-    let cleanup = () => {};
-    (async () => {
-      const due = isBackupDue(await getLastBackup());
-      if (cancelled || !due || habits.length === 0) return;
-      const run = () => {
-        if (autoBackupRan.current) return;
-        autoBackupRan.current = true;
-        cleanup();
-        try {
-          downloadBackup({ habits, logs, units, config: appConfig });
-          void setLastBackup(new Date().toISOString());
-        } catch (e) {
-          console.warn("auto-backup skipped", e);
-        }
-      };
-      window.addEventListener("pointerdown", run, { once: true });
-      window.addEventListener("keydown", run, { once: true });
-      cleanup = () => {
-        window.removeEventListener("pointerdown", run);
-        window.removeEventListener("keydown", run);
-      };
-    })();
-    return () => { cancelled = true; cleanup(); };
-  }, [loading, appConfig, habits, logs, units]);
 
   const save = useCallback(async (h: Habit[], l: Logs, u: Unit[], c: AppConfig) => {
     try {

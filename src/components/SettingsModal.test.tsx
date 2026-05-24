@@ -1,4 +1,3 @@
-import "fake-indexeddb/auto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -13,21 +12,22 @@ const sample: PersistedState = {
   config: DEFAULT_CONFIG,
 };
 
-function renderModal(overrides: Record<string, unknown> = {}) {
-  const handlers = {
-    onUpdateUnit: vi.fn(), onDeleteUnit: vi.fn(), onAddUnit: vi.fn(),
-    onUpdateConfig: vi.fn(), onImportState: vi.fn(), onClose: vi.fn(), ...overrides,
-  };
+function renderModal(onImportState = vi.fn()) {
   render(
     <SettingsModal
       units={BUILTIN_UNITS}
       habits={sample.habits}
       logs={sample.logs}
+      onUpdateUnit={vi.fn()}
+      onDeleteUnit={vi.fn()}
+      onAddUnit={vi.fn()}
       appConfig={DEFAULT_CONFIG}
-      {...handlers}
+      onUpdateConfig={vi.fn()}
+      onImportState={onImportState}
+      onClose={vi.fn()}
     />,
   );
-  return handlers;
+  return { onImportState };
 }
 
 beforeEach(() => {
@@ -62,14 +62,5 @@ describe("SettingsModal — Data backup", () => {
     await user.upload(screen.getByLabelText(/Import backup file/i), file);
     expect(await screen.findByText(/valid backup file/i)).toBeInTheDocument();
     expect(onImportState).not.toHaveBeenCalled();
-  });
-
-  it("toggles the daily auto-backup preference", async () => {
-    const user = userEvent.setup();
-    const { onUpdateConfig } = renderModal();
-    const sw = screen.getByRole("switch", { name: /Daily auto-backup/i });
-    expect(sw).toBeChecked(); // DEFAULT_CONFIG.autoBackup === true
-    await user.click(sw);
-    expect(onUpdateConfig).toHaveBeenCalledWith(expect.objectContaining({ autoBackup: false }));
   });
 });

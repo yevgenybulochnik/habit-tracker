@@ -52,20 +52,6 @@ test("renders a calendar svg per habit and switches tabs", async ({ page }) => {
   await expect(page.getByText(/Log Date/i)).toBeVisible();
 });
 
-test("auto-backup: a daily backup downloads on first interaction when due", async ({ page }) => {
-  await page.goto("/");
-  await createHabit(page, "Stretch"); // first load had no habits, so no auto-backup yet
-
-  // Reload: a habit now exists and no backup was recorded today → auto-export is armed.
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Stretch", level: 3 })).toBeVisible();
-  // The download fires on the first user gesture (browsers block gesture-less downloads).
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("heading", { name: /habits/i, level: 1 }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toContain("habit-tracker-backup");
-});
-
 test("backup: export then import restores a deleted habit", async ({ page }) => {
   await page.goto("/");
   await createHabit(page, "Meditation");
