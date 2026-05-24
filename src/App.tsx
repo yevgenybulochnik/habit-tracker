@@ -23,7 +23,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"dashboard" | "log">("dashboard");
   const [logDate, setLogDate] = useState(todayK());
-  const [slideDir, setSlideDir] = useState<"left" | "right">("left");
   const prevTab = useRef<"dashboard" | "log">("dashboard");
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
@@ -103,8 +102,8 @@ export default function App() {
     save(nh, nl, nu, nc);
   }, [save]);
 
-  const switchTab = useCallback((t: "dashboard" | "log") => { if (t === tab) return; setSlideDir(t === "log" ? "left" : "right"); prevTab.current = tab; setTab(t); }, [tab]);
-  const navToLog = useCallback((dateKey: string) => { setLogDate(dateKey); setSlideDir("left"); prevTab.current = "dashboard"; setTab("log"); }, []);
+  const switchTab = useCallback((t: "dashboard" | "log") => { if (t === tab) return; prevTab.current = tab; setTab(t); }, [tab]);
+  const navToLog = useCallback((dateKey: string) => { setLogDate(dateKey); prevTab.current = "dashboard"; setTab("log"); }, []);
   const tKey = todayK();
   const completed = habits.filter((h) => logActive(h, logs[h.id]?.[tKey], units)).length;
 
@@ -137,13 +136,11 @@ export default function App() {
         </div>
 
         {/* Content — both panels stay mounted and we toggle visibility, so
-            switching tabs doesn't unmount/rebuild the d3 calendars. The slide
-            class is applied only to the active panel, replaying on each switch. */}
+            switching tabs doesn't unmount/rebuild the d3 calendars. Switching is
+            an instant display swap: a reveal-from-display:none entrance animation
+            here caused a visible flicker in the iOS standalone (PWA) web view. */}
         <div style={{ minHeight: 200 }}>
-          <div
-            style={{ display: tab === "dashboard" ? "block" : "none" }}
-            className={tab === "dashboard" ? (slideDir === "left" ? "panel-slide-left" : "panel-slide-right") : undefined}
-          >
+          <div style={{ display: tab === "dashboard" ? "block" : "none" }}>
             {habits.length === 0 ? (
               <div style={{ background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, padding: "60px 20px", textAlign: "center" }}>
                 <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
@@ -160,10 +157,7 @@ export default function App() {
               </StaggeredList>
             )}
           </div>
-          <div
-            style={{ display: tab === "log" ? "block" : "none" }}
-            className={tab === "log" ? (slideDir === "left" ? "panel-slide-left" : "panel-slide-right") : undefined}
-          >
+          <div style={{ display: tab === "log" ? "block" : "none" }}>
             <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} theme={theme} />
           </div>
         </div>
