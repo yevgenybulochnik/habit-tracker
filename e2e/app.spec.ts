@@ -1,25 +1,10 @@
-import { test, expect, type Page } from "@playwright/test";
-
-// Create a single-metric habit (default unit "reps") via the UI.
-async function createHabit(page: Page, name: string) {
-  await page.getByRole("button", { name: /New Habit/i }).click();
-  await page.getByPlaceholder(/Morning Workout/i).fill(name);
-  await page.getByPlaceholder(/Metric name/i).fill("Reps");
-  await page.getByRole("button", { name: /^\+ Add$/ }).click();
-  await page.getByRole("button", { name: /^Create$/ }).click();
-  await expect(page.getByRole("heading", { name, level: 3 })).toBeVisible();
-}
+import { test, expect } from "@playwright/test";
+import { createHabit, openSettings, setTheme, deleteHabit } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
   await page.goto("/");
-  // Create a habit whose metric uses the "min" unit (timers only show for minutes)
-  await page.getByRole("button", { name: /New Habit/i }).click();
-  await page.getByPlaceholder(/Morning Workout/i).fill("Meditate");
-  await page.getByPlaceholder(/Metric name/i).fill("Minutes");
-  await page.getByRole("combobox").selectOption("min");
-  await page.getByRole("button", { name: /^\+ Add$/ }).click();
-  await page.getByRole("button", { name: /^Create$/ }).click();
-  await expect(page.getByRole("heading", { name: "Meditate", level: 3 })).toBeVisible();
+  // Timers only show for "min"-unit metrics
+  await createHabit(page, "Meditate", { metricName: "Minutes", unit: "min" });
 
   // Start the timer → it shows "Stop"
   await page.getByRole("button", { name: /Timer/ }).click();
@@ -34,9 +19,7 @@ test("a running timer survives a page reload", async ({ page }) => {
 
 test("switching to the light theme updates the appearance", async ({ page }) => {
   await page.goto("/");
-  await page.getByTitle("Settings").click();
-  await page.getByRole("button", { name: "Light" }).click();
-  await page.getByRole("button", { name: "Done" }).click();
+  await setTheme(page, "light");
   // The root applies data-theme=light; the CSS variable resolves to white.
   await expect(page.locator('div[data-theme="light"]')).toHaveCSS("background-color", "rgb(255, 255, 255)");
 });
@@ -88,23 +71,19 @@ test("backup: export then import restores a deleted habit", async ({ page }) => 
   await createHabit(page, "Meditation");
 
   // Export → capture the downloaded JSON
-  await page.getByTitle("Settings").click();
+  await openSettings(page);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export" }).click();
   const download = await downloadPromise;
   const path = await download.path();
   await page.getByRole("button", { name: "Done" }).click();
 
-  // Delete the habit via long-press → Edit modal → confirm delete
-  const header = page.getByRole("heading", { name: "Meditation", level: 3 });
-  await header.dispatchEvent("mousedown");
-  await page.waitForTimeout(700); // long-press threshold is 500ms
-  await page.getByRole("button", { name: /Delete habit/i }).click();
-  await page.getByRole("button", { name: /Delete Habit/i }).click();
+  // Delete the habit, then confirm it's gone
+  await deleteHabit(page, "Meditation");
   await expect(page.getByRole("heading", { name: "Meditation", level: 3 })).toHaveCount(0);
 
   // Import the backup → habit reappears
-  await page.getByTitle("Settings").click();
+  await openSettings(page);
   await page.getByLabel(/Import backup file/i).setInputFiles(path!);
   await expect(page.getByRole("heading", { name: "Meditation", level: 3 })).toBeVisible();
 });
