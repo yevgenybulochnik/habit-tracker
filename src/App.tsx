@@ -118,7 +118,7 @@ export default function App() {
           <div>
             <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: C.green4, boxShadow: `0 0 12px ${C.green4}` }} />
-              habits<span style={{ color: C.dim, fontWeight: 400 }}>.v2</span>
+              Habits
             </h1>
             <p style={{ margin: "4px 0 0 18px", fontSize: 12, color: C.muted }}>{habits.length > 0 ? `${completed}/${habits.length} completed today` : "Start tracking"}</p>
           </div>
