@@ -13,7 +13,7 @@ export default function ModalShell({ onClose, closing, children, width }: Props)
     <div
       className="modal-backdrop"
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)", opacity: closing ? 0 : undefined, transition: closing ? "opacity .35s ease" : undefined }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)", boxSizing: "border-box", padding: "env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)", opacity: closing ? 0 : undefined, transition: closing ? "opacity .35s ease" : undefined }}
     >
       <div
         className="modal-content"

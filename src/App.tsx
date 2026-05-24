@@ -89,7 +89,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F }}>
       <style>{CSS}</style>
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 20px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))" }}>
         {/* Header */}
         <div className="stagger-child" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
