@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { THEMES, THEME_CSS, DEFAULT_CONFIG } from "./constants";
+import { THEMES, THEME_CSS, DEFAULT_CONFIG, resolvePalette } from "./constants";
+
+const lum = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+};
 
 describe("themes", () => {
   it("defines dark and light with matching keys", () => {
@@ -17,5 +22,21 @@ describe("themes", () => {
 
   it("defaults to the dark theme", () => {
     expect(DEFAULT_CONFIG.theme).toBe("dark");
+  });
+});
+
+describe("resolvePalette", () => {
+  it("light theme ramps darker as intensity rises (higher = darker)", () => {
+    const s = resolvePalette("Green", "light").shades;
+    expect(lum(s[1])).toBeGreaterThan(lum(s[4])); // low count lighter than high count
+    expect(lum(s[2])).toBeGreaterThan(lum(s[3]));
+  });
+  it("dark theme keeps higher = brighter (unchanged)", () => {
+    const s = resolvePalette("Green", "dark").shades;
+    expect(lum(s[4])).toBeGreaterThan(lum(s[1]));
+  });
+  it("falls back to a 5-shade ramp for an unknown color", () => {
+    expect(resolvePalette("Nope", "light").shades).toHaveLength(5);
+    expect(resolvePalette("Nope", "dark").shades).toHaveLength(5);
   });
 });

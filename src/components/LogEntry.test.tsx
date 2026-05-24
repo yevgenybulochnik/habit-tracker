@@ -14,7 +14,7 @@ function renderLog(overrides = {}) {
   const props = {
     habits, allLogs: {} as Logs, units: BUILTIN_UNITS,
     onSaveLog: vi.fn(), selectedDate: todayK(), onDateChange: vi.fn(),
-    timers: {}, onStopTimer: vi.fn(), ...overrides,
+    timers: {}, onStopTimer: vi.fn(), theme: "dark" as const, ...overrides,
   };
   render(<LogEntry {...props} />);
   return props;

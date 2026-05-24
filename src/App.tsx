@@ -164,7 +164,7 @@ export default function App() {
             style={{ display: tab === "log" ? "block" : "none" }}
             className={tab === "log" ? (slideDir === "left" ? "panel-slide-left" : "panel-slide-right") : undefined}
           >
-            <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} />
+            <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} theme={theme} />
           </div>
         </div>
 

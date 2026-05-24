@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
-import { C, F, MONTHS, WK_FULL, PALETTES, THEMES, DEFAULT_CONFIG, D3E } from "../constants";
+import { C, F, MONTHS, WK_FULL, resolvePalette, THEMES, DEFAULT_CONFIG, D3E } from "../constants";
 import { getUnit } from "../lib/metrics";
 import { logLevel, logSummary, habitStats } from "../lib/stats";
 import { todayK } from "../lib/dates";
@@ -49,7 +49,8 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
   const numM = zoomed ? 1 : NUM_MONTHS;
   const days = useMemo(() => getRecentDays(numM, offset), [numM, offset]);
   const tKey = todayK();
-  const pal = PALETTES.find((p) => p.name === habit.color) || PALETTES[0];
+  const theme = cfg.theme === "light" ? "light" : "dark";
+  const pal = resolvePalette(habit.color, theme); // theme-aware intensity ramp
   const stats = useMemo(() => habitStats(habit, logs, units), [habit, logs, units]);
   const pu = (habit.metrics || [])[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
@@ -87,7 +88,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     // d3 sets SVG presentation attributes, where CSS vars don't resolve — use
     // concrete theme hex here. The empty (level-0) cell is theme-specific.
     const Tc = THEMES[cfg.theme === "light" ? "light" : "dark"];
-    const sh = [Tc.emptyCell, ...pal.shades.slice(1)], DUR = 700;
+    const sh = pal.shades, DUR = 700; // pal.shades[0] is the theme's empty cell
     svg.selectAll("*").interrupt();
 
     const { cells: layout, mLabels } = view === "heatmap"
@@ -232,7 +233,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
       {/* Legend */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5, marginTop: 8 }}>
         <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>Less</span>
-        {[THEMES[cfg.theme === "light" ? "light" : "dark"].emptyCell, ...pal.shades.slice(1)].map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />)}
+        {pal.shades.map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />)}
         <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>More</span>
       </div>
 

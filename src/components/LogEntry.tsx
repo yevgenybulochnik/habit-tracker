@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, F, PALETTES, inpS } from "../constants";
+import { C, F, resolvePalette, inpS } from "../constants";
 import { getUnit, getQuickAdd, isSetMetric, metricActive, findLastWeight } from "../lib/metrics";
 import { fmtVal, fmtSets } from "../lib/format";
 import { logLevel } from "../lib/stats";
@@ -7,7 +7,7 @@ import { dk, todayK } from "../lib/dates";
 import SetInput from "./SetInput";
 import LiveTimer from "./LiveTimer";
 import StaggeredList from "./StaggeredList";
-import type { DayLog, Habit, Logs, SetEntry, Timers, Unit } from "../types";
+import type { DayLog, Habit, Logs, SetEntry, ThemeName, Timers, Unit } from "../types";
 
 type LocalVal = string | SetEntry[];
 type LocalState = Record<string, Record<string, LocalVal>>;
@@ -21,9 +21,10 @@ type Props = {
   onDateChange: (dateKey: string) => void;
   timers?: Timers;
   onStopTimer: (habitId: string, metricId: string) => void;
+  theme: ThemeName;
 };
 
-export default function LogEntry({ habits, allLogs, units, onSaveLog, selectedDate, onDateChange, timers, onStopTimer }: Props) {
+export default function LogEntry({ habits, allLogs, units, onSaveLog, selectedDate, onDateChange, timers, onStopTimer, theme }: Props) {
   const [local, setLocal] = useState<LocalState>({});
   const [saved, setSaved] = useState(false);
   const [dDir, setDDir] = useState<"left" | "right" | null>(null);
@@ -93,7 +94,7 @@ export default function LogEntry({ habits, allLogs, units, onSaveLog, selectedDa
       ) : (
         <StaggeredList keyProp={selectedDate}>
           {habits.map((h) => {
-            const pal2 = PALETTES.find((p) => p.name === h.color) || PALETTES[0];
+            const pal2 = resolvePalette(h.color, theme);
             const hL = local[h.id] || {};
             const ms = h.metrics || [];
             const compact = ms.length === 1;

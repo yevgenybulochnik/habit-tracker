@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
-import type { AppConfig, ThemeName, Unit } from "./types";
+import type { AppConfig, Palette, ThemeName, Unit } from "./types";
 
 export const STORAGE_KEY = "habit-tracker-v3";
 
@@ -49,6 +49,28 @@ export const PALETTES = [
   { name: "Pink", shades: ["#161b22", "#5e103e", "#bf3989", "#db61a2", "#f778ba"] },
   { name: "Red", shades: ["#161b22", "#67060c", "#bd561d", "#da3633", "#f85149"] },
 ];
+
+// Light-theme intensity ramps: empty (light grey) → pale → deep, so a higher
+// count is a DARKER block (reads correctly on a white background). The dark
+// PALETTES above keep the contribution-graph convention (higher = brighter),
+// which stays legible on the dark background.
+const LIGHT_PALETTES: Record<string, string[]> = {
+  Green: ["#ebedf0", "#aceebb", "#4ac26b", "#2da44e", "#116329"],
+  Blue: ["#ebedf0", "#b6e3ff", "#54aeff", "#0969da", "#0a3069"],
+  Purple: ["#ebedf0", "#ecd8ff", "#c297ff", "#8250df", "#4c2889"],
+  Orange: ["#ebedf0", "#ffd8b5", "#fb8f44", "#bc4c00", "#762c00"],
+  Pink: ["#ebedf0", "#ffbedd", "#ff80c8", "#bf3989", "#772057"],
+  Red: ["#ebedf0", "#ffcecb", "#ff8182", "#cf222e", "#82071e"],
+};
+
+/** Resolve a habit's 5-shade intensity ramp for the active theme. */
+export function resolvePalette(name: string, theme: ThemeName): Palette {
+  const base = PALETTES.find((p) => p.name === name) || PALETTES[0];
+  if (theme === "light") {
+    return { name: base.name, shades: LIGHT_PALETTES[name] || LIGHT_PALETTES[PALETTES[0].name] };
+  }
+  return base;
+}
 
 export const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 export const WK_FULL = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
