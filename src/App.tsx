@@ -8,6 +8,7 @@ import D3Calendar from "./components/D3Calendar";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
+import BrandMark from "./components/BrandMark";
 import type { AppConfig, DashView, Habit, Logs, PersistedState, SetEntry, Timers, Unit } from "./types";
 import type { NewHabit } from "./components/AddHabitModal";
 
@@ -113,10 +114,10 @@ export default function App() {
         <div className="stagger-child" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: C.green4, boxShadow: `0 0 12px ${C.green4}` }} />
+              <BrandMark />
               Habits
             </h1>
-            <p style={{ margin: "4px 0 0 18px", fontSize: 12, color: C.muted }}>{habits.length > 0 ? `${completed}/${habits.length} completed today` : "Start tracking"}</p>
+            <p style={{ margin: "4px 0 0 28px", fontSize: 12, color: C.muted }}>{habits.length > 0 ? `${completed}/${habits.length} completed today` : "Start tracking"}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => setShowUnits(true)} title="Settings" style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${C.border}`, background: C.surface, color: C.dim, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>⚙</button>
