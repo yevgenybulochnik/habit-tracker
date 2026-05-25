@@ -5,11 +5,10 @@ import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
 import StaggeredList from "./components/StaggeredList";
 import D3Calendar from "./components/D3Calendar";
-import LogEntry from "./components/LogEntry";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
-import type { AppConfig, Habit, Logs, PersistedState, SetEntry, Timers, Unit } from "./types";
+import type { AppConfig, DashView, Habit, Logs, PersistedState, SetEntry, Timers, Unit } from "./types";
 import type { NewHabit } from "./components/AddHabitModal";
 
 export default function App() {
@@ -21,9 +20,6 @@ export default function App() {
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [showUnits, setShowUnits] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"dashboard" | "log">("dashboard");
-  const [logDate, setLogDate] = useState(todayK());
-  const prevTab = useRef<"dashboard" | "log">("dashboard");
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
   // every mutator having to thread it through (timers change only on start/stop).
@@ -102,8 +98,8 @@ export default function App() {
     save(nh, nl, nu, nc);
   }, [save]);
 
-  const switchTab = useCallback((t: "dashboard" | "log") => { if (t === tab) return; prevTab.current = tab; setTab(t); }, [tab]);
-  const navToLog = useCallback((dateKey: string) => { setLogDate(dateKey); prevTab.current = "dashboard"; setTab("log"); }, []);
+  const dashView = appConfig.dashView ?? "quick"; // persisted Quick/Calendar choice
+  const setDashView = (v: DashView) => updateConfig({ ...appConfig, dashView: v });
   const tKey = todayK();
   const completed = habits.filter((h) => logActive(h, logs[h.id]?.[tKey], units)).length;
 
@@ -129,41 +125,34 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 2, marginBottom: 24, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: 4 }}>
-          {([{ id: "dashboard", label: "Dashboard", icon: "◻" }, { id: "log", label: "Log Entry", icon: "✎" }] as const).map((t) => (
-            <button key={t.id} onClick={() => switchTab(t.id)} style={{ flex: 1, padding: "10px 16px", borderRadius: 7, border: "none", background: tab === t.id ? C.bg : "transparent", color: tab === t.id ? C.text : C.muted, cursor: "pointer", fontSize: 13, fontFamily: F, fontWeight: tab === t.id ? 600 : 400, transition: "all .35s cubic-bezier(.16,1,.3,1)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,.3)" : "none", transform: tab === t.id ? "scale(1)" : "scale(.98)" }}><span style={{ fontSize: 14 }}>{t.icon}</span>{t.label}</button>))}
-        </div>
-
-        {/* Content — both panels stay mounted and we toggle visibility, so
-            switching tabs doesn't unmount/rebuild the d3 calendars. Switching is
-            an instant display swap: a reveal-from-display:none entrance animation
-            here caused a visible flicker in the iOS standalone (PWA) web view. */}
+        {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
         <div style={{ minHeight: 200 }}>
-          <div style={{ display: tab === "dashboard" ? "block" : "none" }}>
-            {habits.length === 0 ? (
-              <div style={{ background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, padding: "60px 20px", textAlign: "center" }}>
-                <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-                <div style={{ fontSize: 16, color: C.muted, marginBottom: 8 }}>No habits yet</div>
-                <div style={{ fontSize: 12, color: C.dim }}>Click "New Habit" to start</div>
+          {habits.length === 0 ? (
+            <div style={{ background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, padding: "60px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+              <div style={{ fontSize: 16, color: C.muted, marginBottom: 8 }}>No habits yet</div>
+              <div style={{ fontSize: 12, color: C.dim }}>Click "New Habit" to start</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, padding: 3, gap: 2, width: "fit-content", marginBottom: 16 }}>
+                {([{ id: "quick", label: "Quick" }, { id: "calendar", label: "Calendar" }] as const).map((v) => (
+                  <button key={v.id} onClick={() => setDashView(v.id)} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: dashView === v.id ? C.bg : "transparent", color: dashView === v.id ? C.text : C.muted, fontWeight: dashView === v.id ? 600 : 400, fontSize: 12, fontFamily: F, cursor: "pointer", transition: "all .2s" }}>{v.label}</button>
+                ))}
               </div>
-            ) : (
               <StaggeredList keyProp="dashboard">
                 {habits.map((h) => (
                   <div key={h.id}>
-                    <D3Calendar habit={h} logs={logs[h.id] || {}} units={units} onCellClick={navToLog} onEdit={() => setEditHabit(h)} onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)} onQuickReset={(mId) => quickReset(h.id, mId)} onAddSet={(mId, set) => quickAddSet(h.id, mId, set)} onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)} timers={timers} onStartTimer={(mId) => startTimer(h.id, mId)} onStopTimer={(mId) => stopTimer(h.id, mId)} habitId={h.id} appConfig={appConfig} />
+                    <D3Calendar expanded={dashView === "calendar"} habit={h} logs={logs[h.id] || {}} units={units} onSaveDay={(dateKey, entry) => saveLog(dateKey, { [h.id]: entry })} onEdit={() => setEditHabit(h)} onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)} onQuickReset={(mId) => quickReset(h.id, mId)} onAddSet={(mId, set) => quickAddSet(h.id, mId, set)} onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)} timers={timers} onStartTimer={(mId) => startTimer(h.id, mId)} onStopTimer={(mId) => stopTimer(h.id, mId)} habitId={h.id} appConfig={appConfig} />
                   </div>
                 ))}
               </StaggeredList>
-            )}
-          </div>
-          <div style={{ display: tab === "log" ? "block" : "none" }}>
-            <LogEntry habits={habits} allLogs={logs} units={units} onSaveLog={saveLog} selectedDate={logDate} onDateChange={setLogDate} timers={timers} onStopTimer={stopTimer} theme={theme} />
-          </div>
+            </>
+          )}
         </div>
 
         <div className="stagger-child" style={{ textAlign: "center", marginTop: 32, fontSize: 11, color: C.dim, animationDelay: "500ms" }}>
-          metrics + units · heat ↔ cal · ‹› to navigate · long-press to edit
+          tap a day to log it · long-press a habit to edit · ‹› to navigate
         </div>
       </div>
 

@@ -8,13 +8,15 @@ import {
   getRecentDays, fitCellSize, compactHeatLayout, compactCalLayout,
 } from "../lib/d3layout";
 import QuickLogSection from "./QuickLogSection";
-import type { AppConfig, Habit, HabitLogs, SetEntry, Timers, Unit } from "../types";
+import DayEditor from "./DayEditor";
+import type { AppConfig, DayLog, Habit, HabitLogs, SetEntry, Timers, Unit } from "../types";
 
 type Props = {
   habit: Habit;
   logs: HabitLogs;
   units: Unit[];
-  onCellClick: (dateKey: string) => void;
+  /** Persist an exact day's entry (from the inline day editor opened by tapping a cell). */
+  onSaveDay?: (dateKey: string, entry: DayLog) => void;
   onEdit?: () => void;
   onQuickLog?: (metricId: string, amt: number) => void;
   onQuickReset: (metricId: string) => void;
@@ -25,11 +27,13 @@ type Props = {
   onStopTimer: (metricId: string) => void;
   habitId: string;
   appConfig?: AppConfig;
+  /** When false the calendar body (controls/svg/legend) collapses; only header + quick-log show. */
+  expanded?: boolean;
 };
 
 type Tip = { label: string; date: string };
 
-export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, onQuickLog, onQuickReset, onAddSet, onRemoveSet, timers, onStartTimer, onStopTimer, habitId, appConfig }: Props) {
+export default function D3Calendar({ habit, logs, units, onSaveDay, onEdit, onQuickLog, onQuickReset, onAddSet, onRemoveSet, timers, onStartTimer, onStopTimer, habitId, appConfig, expanded = true }: Props) {
   const cfg = appConfig || DEFAULT_CONFIG;
   const NUM_MONTHS = cfg.numMonths || 4;
   const svgRef = useRef<SVGSVGElement>(null), cRef = useRef<HTMLDivElement>(null);
@@ -41,16 +45,39 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
   const [zoomed, setZoomed] = useState(false);
   const [pressing, setPressing] = useState(false);
   const [svgHeight, setSvgHeight] = useState(120);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // drives open/close animation
+  const [editorDate, setEditorDate] = useState<string | null>(null); // kept mounted through the close animation
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tapRef = useRef<(k: string) => void>(() => {});
+  const selectedDateRef = useRef<string | null>(null); // current selection for the (build-once) hover handlers
+  selectedDateRef.current = selectedDate;
+
+  const closeEditor = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setSelectedDate(null);
+    closeTimerRef.current = setTimeout(() => setEditorDate(null), 450); // unmount after it collapses
+  };
+  // Reassigned each render so the d3 click handler always sees current state.
+  tapRef.current = (k: string) => {
+    if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+    if (selectedDate === k) closeEditor();
+    else { setEditorDate(k); setSelectedDate(k); }
+  };
+  useEffect(() => { // collapsing the card closes the editor
+    if (!expanded) { setSelectedDate(null); setEditorDate(null); if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }
+  }, [expanded]);
 
   const startPress = () => { setPressing(true); longPressRef.current = setTimeout(() => { setPressing(false); if (onEdit) onEdit(); }, 500); };
   const cancelPress = () => { setPressing(false); if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; } };
-  useEffect(() => () => { if (longPressRef.current) clearTimeout(longPressRef.current); }, []);
+  useEffect(() => () => { if (longPressRef.current) clearTimeout(longPressRef.current); if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }, []);
 
   const numM = zoomed ? 1 : NUM_MONTHS;
   const days = useMemo(() => getRecentDays(numM, offset), [numM, offset]);
   const tKey = todayK();
   const theme = cfg.theme === "light" ? "light" : "dark";
-  const pal = resolvePalette(habit.color, theme); // theme-aware intensity ramp
+  // Memoized: the light ramp builds a fresh object, which would otherwise churn
+  // the d3 effect (pal is in its deps) on every render.
+  const pal = useMemo(() => resolvePalette(habit.color, theme), [habit.color, theme]);
   const stats = useMemo(() => habitStats(habit, logs, units), [habit, logs, units]);
   const pu = (habit.metrics || [])[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
@@ -76,6 +103,7 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
   }, []);
 
   useEffect(() => {
+    if (!expanded || !svgRef.current) return; // calendar body not rendered when collapsed
     // d3 selection is kept loosely typed: the data-join/animation logic is
     // ported verbatim from the prototype to preserve identical behavior.
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -131,9 +159,9 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
       .style("cursor", (d: any) => d.future ? "default" : "pointer").style("opacity", 0);
     enter.each(function (this: any, d: any) { d3.select(this).transition("en").delay(stag(d)).duration(DUR * .6).ease(D3E).style("opacity", cellOp(d)); });
     const merged = cells.merge(enter);
-    merged.on("click", (_: any, d: any) => { if (!d.future && onCellClick) onCellClick(d.key); })
-      .on("mouseenter", (ev: any, d: any) => { if (d.future) return; setTip({ label: logSummary(habit, logs[d.key]), date: d.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) }); d3.select(ev.currentTarget).attr("stroke", sh[4]).attr("stroke-width", 2); })
-      .on("mouseleave", (ev: any, d: any) => { setTip(null); d3.select(ev.currentTarget).attr("stroke", cellStroke(d)).attr("stroke-width", cellStrokeW(d)); });
+    merged.on("click", (_: any, d: any) => { if (!d.future) tapRef.current(d.key); })
+      .on("mouseenter", (ev: any, d: any) => { if (d.future) return; const label = logSummary(habit, logs[d.key]); setTip(label === "No entry" ? null : { label, date: d.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) }); d3.select(ev.currentTarget).attr("stroke", sh[4]).attr("stroke-width", 2); })
+      .on("mouseleave", (ev: any, d: any) => { setTip(null); const isSel = selectedDateRef.current === d.key; d3.select(ev.currentTarget).attr("stroke", isSel ? sh[4] : cellStroke(d)).attr("stroke-width", isSel ? 2.5 : cellStrokeW(d)); });
     merged.each(function (this: any, d: any) {
       d3.select(this).transition("up").delay(stag(d)).duration(DUR * .6).ease(D3E)
         .attr("x", d.x).attr("y", d.y).attr("width", d.w).attr("height", d.h).attr("rx", cellR).attr("ry", cellR)
@@ -193,12 +221,28 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
     wks.merge(wkEn).transition("wkup").delay(DUR * .3).duration(DUR / 2).ease(D3E)
       .attr("x", (d: any) => d.x).attr("y", (d: any) => d.y).style("opacity", 1);
     /* eslint-enable @typescript-eslint/no-explicit-any */
-  }, [view, offset, zoomed, cw, days, logs, habit, pal, units, tKey, onCellClick, cfg]);
+  }, [expanded, view, offset, zoomed, cw, days, logs, habit, pal, units, tKey, cfg]);
+
+  // Outline the selected day's cell — separate cheap effect (restroke only, no
+  // data re-join/ripple). Runs on selection/theme change.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const Tc = THEMES[theme];
+    d3.select(svg).selectAll<SVGRectElement, any>(".dc").each(function (this: any, d: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (d.future) return;
+      const isSel = selectedDate === d.key;
+      const isToday = d.key === tKey;
+      d3.select(this)
+        .attr("stroke", isSel ? pal.shades[4] : isToday ? Tc.accent : Tc.cellStroke)
+        .attr("stroke-width", isSel ? 2.5 : isToday ? 1.5 : 1);
+    });
+  }, [selectedDate, tKey, pal, theme]);
 
   return (
-    <div ref={cRef} style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: "16px 16px", marginBottom: 16, transition: "border-color .3s", position: "relative" }}>
+    <div ref={cRef} style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: expanded ? "16px 16px" : "12px 16px", marginBottom: expanded ? 16 : 10, transition: "padding .45s cubic-bezier(.22,1,.36,1), margin-bottom .45s cubic-bezier(.22,1,.36,1), border-color .3s", position: "relative" }}>
       {/* Header: name + stats */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: expanded ? 12 : 2, flexWrap: "wrap", gap: 10, transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "default", userSelect: "none", WebkitUserSelect: "none" }}
           onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
           onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}>
@@ -215,6 +259,10 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
         </div>
       </div>
 
+      {/* Calendar body animates open/closed via grid-template-rows 0fr↔1fr
+          (stays mounted so both directions transition; avoids the iOS reveal-flash). */}
+      <div style={{ display: "grid", gridTemplateRows: expanded ? "1fr" : "0fr", opacity: expanded ? 1 : 0, transition: "grid-template-rows .45s cubic-bezier(.22,1,.36,1), opacity .3s ease" }}>
+        <div style={{ overflow: "hidden", minHeight: 0 }}>
       {/* Controls: view toggle + range + nav arrows */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
         <div style={{ display: "flex", background: C.bg, borderRadius: 5, border: `1px solid ${C.border}`, padding: 2, gap: 2 }}>
@@ -236,9 +284,28 @@ export default function D3Calendar({ habit, logs, units, onCellClick, onEdit, on
         {pal.shades.map((c, i) => <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />)}
         <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>More</span>
       </div>
+        </div>
+      </div>
 
-      {/* Quick-log for today */}
-      {onQuickLog && <QuickLogSection habit={habit} logs={logs} units={units} pal={pal} onQuickLog={(mId, amt) => { if (!zoomed) { setZoomed(true); setOffset(0); setView("calendar"); } onQuickLog(mId, amt); }} onQuickReset={onQuickReset} onAddSet={onAddSet ? (mId, set) => { if (!zoomed) { setZoomed(true); setOffset(0); setView("calendar"); } onAddSet(mId, set); } : null} onRemoveSet={onRemoveSet} timers={timers} onStartTimer={onStartTimer} onStopTimer={onStopTimer} habitId={habitId} />}
+      {/* Inline day editor — the card "further expands" when a day is tapped.
+          It and the quick-log both stay mounted and cross-swap heights so
+          selecting/closing animates smoothly; editorDate lingers through close. */}
+      <div style={{ display: "grid", gridTemplateRows: selectedDate ? "1fr" : "0fr", opacity: selectedDate ? 1 : 0, transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease" }}>
+        <div style={{ overflow: "hidden", minHeight: 0 }}>
+          {editorDate && onSaveDay && (
+            <DayEditor key={editorDate} habit={habit} dateKey={editorDate} habitLogs={logs} units={units} pal={pal} onSave={(d, entry) => { onSaveDay(d, entry); closeEditor(); }} onClose={closeEditor} />
+          )}
+        </div>
+      </div>
+
+      {/* Quick-log for today — stays mounted; collapses while editing a day */}
+      {onQuickLog && (
+        <div style={{ display: "grid", gridTemplateRows: selectedDate ? "0fr" : "1fr", transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1)" }}>
+          <div style={{ overflow: "hidden", minHeight: 0 }}>
+            <QuickLogSection dense={!expanded} habit={habit} logs={logs} units={units} pal={pal} onQuickLog={(mId, amt) => { if (expanded && !zoomed) { setZoomed(true); setOffset(0); setView("calendar"); } onQuickLog(mId, amt); }} onQuickReset={onQuickReset} onAddSet={onAddSet ? (mId, set) => { if (expanded && !zoomed) { setZoomed(true); setOffset(0); setView("calendar"); } onAddSet(mId, set); } : null} onRemoveSet={onRemoveSet} timers={timers} onStartTimer={onStartTimer} onStopTimer={onStopTimer} habitId={habitId} />
+          </div>
+        </div>
+      )}
 
       {/* Tooltip */}
       {tip && (

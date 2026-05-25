@@ -26,6 +26,11 @@ export async function openSettings(page: Page) {
   await page.getByTitle("Settings").click();
 }
 
+/** Switch the dashboard view via the Quick/Calendar toggle. */
+export async function setDashView(page: Page, view: "quick" | "calendar") {
+  await page.getByRole("button", { name: view === "calendar" ? "Calendar" : "Quick" }).click();
+}
+
 export async function setTheme(page: Page, theme: "dark" | "light") {
   await openSettings(page);
   await page.getByRole("button", { name: theme === "light" ? "Light" : "Dark" }).click();

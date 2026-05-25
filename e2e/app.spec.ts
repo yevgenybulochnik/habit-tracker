@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createHabit, openSettings, setTheme, deleteHabit } from "./helpers";
+import { createHabit, openSettings, setTheme, deleteHabit, setDashView } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
   await page.goto("/");
@@ -57,13 +57,47 @@ test("persistence: a logged habit survives a reload", async ({ page }) => {
   await expect(page.getByText("10 reps").first()).toBeVisible();
 });
 
-test("renders a calendar svg per habit and switches tabs", async ({ page }) => {
+test("Quick/Calendar toggle shows the heatmap and is remembered across reloads", async ({ page }) => {
   await page.goto("/");
   await createHabit(page, "Reading");
-  // D3Calendar mounted without crashing → an <svg> exists in the card
-  await expect(page.locator("svg").first()).toBeVisible();
-  await page.getByRole("button", { name: /Log Entry/i }).click();
-  await expect(page.getByText(/Log Date/i)).toBeVisible();
+  // Default Quick view: no calendar cells drawn (d3 gated off while collapsed)
+  await expect(page.locator("svg rect.dc")).toHaveCount(0);
+  // Switch to Calendar → cells appear
+  await setDashView(page, "calendar");
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+  // Persisted: reload stays in Calendar (cells present without toggling)
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Reading", level: 3 })).toBeVisible();
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+});
+
+test("tapping a calendar day opens the editor; the saved value persists", async ({ page }) => {
+  await page.goto("/");
+  await createHabit(page, "Reading"); // reps unit
+  await setDashView(page, "calendar");
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+
+  await page.locator("svg rect.dc").nth(20).click(); // an early (past) day
+  await expect(page.getByText(/^Edit/)).toBeVisible();
+  await page.getByPlaceholder("0").fill("23");
+  await page.getByRole("button", { name: /^Save$/ }).click();
+  await page.waitForTimeout(500); // let the IndexedDB write flush before reload
+
+  // Reload (view persisted = Calendar) and reopen the same day → value is there
+  await page.reload();
+  await expect(page.locator("svg rect.dc").nth(20)).toBeVisible();
+  await page.locator("svg rect.dc").nth(20).click();
+  await expect(page.getByPlaceholder("0")).toHaveValue("23");
+});
+
+test("selecting a day outlines its cell", async ({ page }) => {
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await setDashView(page, "calendar");
+  const cell = page.locator("svg rect.dc").nth(20);
+  await cell.click();
+  await page.mouse.move(5, 5); // clear hover so only the selection stroke remains
+  await expect(cell).toHaveAttribute("stroke-width", "2.5");
 });
 
 test("backup: export then import restores a deleted habit", async ({ page }) => {
