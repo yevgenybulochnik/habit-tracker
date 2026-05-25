@@ -36,7 +36,7 @@ export function logSummary(h: Habit, log: DayLog | undefined): string {
   const parts = ms
     .filter((m) => metricActive(m, log))
     .map((m) => {
-      if (isSetMetric(m)) return `${m.name}: ${fmtSets(log[m.id] as SetEntry[], m.weightUnit)}`;
+      if (isSetMetric(m)) return `${m.name}: ${fmtSets(log[m.id] as SetEntry[], m)}`;
       return `${m.name}: ${fmtVal(log[m.id] as number, m.unit)}`;
     });
   return parts.length ? parts.join(", ") : "No entry";

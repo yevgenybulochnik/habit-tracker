@@ -42,7 +42,7 @@ export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, o
   const summary = (() => {
     if (!hasAny) return null;
     if (compact) {
-      if (priIsSets) return fmtSets(todayLog[ms[0].id] as SetEntry[], ms[0].weightUnit);
+      if (priIsSets) return fmtSets(todayLog[ms[0].id] as SetEntry[], ms[0]);
       return fmtVal(ms.reduce((s, m) => s + ((todayLog[m.id] as number) || 0), 0), ms[0].unit);
     }
     return `${ms.filter((m) => metricActive(m, todayLog)).length}/${ms.length}`;
@@ -98,7 +98,7 @@ export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, o
                       </div>
                       <span style={{ fontSize: 10, fontFamily: F, fontWeight: 500, color: hasSets2 ? C.text : C.muted }}>{m.name}</span>
                       <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "1px 5px", borderRadius: 2, background: C.accentDim }}>SETS</span>
-                      {hasSets2 && <span style={{ fontSize: 9, color: pal.shades[4], fontFamily: F, fontWeight: 600, marginLeft: "auto" }}>{fmtSets(sets, m.weightUnit)}</span>}
+                      {hasSets2 && <span style={{ fontSize: 9, color: pal.shades[4], fontFamily: F, fontWeight: 600, marginLeft: "auto" }}>{fmtSets(sets, m)}</span>}
                     </div>
                     <SetInput metric={m} sets={sets} pal={pal} onAddSet={onAddSet!} onRemoveSet={onRemoveSet} lastWeight={findLastWeight(logs, m.id)} />
                   </div>
