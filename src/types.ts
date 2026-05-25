@@ -1,7 +1,19 @@
 // Shared domain types for the habit tracker.
 
-/** One logged set in a "sets"-mode metric: weight × reps. */
-export type SetEntry = { w: number; r: number };
+/** How a per-set field rolls up across a day's sets. */
+export type SetAgg = "sum" | "max" | "last" | "avg";
+
+/** One measured field within a sets-mode metric (e.g. weight, reps, minutes). */
+export type SetField = {
+  id: string; // key under which the value is stored in a SetEntry
+  label: string; // display name, e.g. "Weight", "Reps", "Minutes"
+  unit?: string; // optional unit shown beside the value, e.g. "lbs", "min"
+  agg: SetAgg; // how the field aggregates across the day's sets
+  primary?: boolean; // when setValue is "primary", this field is the headline number
+};
+
+/** One logged set: fieldId → value. Legacy weighted sets are { w, r }. */
+export type SetEntry = Record<string, number>;
 
 /** Intensity colouring strategy when a habit has multiple metrics. */
 export type IntensityMode = "total" | "coverage";
@@ -11,10 +23,14 @@ export type Metric = {
   id: string;
   name: string;
   unit: string;
-  /** Present only for sets-mode metrics (weight × reps). */
+  /** Present only for sets-mode metrics (a list of sets per day). */
   mode?: "sets";
-  /** Weight unit for sets mode, e.g. "lbs" | "kg". */
+  /** Weight unit for the default weighted schema, e.g. "lbs" | "kg". */
   weightUnit?: string;
+  /** Per-set fields. Absent ⇒ the default weighted [weight, reps] schema. */
+  setFields?: SetField[];
+  /** Headline value: "volume" (Σ of per-set field products) or the "primary" field's agg. */
+  setValue?: "volume" | "primary";
 };
 
 export type Habit = {
