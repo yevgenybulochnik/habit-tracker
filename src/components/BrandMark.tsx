@@ -1,24 +1,13 @@
 import { C } from "../constants";
+import { FRAMES, ICON_CELLS } from "../lib/brandMark";
 
-// The 3x3 grid mark. Cells 0,1,3,8 are the icon's green set (also the
-// reduced-motion fallback).
-const ICON_CELLS = [0, 1, 3, 8];
-
-// Pure-CSS looping pattern cycle.
-// The glyph cycles through FRAMES (each = the green cell indices for that frame).
-// Every frame keeps a mix — never all-green, never all-grey — so the mark always
-// reads as a grid. Animation is 100% CSS: every cell shares one duration with no
-// delay, so the grid advances through frames in lockstep and loops seamlessly.
-// The per-cell @keyframes are generated below from FRAMES (build-time JS; nothing
-// runs at runtime but the CSS engine). Disabled under prefers-reduced-motion.
-const FRAMES: number[][] = [
-  [0, 1, 3, 8], // icon
-  [1, 2, 4, 7],
-  [2, 4, 5, 6],
-  [3, 5, 7, 8],
-  [1, 3, 4, 6],
-  [0, 2, 4, 8],
-];
+// Pure-CSS looping pattern cycle. The glyph cycles through FRAMES (the green cells
+// per frame; see lib/brandMark). Every frame keeps a mix — never all-green, never
+// all-grey — so the mark always reads as a grid. Animation is 100% CSS: every cell
+// shares one duration with no delay, so the grid advances through frames in
+// lockstep and loops seamlessly. The per-cell @keyframes are generated below from
+// FRAMES (build-time JS; nothing runs at runtime but the CSS engine). Disabled
+// under prefers-reduced-motion.
 const DUR = 18; // seconds for one full loop through all frames (~3s per frame)
 const SNAP = 0.1; // fraction of a frame spent transitioning (rest is a flat hold)
 
