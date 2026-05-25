@@ -9,7 +9,7 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 - **Multi-metric habits** — each habit tracks one or more metrics. A metric is either **numeric** (e.g. minutes, reps, count) or **sets mode** (weight × reps, like a workout log).
 - **Configurable units** — built-in `min` / `reps` / `count`, plus custom units with their own quick-add buttons and intensity thresholds.
 - **d3 calendar + heatmap** — per-habit contribution-style heatmap and month calendar, with intensity colouring, month navigation, and zoom.
-- **Quick logging** on the dashboard, a dedicated **Log Entry** screen with date navigation, and **live timers** for minute-based metrics (persisted across reloads).
+- **Single dashboard** with a persisted **Quick ⟷ Calendar** toggle — Quick is a condensed log list; Calendar expands each card to its heatmap. **Tap any calendar day** to edit that date inline (exact value + quick-adds + sets), which covers back-dating. Plus **live timers** for minute-based metrics (persisted across reloads).
 - **Streaks & stats** — current/longest streak, total days, totals.
 - **Light / dark theme**, iOS safe-area aware.
 - **JSON export / import** backup (Settings → Data).
@@ -83,7 +83,7 @@ type Unit = {
   thresholds: number[];  // intensity level cutoffs, e.g. [15, 30, 60]
 };
 
-type AppConfig = { numMonths: number; monthGap: number; theme?: "dark" | "light" };
+type AppConfig = { numMonths: number; monthGap: number; theme?: "dark" | "light"; dashView?: "quick" | "calendar" };
 ```
 
 ### How logs are stored (the key shape)
@@ -144,10 +144,10 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 ```
 src/
   lib/          pure logic, no React/DOM (dates, format, metrics, stats, d3layout, storage, backup) — heavily unit-tested
-  components/   React components (D3Calendar, LogEntry, modals, quick-log, timers, …)
+  components/   React components (D3Calendar, DayEditor, modals, quick-log, timers, …)
   types.ts      domain types (the data model above)
   constants.ts  colors/themes, palettes, units, CSS, design tokens
-  App.tsx       single stateful container; persistence + tab routing
+  App.tsx       single stateful container; persistence + dashboard view toggle
 e2e/            Playwright specs + shared helpers
 scripts/        generate-icons.mjs (dependency-free PWA icon generator)
 ```

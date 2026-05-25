@@ -80,13 +80,19 @@ both producing a level 0–4 that maps to a palette shade.
 `habits`, `logs`, `units`, `appConfig`, and `timers`, and every mutation funnels through one
 `save()` callback → `storage.saveState()`. On mount it calls `requestPersistence()` (asks iOS
 to keep storage durable) then `loadState()`, which migrates a legacy `habit-tracker-v2` key
-forward to `habit-tracker-v3`. There is no external state library and no backend.
+forward to `habit-tracker-v3`. There is no external state library and no backend. The dashboard
+is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`quick` |
+`calendar`) toggle.
 
 **`D3Calendar` is the one imperative component.** It renders the SVG heatmap/calendar via d3
 data-joins inside a `useEffect`; the pure geometry is extracted to `src/lib/d3layout.ts`. The
 d3 selection/animation code is intentionally **loosely typed (`any`) at the d3 boundary** —
 keep it that way rather than fighting d3's generics; correctness there is covered by E2E render
-checks, not unit tests.
+checks, not unit tests. Each card collapses (Quick) or expands to its heatmap (Calendar) via an
+`expanded` prop, animated with `grid-template-rows`; the d3 build is gated off while collapsed.
+Tapping a calendar day opens an inline `DayEditor` for that date (exact-value entry +
+back-dating). Selection highlight and `pal` are kept out of the main build (separate effect /
+`useMemo`) so a tap doesn't re-ripple the heatmap.
 
 **Styling.** All styling is **inline styles** plus one injected `<style>` block (the `CSS`
 const, holding keyframes). Design tokens live in `src/constants.ts`: `C` (colors), `PALETTES`,
