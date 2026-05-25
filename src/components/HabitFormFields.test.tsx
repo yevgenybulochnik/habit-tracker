@@ -45,11 +45,24 @@ describe("HabitFormFields", () => {
     expect(screen.queryByText("Squats")).not.toBeInTheDocument();
   });
 
-  it("reveals the weight-unit select when sets mode is enabled", async () => {
+  it("reveals the sets presets when sets mode is enabled (weighted default)", async () => {
     const user = userEvent.setup();
     render(<Harness />);
     expect(screen.queryByText(/Log weight × reps per set/i)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
     expect(screen.getByText(/Log weight × reps per set/i)).toBeInTheDocument();
+  });
+
+  it("adds a reps-only (bodyweight) sets metric via the preset", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.type(screen.getByPlaceholderText(/Metric name/i), "Pull-ups");
+    await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
+    await user.click(screen.getByRole("button", { name: "Reps only" }));
+    expect(screen.getByText(/Log reps per set/i)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeNull(); // unit select still present
+    await user.click(screen.getByRole("button", { name: /\+ Add/i }));
+    // metric chip shows the reps-based badge, not "lbs"
+    expect(screen.getByText("SETS · reps")).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import {
   setsVolume, setsTotalReps, setsMaxWeight,
   metricVal, metricActive, findLastWeight,
   setFieldsOf, aggregateSets, setVolume, setsMetricVal, primaryField, findLastSet, setUnitLabel,
+  setsPreset,
 } from "./metrics";
 import { BUILTIN_UNITS } from "../constants";
 import type { Metric, HabitLogs } from "../types";
@@ -120,6 +121,27 @@ describe("setsMetricVal", () => {
   });
   it("tempo+time → primary (minutes), ignoring the max-agg field", () => {
     expect(setsMetricVal(tempoM, [{ bpm: 120, min: 10 }, { bpm: 90, min: 5 }])).toBe(15);
+  });
+});
+
+describe("setsPreset", () => {
+  it("weighted → volume, weight+reps fields, honoring the weight unit", () => {
+    const p = setsPreset("weighted", "kg");
+    expect(p.setValue).toBe("volume");
+    expect(p.setFields!.map((f) => f.id)).toEqual(["w", "r"]);
+    expect(p.setFields![0].unit).toBe("kg");
+    expect(p.weightUnit).toBe("kg");
+  });
+  it("reps → primary, single reps field", () => {
+    const p = setsPreset("reps");
+    expect(p.setValue).toBe("primary");
+    expect(p.setFields!.map((f) => f.id)).toEqual(["r"]);
+    expect(p.unit).toBe("reps");
+  });
+  it("timed → primary, single minutes field", () => {
+    const p = setsPreset("timed");
+    expect(p.setFields!.map((f) => f.id)).toEqual(["min"]);
+    expect(p.unit).toBe("min");
   });
 });
 

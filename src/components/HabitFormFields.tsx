@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { C, F, EMOJIS, PALETTES, inpS, lbl } from "../constants";
-import { getUnit } from "../lib/metrics";
+import { getUnit, setsPreset, setUnitLabel } from "../lib/metrics";
+import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
 
 type Props = {
@@ -19,6 +20,7 @@ export default function HabitFormFields({ name, setName, emoji, setEmoji, descri
   const [newMN, setNewMN] = useState("");
   const [newMU, setNewMU] = useState("reps");
   const [newMode, setNewMode] = useState<"normal" | "sets">("normal");
+  const [newPreset, setNewPreset] = useState<SetPreset>("weighted");
   const [newWU, setNewWU] = useState("lbs");
   const [showCU, setShowCU] = useState(false);
   const [cuId, setCuId] = useState("");
@@ -28,11 +30,13 @@ export default function HabitFormFields({ name, setName, emoji, setEmoji, descri
 
   const addMetric = () => {
     if (newMN.trim()) {
-      const m: Metric = { id: `m_${Date.now()}`, name: newMN.trim(), unit: newMU };
-      if (newMode === "sets") { m.mode = "sets"; m.weightUnit = newWU; }
+      const m: Metric = newMode === "sets"
+        ? { id: `m_${Date.now()}`, name: newMN.trim(), mode: "sets", ...setsPreset(newPreset, newWU) }
+        : { id: `m_${Date.now()}`, name: newMN.trim(), unit: newMU };
       setMetrics((p) => [...p, m]);
       setNewMN("");
       setNewMode("normal");
+      setNewPreset("weighted");
     }
   };
   const rmMetric = (id: string) => setMetrics((p) => p.filter((m) => m.id !== id));
@@ -70,7 +74,7 @@ export default function HabitFormFields({ name, setName, emoji, setEmoji, descri
         {metrics.map((m) => (
           <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px 12px", borderRadius: 6, background: C.bg, border: `1px solid ${C.border}` }}>
             <span style={{ flex: 1, fontSize: 13, color: C.text, fontFamily: F }}>{m.name}</span>
-            {m.mode === "sets" && <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "2px 6px", borderRadius: 3, background: C.accentDim, fontWeight: 600 }}>SETS · {m.weightUnit || "lbs"}</span>}
+            {m.mode === "sets" && <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "2px 6px", borderRadius: 3, background: C.accentDim, fontWeight: 600 }}>SETS · {setUnitLabel(m)}</span>}
             <span style={{ fontSize: 10, color: C.dim, fontFamily: F, padding: "2px 8px", borderRadius: 3, background: C.surface }}>{getUnit(m.unit, units).label}</span>
             <button onClick={() => rmMetric(m.id)} style={{ width: 22, height: 22, borderRadius: 4, border: "none", background: "transparent", color: C.dim, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => (e.currentTarget.style.color = C.danger)} onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}>×</button>
           </div>
@@ -83,16 +87,27 @@ export default function HabitFormFields({ name, setName, emoji, setEmoji, descri
           </select>
           <button onClick={addMetric} style={{ padding: "8px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.muted, cursor: "pointer", fontSize: 12, fontFamily: F, whiteSpace: "nowrap" }}>+ Add</button>
         </div>
-        {/* Sets mode toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+        {/* Sets mode toggle + schema preset */}
+        <div style={{ marginTop: 8 }}>
           <button onClick={() => setNewMode((p) => (p === "sets" ? "normal" : "sets"))} style={{ padding: "5px 12px", borderRadius: 5, fontSize: 10, fontFamily: F, fontWeight: 600, cursor: "pointer", border: `1px solid ${newMode === "sets" ? C.accent : C.border}`, background: newMode === "sets" ? C.accentDim : "transparent", color: newMode === "sets" ? C.accent : C.muted, transition: "all .2s" }}>{newMode === "sets" ? "◼ Sets mode ON" : "○ Enable sets mode"}</button>
           {newMode === "sets" && (
-            <select value={newWU} onChange={(e) => setNewWU(e.target.value)} style={{ ...inpS, width: 80, fontSize: 11, padding: "5px 8px", cursor: "pointer" }}>
-              <option value="lbs">lbs</option>
-              <option value="kg">kg</option>
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                {([["weighted", "Weighted"], ["reps", "Reps only"], ["timed", "Timed"]] as const).map(([k, l]) => (
+                  <button key={k} onClick={() => setNewPreset(k)} style={{ padding: "5px 10px", borderRadius: 5, fontSize: 10, fontFamily: F, fontWeight: 600, cursor: "pointer", border: `1px solid ${newPreset === k ? C.accent : C.border}`, background: newPreset === k ? C.accentDim : "transparent", color: newPreset === k ? C.accent : C.muted, transition: "all .2s" }}>{l}</button>
+                ))}
+              </div>
+              {newPreset === "weighted" && (
+                <select value={newWU} onChange={(e) => setNewWU(e.target.value)} style={{ ...inpS, width: 70, fontSize: 11, padding: "5px 8px", cursor: "pointer" }}>
+                  <option value="lbs">lbs</option>
+                  <option value="kg">kg</option>
+                </select>
+              )}
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: F }}>
+                {newPreset === "weighted" ? "Log weight × reps per set" : newPreset === "reps" ? "Log reps per set (bodyweight)" : "Log minutes per set"}
+              </span>
+            </div>
           )}
-          {newMode === "sets" && <span style={{ fontSize: 9, color: C.dim, fontFamily: F }}>Log weight × reps per set</span>}
         </div>
         {showCU && (
           <div style={{ marginTop: 10, padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.accent}`, background: C.accentDim, animation: "fadeIn .3s ease" }}>

@@ -59,6 +59,25 @@ export function setsMetricVal(m: Metric, sets: SetEntry[] | undefined): number {
   return setVolume(sets, fields);
 }
 
+/** Built-in sets schemas chosen in the habit form. */
+export type SetPreset = "weighted" | "reps" | "timed";
+
+/** The metric fields a sets preset writes (schema + value mode + unit). */
+export function setsPreset(kind: SetPreset, weightUnit = "lbs"): Pick<Metric, "setFields" | "setValue" | "weightUnit" | "unit"> {
+  switch (kind) {
+    case "reps":
+      return { setValue: "primary", unit: "reps", setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }] };
+    case "timed":
+      return { setValue: "primary", unit: "min", setFields: [{ id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true }] };
+    case "weighted":
+    default:
+      return {
+        setValue: "volume", unit: "reps", weightUnit,
+        setFields: [{ id: "w", label: "Weight", unit: weightUnit, agg: "max" }, { id: "r", label: "Reps", agg: "sum", primary: true }],
+      };
+  }
+}
+
 /** Short unit label for a sets metric's badge, e.g. "lbs" | "reps" | "min". */
 export function setUnitLabel(m: Metric): string {
   if ((m.setValue ?? "volume") === "volume") return setFieldsOf(m).find((f) => f.unit)?.unit || "lbs";
