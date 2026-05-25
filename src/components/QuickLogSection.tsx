@@ -21,9 +21,11 @@ type Props = {
   onStartTimer: (metricId: string) => void;
   onStopTimer: (metricId: string) => void;
   habitId: string;
+  /** Dense layout (Quick view / collapsed card): drop the "Quick log today" label, trim spacing. */
+  dense?: boolean;
 };
 
-export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, onQuickReset, onAddSet, onRemoveSet, timers, onStartTimer, onStopTimer, habitId }: Props) {
+export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, onQuickReset, onAddSet, onRemoveSet, timers, onStartTimer, onStopTimer, habitId, dense }: Props) {
   const [justTapped, setJustTapped] = useState<string | null>(null);
   const ms = habit.metrics || [];
   const compact = ms.length === 1;
@@ -47,11 +49,13 @@ export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, o
   })();
 
   return (
-    <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 8, color: C.dim, fontFamily: F, textTransform: "uppercase", letterSpacing: ".06em" }}>Quick log today</span>
-        {hasAny && <span style={{ fontSize: 11, color: pal.shades[4], fontFamily: F, fontWeight: 700, animation: "fadeIn .3s ease" }}>{summary}</span>}
-      </div>
+    <div style={{ borderTop: `1px solid ${C.border}`, marginTop: dense ? 8 : 10, paddingTop: dense ? 8 : 10 }}>
+      {(!dense || hasAny) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: dense ? "flex-end" : "space-between", marginBottom: 6 }}>
+          {!dense && <span style={{ fontSize: 8, color: C.dim, fontFamily: F, textTransform: "uppercase", letterSpacing: ".06em" }}>Quick log today</span>}
+          {hasAny && <span style={{ fontSize: 11, color: pal.shades[4], fontFamily: F, fontWeight: 700, animation: "fadeIn .3s ease" }}>{summary}</span>}
+        </div>
+      )}
 
       {/* Single metric: sets or normal */}
       {compact && priIsSets ? (

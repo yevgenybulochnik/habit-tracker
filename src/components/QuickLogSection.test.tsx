@@ -30,6 +30,17 @@ function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
   return handlers;
 }
 
+describe("QuickLogSection dense mode", () => {
+  it("shows the 'Quick log today' label by default", () => {
+    renderQL(minHabit, {});
+    expect(screen.getByText(/Quick log today/i)).toBeInTheDocument();
+  });
+  it("hides the 'Quick log today' label when dense", () => {
+    renderQL(minHabit, {}, { dense: true });
+    expect(screen.queryByText(/Quick log today/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("QuickLogSection", () => {
   it("fires onQuickLog with the metric id and amount when a +N button is tapped", async () => {
     const user = userEvent.setup();
