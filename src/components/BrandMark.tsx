@@ -31,7 +31,7 @@ export default function BrandMark({
           key={i}
           style={{
             borderRadius: size * 0.08,
-            background: on.has(i) ? C.green4 : C.surface,
+            background: on.has(i) ? C.green4 : C.borderLight,
             transition: "background .4s ease",
           }}
         />
