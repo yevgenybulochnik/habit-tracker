@@ -59,6 +59,13 @@ export function setsMetricVal(m: Metric, sets: SetEntry[] | undefined): number {
   return setVolume(sets, fields);
 }
 
+/** Short unit label for a sets metric's badge, e.g. "lbs" | "reps" | "min". */
+export function setUnitLabel(m: Metric): string {
+  if ((m.setValue ?? "volume") === "volume") return setFieldsOf(m).find((f) => f.unit)?.unit || "lbs";
+  const p = primaryField(m);
+  return p.unit || p.label.toLowerCase();
+}
+
 export function setsVolume(sets: SetEntry[] | undefined): number {
   if (!Array.isArray(sets) || !sets.length) return 0;
   return sets.reduce((s, st) => s + (st.w || 0) * (st.r || 0), 0);

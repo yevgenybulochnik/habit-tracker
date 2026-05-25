@@ -3,7 +3,7 @@ import {
   getUnit, getQuickAdd, isSetMetric,
   setsVolume, setsTotalReps, setsMaxWeight,
   metricVal, metricActive, findLastWeight,
-  setFieldsOf, aggregateSets, setVolume, setsMetricVal, primaryField, findLastSet,
+  setFieldsOf, aggregateSets, setVolume, setsMetricVal, primaryField, findLastSet, setUnitLabel,
 } from "./metrics";
 import { BUILTIN_UNITS } from "../constants";
 import type { Metric, HabitLogs } from "../types";
@@ -120,6 +120,14 @@ describe("setsMetricVal", () => {
   });
   it("tempo+time → primary (minutes), ignoring the max-agg field", () => {
     expect(setsMetricVal(tempoM, [{ bpm: 120, min: 10 }, { bpm: 90, min: 5 }])).toBe(15);
+  });
+});
+
+describe("setUnitLabel", () => {
+  it("is the weight unit for weighted, the primary unit/label otherwise", () => {
+    expect(setUnitLabel(setM)).toBe("lbs");
+    expect(setUnitLabel(repsM)).toBe("reps");
+    expect(setUnitLabel(timedM)).toBe("min");
   });
 });
 

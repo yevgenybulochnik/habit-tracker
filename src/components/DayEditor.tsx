@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, F, inpS } from "../constants";
-import { isSetMetric, getQuickAdd, findLastWeight } from "../lib/metrics";
+import { isSetMetric, getQuickAdd, findLastSet, setUnitLabel } from "../lib/metrics";
 import { todayK } from "../lib/dates";
 import SetInput from "./SetInput";
 import type { DayLog, Habit, HabitLogs, Palette, SetEntry, Unit } from "../types";
@@ -58,8 +58,8 @@ export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSav
           if (isSetMetric(m)) {
             return (
               <div key={m.id}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: C.text, fontFamily: F, marginBottom: 4 }}>{m.name} <span style={{ fontSize: 9, color: C.accent }}>SETS · {m.weightUnit || "lbs"}</span></div>
-                <SetInput metric={m} sets={local[m.id] as SetEntry[]} pal={pal} onAddSet={(_, set) => addSet(m.id, set)} onRemoveSet={(_, idx) => rmSet(m.id, idx)} lastWeight={findLastWeight(habitLogs, m.id)} />
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text, fontFamily: F, marginBottom: 4 }}>{m.name} <span style={{ fontSize: 9, color: C.accent }}>SETS · {setUnitLabel(m)}</span></div>
+                <SetInput metric={m} sets={local[m.id] as SetEntry[]} pal={pal} onAddSet={(_, set) => addSet(m.id, set)} onRemoveSet={(_, idx) => rmSet(m.id, idx)} lastSet={findLastSet(habitLogs, m.id)} />
               </div>
             );
           }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, F } from "../constants";
-import { getQuickAdd, isSetMetric, metricActive, findLastWeight } from "../lib/metrics";
+import { getQuickAdd, isSetMetric, metricActive, findLastSet, setUnitLabel } from "../lib/metrics";
 import { fmtVal, fmtSets } from "../lib/format";
 import { logLevel } from "../lib/stats";
 import { todayK } from "../lib/dates";
@@ -62,9 +62,9 @@ export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, o
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span style={{ fontSize: 11, fontFamily: F, fontWeight: 600, color: C.text }}>{ms[0].name}</span>
-            <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "1px 5px", borderRadius: 2, background: C.accentDim, fontWeight: 600 }}>SETS · {ms[0].weightUnit || "lbs"}</span>
+            <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "1px 5px", borderRadius: 2, background: C.accentDim, fontWeight: 600 }}>SETS · {setUnitLabel(ms[0])}</span>
           </div>
-          <SetInput metric={ms[0]} sets={todayLog[ms[0].id] as SetEntry[]} pal={pal} onAddSet={onAddSet!} onRemoveSet={onRemoveSet} lastWeight={findLastWeight(logs, ms[0].id)} />
+          <SetInput metric={ms[0]} sets={todayLog[ms[0].id] as SetEntry[]} pal={pal} onAddSet={onAddSet!} onRemoveSet={onRemoveSet} lastSet={findLastSet(logs, ms[0].id)} />
           <div style={{ display: "flex", gap: 3, marginTop: 6 }}>{[1, 2, 3, 4].map((i) => <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: level >= i ? pal.shades[i] : C.bg, transition: "background .4s" }} />)}</div>
         </>
       ) : compact ? (
@@ -100,7 +100,7 @@ export default function QuickLogSection({ habit, logs, units, pal, onQuickLog, o
                       <span style={{ fontSize: 9, color: C.accent, fontFamily: F, padding: "1px 5px", borderRadius: 2, background: C.accentDim }}>SETS</span>
                       {hasSets2 && <span style={{ fontSize: 9, color: pal.shades[4], fontFamily: F, fontWeight: 600, marginLeft: "auto" }}>{fmtSets(sets, m)}</span>}
                     </div>
-                    <SetInput metric={m} sets={sets} pal={pal} onAddSet={onAddSet!} onRemoveSet={onRemoveSet} lastWeight={findLastWeight(logs, m.id)} />
+                    <SetInput metric={m} sets={sets} pal={pal} onAddSet={onAddSet!} onRemoveSet={onRemoveSet} lastSet={findLastSet(logs, m.id)} />
                   </div>
                 );
               }
