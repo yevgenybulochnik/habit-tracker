@@ -50,6 +50,10 @@ Because the core logic is isolated, the natural rhythm is to push new behavior i
 
 ### Commit conventions
 
+- **Commit as you go — do not ask for approval before committing.** Land each increment
+  yourself as you complete it (per the red–green loop above); never pause to ask "should I
+  commit this?". This standing instruction overrides the default of committing only when asked.
+  (Still do **not** `git push` without being asked.)
 - **Conventional Commits**: `feat:`, `fix:`, `test:`, `chore:`, `refactor:`, `revert:`.
 - End every commit message with the trailer:
   `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`.
