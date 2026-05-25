@@ -50,7 +50,9 @@ export type Logs = Record<string, HabitLogs>;
 
 export type ThemeName = "dark" | "light";
 
-export type AppConfig = { numMonths: number; monthGap: number; theme?: ThemeName };
+export type DashView = "quick" | "calendar";
+
+export type AppConfig = { numMonths: number; monthGap: number; theme?: ThemeName; dashView?: DashView };
 
 /** Running timers keyed by "habitId:metricId" → start timestamp (ms). */
 export type Timers = Record<string, number>;

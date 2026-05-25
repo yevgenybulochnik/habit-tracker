@@ -111,4 +111,4 @@ input,select,textarea{font-size:16px !important}
 export const inpS: CSSProperties = {width:"100%",padding:"10px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:C.bg,color:C.text,fontSize:14,fontFamily:F,outline:"none",boxSizing:"border-box"};
 export const lbl: CSSProperties = {display:"block",fontSize:11,color:C.muted,fontFamily:F,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"};
 
-export const DEFAULT_CONFIG: AppConfig = { numMonths: 4, monthGap: 5, theme: "dark" };
+export const DEFAULT_CONFIG: AppConfig = { numMonths: 4, monthGap: 5, theme: "dark", dashView: "quick" };
