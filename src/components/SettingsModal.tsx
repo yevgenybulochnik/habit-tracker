@@ -1,8 +1,89 @@
 import { useState, useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
 import { C, F, inpS, BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
 import { todayK } from "../lib/dates";
 import ModalShell from "./ModalShell";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
+
+// Repeated static style objects, lifted out of the JSX below. Dynamic bits
+// (active-state colors, hover handlers) stay inline at each call site.
+const sectionHdr: CSSProperties = {
+  fontSize: 11,
+  color: C.accent,
+  fontFamily: F,
+  fontWeight: 600,
+  marginBottom: 10,
+  textTransform: "uppercase",
+  letterSpacing: ".06em",
+};
+const panel: CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: 8,
+  border: `1px solid ${C.border}`,
+  background: C.bg,
+};
+const rowTitle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: C.text,
+  fontFamily: F,
+};
+const rowDesc: CSSProperties = {
+  fontSize: 9,
+  color: C.dim,
+  fontFamily: F,
+  marginTop: 2,
+};
+const fieldLbl: CSSProperties = {
+  fontSize: 10,
+  color: C.muted,
+  fontFamily: F,
+  marginBottom: 3,
+};
+const inpSm: CSSProperties = { ...inpS, fontSize: 12 };
+const stepBtn: CSSProperties = {
+  width: 24,
+  height: 24,
+  borderRadius: 4,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.muted,
+  cursor: "pointer",
+  fontSize: 13,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontFamily: F,
+  transition: "all .15s",
+};
+const iconBtn24: CSSProperties = {
+  width: 24,
+  height: 24,
+  borderRadius: 4,
+  background: "transparent",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+const pillBtn: CSSProperties = {
+  padding: "5px 12px",
+  borderRadius: 4,
+  cursor: "pointer",
+  fontSize: 11,
+  fontFamily: F,
+};
+const dataBtn: CSSProperties = {
+  padding: "7px 14px",
+  borderRadius: 6,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text,
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 600,
+  fontFamily: F,
+};
 
 type Props = {
   units: Unit[];
@@ -156,46 +237,18 @@ export default function SettingsModal({
 
       {/* ── Appearance ── */}
       <div style={{ marginBottom: 20 }}>
+        <div style={sectionHdr}>Appearance</div>
         <div
           style={{
-            fontSize: 11,
-            color: C.accent,
-            fontFamily: F,
-            fontWeight: 600,
-            marginBottom: 10,
-            textTransform: "uppercase",
-            letterSpacing: ".06em",
-          }}
-        >
-          Appearance
-        </div>
-        <div
-          style={{
-            padding: "12px 14px",
-            borderRadius: 8,
-            border: `1px solid ${C.border}`,
-            background: C.bg,
+            ...panel,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
           <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: C.text,
-                fontFamily: F,
-              }}
-            >
-              Theme
-            </div>
-            <div
-              style={{ fontSize: 9, color: C.dim, fontFamily: F, marginTop: 2 }}
-            >
-              Light or dark appearance
-            </div>
+            <div style={rowTitle}>Theme</div>
+            <div style={rowDesc}>Light or dark appearance</div>
           </div>
           <div
             style={{
@@ -236,27 +289,8 @@ export default function SettingsModal({
 
       {/* ── Calendar Display ── */}
       <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            fontSize: 11,
-            color: C.accent,
-            fontFamily: F,
-            fontWeight: 600,
-            marginBottom: 10,
-            textTransform: "uppercase",
-            letterSpacing: ".06em",
-          }}
-        >
-          Calendar Display
-        </div>
-        <div
-          style={{
-            padding: "12px 14px",
-            borderRadius: 8,
-            border: `1px solid ${C.border}`,
-            background: C.bg,
-          }}
-        >
+        <div style={sectionHdr}>Calendar Display</div>
+        <div style={panel}>
           <div
             style={{
               display: "flex",
@@ -266,24 +300,8 @@ export default function SettingsModal({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: C.text,
-                  fontFamily: F,
-                }}
-              >
-                Months to display
-              </div>
-              <div
-                style={{
-                  fontSize: 9,
-                  color: C.dim,
-                  fontFamily: F,
-                  marginTop: 2,
-                }}
-              >
+              <div style={rowTitle}>Months to display</div>
+              <div style={rowDesc}>
                 Number of months shown in the heatmap view
               </div>
             </div>
@@ -293,21 +311,7 @@ export default function SettingsModal({
                   const v = Math.max(2, cfg.numMonths - 1);
                   onUpdateConfig({ ...cfg, numMonths: v });
                 }}
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  border: `1px solid ${C.border}`,
-                  background: C.surface,
-                  color: C.muted,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: F,
-                  transition: "all .15s",
-                }}
+                style={stepBtn}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = C.accent;
                   e.currentTarget.style.color = C.accent;
@@ -336,21 +340,7 @@ export default function SettingsModal({
                   const v = Math.min(12, cfg.numMonths + 1);
                   onUpdateConfig({ ...cfg, numMonths: v });
                 }}
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  border: `1px solid ${C.border}`,
-                  background: C.surface,
-                  color: C.muted,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: F,
-                  transition: "all .15s",
-                }}
+                style={stepBtn}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = C.accent;
                   e.currentTarget.style.color = C.accent;
@@ -372,24 +362,8 @@ export default function SettingsModal({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: C.text,
-                  fontFamily: F,
-                }}
-              >
-                Month spacing
-              </div>
-              <div
-                style={{
-                  fontSize: 9,
-                  color: C.dim,
-                  fontFamily: F,
-                  marginTop: 2,
-                }}
-              >
+              <div style={rowTitle}>Month spacing</div>
+              <div style={rowDesc}>
                 Gap between month blocks in heatmap (px)
               </div>
             </div>
@@ -420,19 +394,7 @@ export default function SettingsModal({
       </div>
 
       {/* ── Units ── */}
-      <div
-        style={{
-          fontSize: 11,
-          color: C.accent,
-          fontFamily: F,
-          fontWeight: 600,
-          marginBottom: 10,
-          textTransform: "uppercase",
-          letterSpacing: ".06em",
-        }}
-      >
-        Units
-      </div>
+      <div style={sectionHdr}>Units</div>
       <div style={{ marginBottom: 20 }}>
         {units.map((u) => {
           const inUse = usedUnits.has(u.id);
@@ -454,54 +416,27 @@ export default function SettingsModal({
                 <div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: C.muted,
-                          fontFamily: F,
-                          marginBottom: 3,
-                        }}
-                      >
-                        Label
-                      </div>
+                      <div style={fieldLbl}>Label</div>
                       <input
                         value={eLabel}
                         onChange={(e) => setELabel(e.target.value)}
-                        style={{ ...inpS, fontSize: 12 }}
+                        style={inpSm}
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: C.muted,
-                          fontFamily: F,
-                          marginBottom: 3,
-                        }}
-                      >
-                        Quick-add
-                      </div>
+                      <div style={fieldLbl}>Quick-add</div>
                       <input
                         value={eQA}
                         onChange={(e) => setEQA(e.target.value)}
-                        style={{ ...inpS, fontSize: 12 }}
+                        style={inpSm}
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: C.muted,
-                          fontFamily: F,
-                          marginBottom: 3,
-                        }}
-                      >
-                        Thresholds
-                      </div>
+                      <div style={fieldLbl}>Thresholds</div>
                       <input
                         value={eThr}
                         onChange={(e) => setEThr(e.target.value)}
-                        style={{ ...inpS, fontSize: 12 }}
+                        style={inpSm}
                       />
                     </div>
                   </div>
@@ -515,14 +450,10 @@ export default function SettingsModal({
                     <button
                       onClick={() => setEditId(null)}
                       style={{
-                        padding: "5px 12px",
-                        borderRadius: 4,
+                        ...pillBtn,
                         border: `1px solid ${C.border}`,
                         background: "transparent",
                         color: C.muted,
-                        cursor: "pointer",
-                        fontSize: 11,
-                        fontFamily: F,
                       }}
                     >
                       Cancel
@@ -530,15 +461,11 @@ export default function SettingsModal({
                     <button
                       onClick={saveEdit}
                       style={{
-                        padding: "5px 12px",
-                        borderRadius: 4,
+                        ...pillBtn,
                         border: "none",
                         background: C.accent,
                         color: "#fff",
-                        cursor: "pointer",
-                        fontSize: 11,
                         fontWeight: 600,
-                        fontFamily: F,
                       }}
                     >
                       Save
@@ -598,17 +525,10 @@ export default function SettingsModal({
                     <button
                       onClick={() => startEdit(u)}
                       style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 4,
+                        ...iconBtn24,
                         border: `1px solid ${C.border}`,
-                        background: "transparent",
                         color: C.muted,
-                        cursor: "pointer",
                         fontSize: 11,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
                       }}
                       title="Edit"
                     >
@@ -618,17 +538,10 @@ export default function SettingsModal({
                       <button
                         onClick={() => onDeleteUnit(u.id)}
                         style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 4,
+                          ...iconBtn24,
                           border: `1px solid transparent`,
-                          background: "transparent",
                           color: C.dim,
-                          cursor: "pointer",
                           fontSize: 13,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
                         }}
                         onMouseEnter={(e) =>
                           (e.currentTarget.style.color = C.danger)
@@ -658,90 +571,42 @@ export default function SettingsModal({
           background: C.bg,
         }}
       >
-        <div
-          style={{
-            fontSize: 11,
-            color: C.muted,
-            fontFamily: F,
-            fontWeight: 600,
-            marginBottom: 10,
-            textTransform: "uppercase",
-            letterSpacing: ".06em",
-          }}
-        >
-          Add New Unit
-        </div>
+        <div style={{ ...sectionHdr, color: C.muted }}>Add New Unit</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: C.muted,
-                fontFamily: F,
-                marginBottom: 3,
-              }}
-            >
-              ID
-            </div>
+            <div style={fieldLbl}>ID</div>
             <input
               value={newId}
               onChange={(e) => setNewId(e.target.value)}
               placeholder="lbs"
-              style={{ ...inpS, fontSize: 12 }}
+              style={inpSm}
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: C.muted,
-                fontFamily: F,
-                marginBottom: 3,
-              }}
-            >
-              Label
-            </div>
+            <div style={fieldLbl}>Label</div>
             <input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="Pounds"
-              style={{ ...inpS, fontSize: 12 }}
+              style={inpSm}
             />
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
           <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: C.muted,
-                fontFamily: F,
-                marginBottom: 3,
-              }}
-            >
-              Quick-add
-            </div>
+            <div style={fieldLbl}>Quick-add</div>
             <input
               value={newQA}
               onChange={(e) => setNewQA(e.target.value)}
-              style={{ ...inpS, fontSize: 12 }}
+              style={inpSm}
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: C.muted,
-                fontFamily: F,
-                marginBottom: 3,
-              }}
-            >
-              Thresholds
-            </div>
+            <div style={fieldLbl}>Thresholds</div>
             <input
               value={newThr}
               onChange={(e) => setNewThr(e.target.value)}
-              style={{ ...inpS, fontSize: 12 }}
+              style={inpSm}
             />
           </div>
         </div>
@@ -765,27 +630,8 @@ export default function SettingsModal({
 
       {/* ── Data (backup) ── */}
       <div style={{ marginTop: 20 }}>
-        <div
-          style={{
-            fontSize: 11,
-            color: C.accent,
-            fontFamily: F,
-            fontWeight: 600,
-            marginBottom: 10,
-            textTransform: "uppercase",
-            letterSpacing: ".06em",
-          }}
-        >
-          Data
-        </div>
-        <div
-          style={{
-            padding: "12px 14px",
-            borderRadius: 8,
-            border: `1px solid ${C.border}`,
-            background: C.bg,
-          }}
-        >
+        <div style={sectionHdr}>Data</div>
+        <div style={panel}>
           <div
             style={{
               display: "flex",
@@ -798,36 +644,10 @@ export default function SettingsModal({
               Back up or restore all habits, logs, units and settings.
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button
-                onClick={doExport}
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: 6,
-                  border: `1px solid ${C.border}`,
-                  background: C.surface,
-                  color: C.text,
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: F,
-                }}
-              >
+              <button onClick={doExport} style={dataBtn}>
                 Export
               </button>
-              <button
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: 6,
-                  border: `1px solid ${C.border}`,
-                  background: C.surface,
-                  color: C.text,
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: F,
-                }}
-              >
+              <button onClick={() => fileRef.current?.click()} style={dataBtn}>
                 Import
               </button>
               <input
