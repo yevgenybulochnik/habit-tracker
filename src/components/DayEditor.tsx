@@ -13,16 +13,15 @@ type Props = {
   habitLogs: HabitLogs; // this habit's logs (dateKey → DayLog)
   units: Unit[];
   pal: Palette;
-  onSave: (dateKey: string, entry: DayLog) => void;
   onClose: () => void;
   /** Live-persist each edit (typing / quick-add / set add) so the heatmap cell
-   *  recolors immediately, without waiting for the explicit Save. */
-  onChange?: (dateKey: string, entry: DayLog) => void;
+   *  recolors immediately; there is no explicit Save — the × just closes. */
+  onChange: (dateKey: string, entry: DayLog) => void;
 };
 
 // Inline editor for one habit on one date — shown inside the card when a
 // calendar day is tapped. Recovers exact-value entry + back-dating.
-export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSave, onClose, onChange }: Props) {
+export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onClose, onChange }: Props) {
   const ms = habit.metrics || [];
   const dayLog = habitLogs[dateKey] || {};
   const [local, setLocal] = useState<Record<string, LocalVal>>(() => {
@@ -46,7 +45,6 @@ export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSav
     });
     return entry;
   };
-  const save = () => onSave(dateKey, buildEntry());
 
   // Live-persist edits so the calendar cell recolors as you type / tap presets.
   // Skip the initial mount: the editor seeds from the stored value, so emitting
@@ -87,9 +85,6 @@ export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSav
             </div>
           );
         })}
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-        <button onClick={save} style={{ padding: "7px 18px", borderRadius: 6, border: "none", background: pal.shades[3], color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: F }}>Save</button>
       </div>
     </div>
   );

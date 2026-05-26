@@ -71,7 +71,7 @@ test("Quick/Calendar toggle shows the heatmap and is remembered across reloads",
   await expect(page.locator("svg rect.dc").first()).toBeVisible();
 });
 
-test("tapping a calendar day opens the editor; the saved value persists", async ({ page }) => {
+test("tapping a calendar day opens the editor; the entered value persists live", async ({ page }) => {
   await page.goto("/");
   await createHabit(page, "Reading"); // reps unit
   await setDashView(page, "calendar");
@@ -79,8 +79,7 @@ test("tapping a calendar day opens the editor; the saved value persists", async 
 
   await page.locator("svg rect.dc").nth(20).click(); // an early (past) day
   await expect(page.getByText(/^Edit/)).toBeVisible();
-  await page.getByPlaceholder("0").fill("23");
-  await page.getByRole("button", { name: /^Save$/ }).click();
+  await page.getByPlaceholder("0").fill("23"); // no Save — edits persist as you type
   await page.waitForTimeout(500); // let the IndexedDB write flush before reload
 
   // Reload (view persisted = Calendar) and reopen the same day → value is there

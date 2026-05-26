@@ -293,7 +293,7 @@ export default function D3Calendar({ habit, logs, units, onSaveDay, onEdit, onQu
       <div style={{ display: "grid", gridTemplateRows: selectedDate ? "1fr" : "0fr", opacity: selectedDate ? 1 : 0, transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease" }}>
         <div style={{ overflow: "hidden", minHeight: 0 }}>
           {editorDate && onSaveDay && (
-            <DayEditor key={editorDate} habit={habit} dateKey={editorDate} habitLogs={logs} units={units} pal={pal} onChange={(d, entry) => onSaveDay(d, entry)} onSave={(d, entry) => { onSaveDay(d, entry); closeEditor(); }} onClose={closeEditor} />
+            <DayEditor key={editorDate} habit={habit} dateKey={editorDate} habitLogs={logs} units={units} pal={pal} onChange={(d, entry) => onSaveDay(d, entry)} onClose={closeEditor} />
           )}
         </div>
       </div>
