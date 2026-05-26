@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { C, F } from "../constants";
 import {
   getQuickAdd,
@@ -20,6 +21,26 @@ import type {
   Timers,
   Unit,
 } from "../types";
+
+// Static skeletons for repeated bits; the color/fill that varies per state is
+// spread on at each call site (intensity bars, completion checkboxes).
+const barSeg: CSSProperties = {
+  flex: 1,
+  height: 3,
+  borderRadius: 2,
+  transition: "background .4s",
+};
+const checkBox: CSSProperties = {
+  width: 14,
+  height: 14,
+  borderRadius: 3,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "all .2s",
+  flexShrink: 0,
+};
+const checkMark: CSSProperties = { fontSize: 8, color: "#fff" };
 
 type Props = {
   habit: Habit;
@@ -176,11 +197,8 @@ export default function QuickLogSection({
               <div
                 key={i}
                 style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 2,
+                  ...barSeg,
                   background: level >= i ? pal.shades[i] : C.bg,
-                  transition: "background .4s",
                 }}
               />
             ))}
@@ -266,11 +284,8 @@ export default function QuickLogSection({
               <div
                 key={i}
                 style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 2,
+                  ...barSeg,
                   background: level >= i ? pal.shades[i] : C.bg,
-                  transition: "background .4s",
                 }}
               />
             ))}
@@ -306,21 +321,12 @@ export default function QuickLogSection({
                     >
                       <div
                         style={{
-                          width: 14,
-                          height: 14,
-                          borderRadius: 3,
+                          ...checkBox,
                           border: `2px solid ${hasSets2 ? pal.shades[3] : C.border}`,
                           background: hasSets2 ? pal.shades[3] : "transparent",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          transition: "all .2s",
-                          flexShrink: 0,
                         }}
                       >
-                        {hasSets2 && (
-                          <span style={{ fontSize: 8, color: "#fff" }}>✓</span>
-                        )}
+                        {hasSets2 && <span style={checkMark}>✓</span>}
                       </div>
                       <span
                         style={{
@@ -388,21 +394,12 @@ export default function QuickLogSection({
                 >
                   <div
                     style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: 3,
+                      ...checkBox,
                       border: `2px solid ${done ? pal.shades[3] : C.border}`,
                       background: done ? pal.shades[3] : "transparent",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "all .2s",
-                      flexShrink: 0,
                     }}
                   >
-                    {done && (
-                      <span style={{ fontSize: 8, color: "#fff" }}>✓</span>
-                    )}
+                    {done && <span style={checkMark}>✓</span>}
                   </div>
                   <span
                     style={{
@@ -507,11 +504,8 @@ export default function QuickLogSection({
               <div
                 key={m.id}
                 style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 2,
+                  ...barSeg,
                   background: metricActive(m, todayLog) ? pal.shades[3] : C.bg,
-                  transition: "background .4s",
                 }}
               />
             ))}
