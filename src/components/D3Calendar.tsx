@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import {
   C,
@@ -52,6 +53,24 @@ type Props = {
 };
 
 type Tip = { label: string; date: string };
+
+// Repeated static styles in the JSX below (the d3 effect is left untouched).
+// The inner element of each grid collapse-wrapper, the two nav arrows (shared
+// base, with enabled/disabled colors spread on), and the legend end labels.
+const gridInner: CSSProperties = { overflow: "hidden", minHeight: 0 };
+const navBtn: CSSProperties = {
+  width: 22,
+  height: 22,
+  borderRadius: 4,
+  background: C.bg,
+  fontSize: 11,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontFamily: F,
+  transition: "all .15s",
+};
+const legendLbl: CSSProperties = { fontSize: 9, color: C.muted, fontFamily: F };
 
 export default function D3Calendar({
   habit,
@@ -707,7 +726,7 @@ export default function D3Calendar({
             "grid-template-rows .45s cubic-bezier(.22,1,.36,1), opacity .3s ease",
         }}
       >
-        <div style={{ overflow: "hidden", minHeight: 0 }}>
+        <div style={gridInner}>
           {/* Controls: view toggle + range + nav arrows */}
           <div
             style={{
@@ -775,19 +794,10 @@ export default function D3Calendar({
               <button
                 onClick={navBack}
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 4,
+                  ...navBtn,
                   border: `1px solid ${C.border}`,
-                  background: C.bg,
                   color: C.muted,
                   cursor: "pointer",
-                  fontSize: 11,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: F,
-                  transition: "all .15s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = C.accent;
@@ -804,20 +814,11 @@ export default function D3Calendar({
                 onClick={navFwd}
                 disabled={!canFwd}
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 4,
+                  ...navBtn,
                   border: `1px solid ${canFwd ? C.border : C.bg}`,
-                  background: C.bg,
                   color: canFwd ? C.muted : C.dim,
                   cursor: canFwd ? "pointer" : "default",
-                  fontSize: 11,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: F,
                   opacity: canFwd ? 1 : 0.35,
-                  transition: "all .15s",
                 }}
                 onMouseEnter={(e) => {
                   if (canFwd) {
@@ -856,9 +857,7 @@ export default function D3Calendar({
               marginTop: 8,
             }}
           >
-            <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>
-              Less
-            </span>
+            <span style={legendLbl}>Less</span>
             {pal.shades.map((c, i) => (
               <div
                 key={i}
@@ -870,9 +869,7 @@ export default function D3Calendar({
                 }}
               />
             ))}
-            <span style={{ fontSize: 9, color: C.muted, fontFamily: F }}>
-              More
-            </span>
+            <span style={legendLbl}>More</span>
           </div>
         </div>
       </div>
@@ -889,7 +886,7 @@ export default function D3Calendar({
             "grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease",
         }}
       >
-        <div style={{ overflow: "hidden", minHeight: 0 }}>
+        <div style={gridInner}>
           {editorDate && onSaveDay && (
             <DayEditor
               key={editorDate}
@@ -914,7 +911,7 @@ export default function D3Calendar({
             transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1)",
           }}
         >
-          <div style={{ overflow: "hidden", minHeight: 0 }}>
+          <div style={gridInner}>
             <QuickLogSection
               dense={!expanded}
               habit={habit}
