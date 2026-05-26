@@ -25,7 +25,7 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 | [**idb-keyval**](https://github.com/jakearchibald/idb-keyval)                        | tiny IndexedDB key/value wrapper for persistence |
 | [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app)                              | web manifest + service worker (Workbox)          |
 
-Dev/test: **Vitest** + **Testing Library** (+ `fake-indexeddb`) for unit/component tests, **Playwright** for E2E.
+Dev/test: **Vitest** + **Testing Library** (+ `fake-indexeddb`) for unit/component tests, **Playwright** for E2E, **Prettier** for formatting (default 80-col).
 
 ## Getting started
 
@@ -36,6 +36,7 @@ npm run build      # tsc --noEmit && vite build → dist/ + service worker
 npm run preview    # serve the built app (required to exercise the PWA/service worker)
 npm test           # unit + component tests
 npm run e2e        # Playwright end-to-end tests (auto-builds + previews)
+npm run format     # format the repo with Prettier (check-only: npm run format:check)
 ```
 
 > The service worker only registers over HTTPS or `localhost`, and is a no-op under `npm run dev`. To test offline/PWA behaviour use `npm run build && npm run preview`.

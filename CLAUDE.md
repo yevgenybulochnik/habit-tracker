@@ -19,13 +19,18 @@ npm run preview      # serve the built app (needed to exercise the PWA/service w
 npm test             # Vitest unit + component tests (jsdom), single run
 npm run test:watch   # Vitest watch mode
 npm run e2e          # Playwright E2E against an auto-built preview server
+npm run format       # Prettier --write over the repo (check-only: npm run format:check)
 node scripts/generate-icons.mjs   # regenerate PWA icons into public/
 
 npx vitest run src/lib/stats.test.ts   # run one test file
 npx vitest run -t "streak"             # run tests matching a name
 ```
 
-- **Typecheck** is part of `npm run build` (`tsc --noEmit`); there is no separate lint step.
+- **Typecheck** is part of `npm run build` (`tsc --noEmit`); there is no lint step.
+- **Formatting** is **Prettier** (default config, 80-col `printWidth`) — run `npm run format`
+  after editing and keep `format:check` clean. `.prettierignore` excludes `dist`,
+  `test-results`, `package-lock.json`, and `habit-tracker-v3.jsx` (the historical prototype
+  is intentionally left unformatted).
 - **Service workers only register over HTTPS or `localhost`**, and `vite-plugin-pwa` uses a
   no-op `registerSW` in dev. Verify PWA/offline behavior with `npm run build && npm run preview`,
   not `npm run dev`.
@@ -101,7 +106,12 @@ back-dating). Selection highlight and `pal` are kept out of the main build (sepa
 **Styling.** All styling is **inline styles** plus one injected `<style>` block (the `CSS`
 const, holding keyframes). Design tokens live in `src/constants.ts`: `C` (colors), `PALETTES`,
 `F` (font), and the shared `inpS`/`lbl` style objects (typed `React.CSSProperties` so spreads
-like `{...inpS, fontSize: 12}` don't widen literal unions). No CSS framework.
+like `{...inpS, fontSize: 12}` don't widen literal unions). No CSS framework. **Repeated static
+style objects within a component are lifted to named `const`s at the top of that file** (typed
+`CSSProperties`), with the per-state bits spread on at the call site (`{...navBtn, color: ...}`);
+e.g. `sectionHdr`/`panel` in `SettingsModal`, `navBtn` in `D3Calendar`. Imperative
+`onMouseEnter`/`onMouseLeave` hover handlers (`e.currentTarget.style.*`) and one-off styles stay
+inline — extraction targets repetition, not every literal.
 
 **PWA.** Configured in `vite.config.ts` via `vite-plugin-pwa` (`autoUpdate`, standalone
 manifest, font runtime-cache). iOS home-screen meta tags and `viewport-fit=cover` are in
