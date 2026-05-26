@@ -1,8 +1,18 @@
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { C, F } from "../constants";
 import ModalShell from "./ModalShell";
 import HabitFormFields from "./HabitFormFields";
 import type { Habit, IntensityMode, Metric, Unit } from "../types";
+
+// Shared base for the danger-zone confirm pair (Keep it / Delete Habit).
+const dzBtn: CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: 5,
+  cursor: "pointer",
+  fontSize: 11,
+  fontFamily: F,
+};
 
 type Props = {
   habit: Habit;
@@ -113,14 +123,10 @@ export default function EditHabitModal({
               <button
                 onClick={() => setConfirmDelete(false)}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: 5,
+                  ...dzBtn,
                   border: `1px solid ${C.border}`,
                   background: "transparent",
                   color: C.muted,
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontFamily: F,
                 }}
               >
                 Keep it
@@ -128,15 +134,11 @@ export default function EditHabitModal({
               <button
                 onClick={handleDelete}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: 5,
+                  ...dzBtn,
                   border: "none",
                   background: C.danger,
                   color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 11,
                   fontWeight: 600,
-                  fontFamily: F,
                 }}
               >
                 Delete Habit

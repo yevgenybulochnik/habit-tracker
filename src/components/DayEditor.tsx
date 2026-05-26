@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import { C, F, inpS } from "../constants";
 import {
   isSetMetric,
@@ -18,6 +19,18 @@ import type {
 } from "../types";
 
 type LocalVal = string | SetEntry[];
+
+// Static quick-add (+N) preset button used in the per-metric row.
+const qaBtn: CSSProperties = {
+  padding: "6px 8px",
+  borderRadius: 4,
+  border: `1px solid ${C.border}`,
+  background: C.bg,
+  color: C.muted,
+  cursor: "pointer",
+  fontSize: 10,
+  fontFamily: F,
+};
 
 type Props = {
   habit: Habit;
@@ -230,20 +243,7 @@ export default function DayEditor({
               </div>
               <div style={{ display: "flex", gap: 3 }}>
                 {getQuickAdd(m.unit, units).map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => qAdd(m.id, n)}
-                    style={{
-                      padding: "6px 8px",
-                      borderRadius: 4,
-                      border: `1px solid ${C.border}`,
-                      background: C.bg,
-                      color: C.muted,
-                      cursor: "pointer",
-                      fontSize: 10,
-                      fontFamily: F,
-                    }}
-                  >
+                  <button key={n} onClick={() => qAdd(m.id, n)} style={qaBtn}>
                     +{n}
                   </button>
                 ))}

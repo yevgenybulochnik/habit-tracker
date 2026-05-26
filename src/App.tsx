@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { CSSProperties } from "react";
 import {
   C,
   F,
@@ -29,6 +30,37 @@ import type {
   Unit,
 } from "./types";
 import type { NewHabit } from "./components/AddHabitModal";
+
+// Header action buttons (static; hover handlers stay inline at the call sites).
+const iconBtn: CSSProperties = {
+  width: 36,
+  height: 36,
+  borderRadius: 6,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.dim,
+  cursor: "pointer",
+  fontSize: 15,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "all .2s",
+};
+const newHabitBtn: CSSProperties = {
+  padding: "9px 18px",
+  borderRadius: 6,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text,
+  cursor: "pointer",
+  fontSize: 13,
+  fontFamily: F,
+  fontWeight: 500,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  transition: "all .2s",
+};
 
 export default function App() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -365,20 +397,7 @@ export default function App() {
             <button
               onClick={() => setShowUnits(true)}
               title="Settings"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 6,
-                border: `1px solid ${C.border}`,
-                background: C.surface,
-                color: C.dim,
-                cursor: "pointer",
-                fontSize: 15,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all .2s",
-              }}
+              style={iconBtn}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = C.muted;
                 e.currentTarget.style.color = C.text;
@@ -392,21 +411,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              style={{
-                padding: "9px 18px",
-                borderRadius: 6,
-                border: `1px solid ${C.border}`,
-                background: C.surface,
-                color: C.text,
-                cursor: "pointer",
-                fontSize: 13,
-                fontFamily: F,
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                transition: "all .2s",
-              }}
+              style={newHabitBtn}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = C.accent;
                 e.currentTarget.style.color = C.accent;
