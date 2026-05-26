@@ -1,9 +1,26 @@
 import { useState, useEffect } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { C, F, EMOJIS, PALETTES, inpS, lbl } from "../constants";
 import { getUnit, setsPreset, setUnitLabel } from "../lib/metrics";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
+
+// Repeated static styles in the custom-unit sub-form. Selection-driven styles
+// (emoji/color/preset buttons) stay inline since they hinge on current state.
+const fieldLbl: CSSProperties = {
+  fontSize: 10,
+  color: C.muted,
+  fontFamily: F,
+  marginBottom: 4,
+};
+const inpSm: CSSProperties = { ...inpS, fontSize: 12 };
+const cuBtn: CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: 5,
+  cursor: "pointer",
+  fontSize: 11,
+  fontFamily: F,
+};
 
 type Props = {
   name: string;
@@ -407,75 +424,39 @@ export default function HabitFormFields({
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.muted,
-                    fontFamily: F,
-                    marginBottom: 4,
-                  }}
-                >
-                  ID
-                </div>
+                <div style={fieldLbl}>ID</div>
                 <input
                   value={cuId}
                   onChange={(e) => setCuId(e.target.value)}
                   placeholder="lbs"
-                  style={{ ...inpS, fontSize: 12 }}
+                  style={inpSm}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.muted,
-                    fontFamily: F,
-                    marginBottom: 4,
-                  }}
-                >
-                  Label
-                </div>
+                <div style={fieldLbl}>Label</div>
                 <input
                   value={cuLbl}
                   onChange={(e) => setCuLbl(e.target.value)}
                   placeholder="Pounds"
-                  style={{ ...inpS, fontSize: 12 }}
+                  style={inpSm}
                 />
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.muted,
-                    fontFamily: F,
-                    marginBottom: 4,
-                  }}
-                >
-                  Quick-add
-                </div>
+                <div style={fieldLbl}>Quick-add</div>
                 <input
                   value={cuQA}
                   onChange={(e) => setCuQA(e.target.value)}
-                  style={{ ...inpS, fontSize: 12 }}
+                  style={inpSm}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.muted,
-                    fontFamily: F,
-                    marginBottom: 4,
-                  }}
-                >
-                  Thresholds
-                </div>
+                <div style={fieldLbl}>Thresholds</div>
                 <input
                   value={cuThr}
                   onChange={(e) => setCuThr(e.target.value)}
-                  style={{ ...inpS, fontSize: 12 }}
+                  style={inpSm}
                 />
               </div>
             </div>
@@ -485,14 +466,10 @@ export default function HabitFormFields({
               <button
                 onClick={() => setShowCU(false)}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: 5,
+                  ...cuBtn,
                   border: `1px solid ${C.border}`,
                   background: "transparent",
                   color: C.muted,
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontFamily: F,
                 }}
               >
                 Cancel
@@ -500,15 +477,11 @@ export default function HabitFormFields({
               <button
                 onClick={addCU}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: 5,
+                  ...cuBtn,
                   border: "none",
                   background: C.accent,
                   color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 11,
                   fontWeight: 600,
-                  fontFamily: F,
                 }}
               >
                 Add Unit
