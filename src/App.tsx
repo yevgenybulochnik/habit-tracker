@@ -3,6 +3,7 @@ import { C, F, CSS, THEME_CSS, THEMES, BUILTIN_UNITS, DEFAULT_CONFIG } from "./c
 import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
+import { setDayLog } from "./lib/logs";
 import StaggeredList from "./components/StaggeredList";
 import D3Calendar from "./components/D3Calendar";
 import AddHabitModal from "./components/AddHabitModal";
@@ -71,7 +72,7 @@ export default function App() {
   const addHabit = useCallback((props: NewHabit) => { const id = `h_${Date.now()}`; const nh = [...habits, { id, ...props }]; const nl = { ...logs, [id]: {} }; setHabits(nh); setLogs(nl); save(nh, nl, units, appConfig); }, [habits, logs, units, appConfig, save]);
   const updateHabit = useCallback((updated: Habit) => { const nh = habits.map((h) => (h.id === updated.id ? updated : h)); setHabits(nh); save(nh, logs, units, appConfig); }, [habits, logs, units, appConfig, save]);
   const deleteHabit = useCallback((id: string) => { const nh = habits.filter((h) => h.id !== id); const nl = { ...logs }; delete nl[id]; setHabits(nh); setLogs(nl); save(nh, nl, units, appConfig); }, [habits, logs, units, appConfig, save]);
-  const saveLog = useCallback((dateKey: string, parsed: Record<string, Logs[string][string]>) => { const nl = { ...logs }; Object.entries(parsed).forEach(([hId, entry]) => { if (!nl[hId]) nl[hId] = {}; nl[hId][dateKey] = entry; }); setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
+  const saveLog = useCallback((dateKey: string, parsed: Record<string, Logs[string][string]>) => { let nl = logs; Object.entries(parsed).forEach(([hId, entry]) => { nl = setDayLog(nl, hId, dateKey, entry); }); setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
   const quickLog = useCallback((hId: string, mId: string, amt: number) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: ((prevDay[mId] as number) || 0) + amt } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
   const quickReset = useCallback((hId: string, mId: string) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: 0 } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
   const quickAddSet = useCallback((hId: string, mId: string, set: SetEntry) => { const tk = todayK(); const prev = logs[hId] || {}; const prevDay = prev[tk] || {}; const curSets = Array.isArray(prevDay[mId]) ? (prevDay[mId] as SetEntry[]) : []; const nl = { ...logs, [hId]: { ...prev, [tk]: { ...prevDay, [mId]: [...curSets, set] } } }; setLogs(nl); save(habits, nl, units, appConfig); }, [logs, habits, units, appConfig, save]);
