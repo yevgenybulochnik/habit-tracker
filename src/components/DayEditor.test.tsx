@@ -9,9 +9,9 @@ const habit: Habit = { id: "h1", name: "Reading", emoji: "📚", color: "Green",
 const setHabit: Habit = { id: "h2", name: "Bench", emoji: "🏋️", color: "Blue", metrics: [{ id: "m2", name: "Reps", unit: "reps", mode: "sets", weightUnit: "lbs" }] };
 const pal = PALETTES[0];
 
-function renderEditor(h: Habit, logs: HabitLogs, onSave = vi.fn(), onClose = vi.fn()) {
-  render(<DayEditor habit={h} dateKey="2026-05-20" habitLogs={logs} units={BUILTIN_UNITS} pal={pal} onSave={onSave} onClose={onClose} />);
-  return { onSave, onClose };
+function renderEditor(h: Habit, logs: HabitLogs, onSave = vi.fn(), onClose = vi.fn(), onChange = vi.fn()) {
+  render(<DayEditor habit={h} dateKey="2026-05-20" habitLogs={logs} units={BUILTIN_UNITS} pal={pal} onSave={onSave} onClose={onClose} onChange={onChange} />);
+  return { onSave, onClose, onChange };
 }
 
 describe("DayEditor", () => {
@@ -41,6 +41,21 @@ describe("DayEditor", () => {
     await user.click(screen.getByRole("button", { name: "+ Set" }));
     await user.click(screen.getByRole("button", { name: /Save/i }));
     expect(onSave).toHaveBeenCalledWith("2026-05-20", { m2: [{ w: 135, r: 5 }] });
+  });
+
+  it("emits live changes via onChange without clicking Save", async () => {
+    const user = userEvent.setup();
+    const { onChange, onSave } = renderEditor(habit, {});
+    await user.click(screen.getByRole("button", { name: "+5" }));
+    expect(onChange).toHaveBeenLastCalledWith("2026-05-20", { m1: 5 });
+    await user.type(screen.getByDisplayValue("5"), "1"); // -> "51"
+    expect(onChange).toHaveBeenLastCalledWith("2026-05-20", { m1: 51 });
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("does not emit onChange on initial mount", () => {
+    const { onChange } = renderEditor(habit, { "2026-05-20": { m1: 12 } });
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("closes via the × button", async () => {

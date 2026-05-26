@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { C, F, inpS } from "../constants";
 import { isSetMetric, getQuickAdd, findLastSet, setUnitLabel } from "../lib/metrics";
 import { todayK } from "../lib/dates";
@@ -15,11 +15,14 @@ type Props = {
   pal: Palette;
   onSave: (dateKey: string, entry: DayLog) => void;
   onClose: () => void;
+  /** Live-persist each edit (typing / quick-add / set add) so the heatmap cell
+   *  recolors immediately, without waiting for the explicit Save. */
+  onChange?: (dateKey: string, entry: DayLog) => void;
 };
 
 // Inline editor for one habit on one date — shown inside the card when a
 // calendar day is tapped. Recovers exact-value entry + back-dating.
-export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSave, onClose }: Props) {
+export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSave, onClose, onChange }: Props) {
   const ms = habit.metrics || [];
   const dayLog = habitLogs[dateKey] || {};
   const [local, setLocal] = useState<Record<string, LocalVal>>(() => {
@@ -35,14 +38,24 @@ export default function DayEditor({ habit, dateKey, habitLogs, units, pal, onSav
   const qAdd = (mId: string, amt: number) => setLocal((p) => ({ ...p, [mId]: String((parseInt((p[mId] as string) || "0", 10) || 0) + amt) }));
   const addSet = (mId: string, set: SetEntry) => setLocal((p) => ({ ...p, [mId]: [...(Array.isArray(p[mId]) ? (p[mId] as SetEntry[]) : []), set] }));
   const rmSet = (mId: string, idx: number) => setLocal((p) => { const c = Array.isArray(p[mId]) ? [...(p[mId] as SetEntry[])] : []; c.splice(idx, 1); return { ...p, [mId]: c }; });
-  const save = () => {
+  const buildEntry = (): DayLog => {
     const entry: DayLog = {};
     ms.forEach((m) => {
       if (isSetMetric(m)) entry[m.id] = Array.isArray(local[m.id]) ? (local[m.id] as SetEntry[]) : [];
       else entry[m.id] = parseInt((local[m.id] as string) || "0", 10) || 0;
     });
-    onSave(dateKey, entry);
+    return entry;
   };
+  const save = () => onSave(dateKey, buildEntry());
+
+  // Live-persist edits so the calendar cell recolors as you type / tap presets.
+  // Skip the initial mount: the editor seeds from the stored value, so emitting
+  // on mount would be a redundant write (and re-trigger the heatmap effect).
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    onChange?.(dateKey, buildEntry());
+  }, [local]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isToday = dateKey === todayK();
   const disp = new Date(dateKey + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
