@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
-  getRecentDays, countMonthBlocks, countHeatCols,
-  fitCellSize, compactHeatLayout, compactCalLayout,
+  getRecentDays,
+  countMonthBlocks,
+  countHeatCols,
+  fitCellSize,
+  compactHeatLayout,
+  compactCalLayout,
 } from "./d3layout";
 import { dk } from "./dates";
 

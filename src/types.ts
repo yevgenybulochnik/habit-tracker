@@ -68,7 +68,12 @@ export type ThemeName = "dark" | "light";
 
 export type DashView = "quick" | "calendar";
 
-export type AppConfig = { numMonths: number; monthGap: number; theme?: ThemeName; dashView?: DashView };
+export type AppConfig = {
+  numMonths: number;
+  monthGap: number;
+  theme?: ThemeName;
+  dashView?: DashView;
+};
 
 /** Running timers keyed by "habitId:metricId" → start timestamp (ms). */
 export type Timers = Record<string, number>;

@@ -6,9 +6,24 @@ import { STORAGE_KEY } from "../constants";
 import type { PersistedState } from "../types";
 
 const sample: PersistedState = {
-  habits: [{ id: "h1", name: "Run", emoji: "🏃", color: "Green", metrics: [{ id: "m1", name: "Min", unit: "min" }] }],
+  habits: [
+    {
+      id: "h1",
+      name: "Run",
+      emoji: "🏃",
+      color: "Green",
+      metrics: [{ id: "m1", name: "Min", unit: "min" }],
+    },
+  ],
   logs: { h1: { "2026-05-24": { m1: 30 } } },
-  units: [{ id: "min", label: "Minutes", quickAdd: [15, 30, 60], thresholds: [15, 30, 60] }],
+  units: [
+    {
+      id: "min",
+      label: "Minutes",
+      quickAdd: [15, 30, 60],
+      thresholds: [15, 30, 60],
+    },
+  ],
   config: { numMonths: 4, monthGap: 5 },
 };
 

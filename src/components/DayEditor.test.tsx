@@ -5,12 +5,41 @@ import DayEditor from "./DayEditor";
 import { BUILTIN_UNITS, PALETTES } from "../constants";
 import type { Habit, HabitLogs } from "../types";
 
-const habit: Habit = { id: "h1", name: "Reading", emoji: "📚", color: "Green", metrics: [{ id: "m1", name: "Pages", unit: "count" }] };
-const setHabit: Habit = { id: "h2", name: "Bench", emoji: "🏋️", color: "Blue", metrics: [{ id: "m2", name: "Reps", unit: "reps", mode: "sets", weightUnit: "lbs" }] };
+const habit: Habit = {
+  id: "h1",
+  name: "Reading",
+  emoji: "📚",
+  color: "Green",
+  metrics: [{ id: "m1", name: "Pages", unit: "count" }],
+};
+const setHabit: Habit = {
+  id: "h2",
+  name: "Bench",
+  emoji: "🏋️",
+  color: "Blue",
+  metrics: [
+    { id: "m2", name: "Reps", unit: "reps", mode: "sets", weightUnit: "lbs" },
+  ],
+};
 const pal = PALETTES[0];
 
-function renderEditor(h: Habit, logs: HabitLogs, onChange = vi.fn(), onClose = vi.fn()) {
-  render(<DayEditor habit={h} dateKey="2026-05-20" habitLogs={logs} units={BUILTIN_UNITS} pal={pal} onChange={onChange} onClose={onClose} />);
+function renderEditor(
+  h: Habit,
+  logs: HabitLogs,
+  onChange = vi.fn(),
+  onClose = vi.fn(),
+) {
+  render(
+    <DayEditor
+      habit={h}
+      dateKey="2026-05-20"
+      habitLogs={logs}
+      units={BUILTIN_UNITS}
+      pal={pal}
+      onChange={onChange}
+      onClose={onClose}
+    />,
+  );
   return { onChange, onClose };
 }
 
@@ -37,7 +66,9 @@ describe("DayEditor", () => {
     await user.type(screen.getByPlaceholderText("Weight"), "135");
     await user.type(screen.getByPlaceholderText("Reps"), "5");
     await user.click(screen.getByRole("button", { name: "+ Set" }));
-    expect(onChange).toHaveBeenLastCalledWith("2026-05-20", { m2: [{ w: 135, r: 5 }] });
+    expect(onChange).toHaveBeenLastCalledWith("2026-05-20", {
+      m2: [{ w: 135, r: 5 }],
+    });
   });
 
   it("emits live changes via onChange as values are edited", async () => {

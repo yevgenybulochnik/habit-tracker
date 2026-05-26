@@ -11,8 +11,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, "..", "public");
 mkdirSync(PUBLIC, { recursive: true });
 
-const BG = [13, 17, 23];     // #0d1117 app background
-const EMPTY = [22, 27, 34];  // #161b22 empty heatmap cell
+const BG = [13, 17, 23]; // #0d1117 app background
+const EMPTY = [22, 27, 34]; // #161b22 empty heatmap cell
 const GREEN = [57, 211, 83]; // #39d353 active (level 4) cell
 const ACTIVE = new Set([1, 2, 4, 9]); // 1-indexed, row-major; 9 = last block
 
@@ -28,7 +28,8 @@ const CRC_TABLE = (() => {
 })();
 function crc32(buf) {
   let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  for (let i = 0; i < buf.length; i++)
+    c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 function chunk(type, data) {
@@ -44,9 +45,12 @@ function chunk(type, data) {
 function inRoundRect(x, y, x0, y0, x1, y1, r) {
   if (x < x0 || x > x1 || y < y0 || y > y1) return false;
   const rx = Math.min(r, (x1 - x0) / 2);
-  let cxC = null, cyC = null;
-  if (x < x0 + rx) cxC = x0 + rx; else if (x > x1 - rx) cxC = x1 - rx;
-  if (y < y0 + rx) cyC = y0 + rx; else if (y > y1 - rx) cyC = y1 - rx;
+  let cxC = null,
+    cyC = null;
+  if (x < x0 + rx) cxC = x0 + rx;
+  else if (x > x1 - rx) cxC = x1 - rx;
+  if (y < y0 + rx) cyC = y0 + rx;
+  else if (y > y1 - rx) cyC = y1 - rx;
   if (cxC !== null && cyC !== null) {
     return (x - cxC) ** 2 + (y - cyC) ** 2 <= rx * rx; // corner region
   }
@@ -67,8 +71,10 @@ function makePng(size, { maskable = false } = {}) {
     for (let col = 0; col < 3; col++) {
       const idx = row * 3 + col + 1;
       cells.push({
-        x0: pad + col * stride, y0: pad + row * stride,
-        x1: pad + col * stride + cell, y1: pad + row * stride + cell,
+        x0: pad + col * stride,
+        y0: pad + row * stride,
+        x1: pad + col * stride + cell,
+        y1: pad + row * stride + cell,
         color: ACTIVE.has(idx) ? GREEN : EMPTY,
       });
     }
@@ -80,18 +86,24 @@ function makePng(size, { maskable = false } = {}) {
   for (let y = 0; y < size; y++) {
     raw[p++] = 0; // PNG filter byte: none
     for (let x = 0; x < size; x++) {
-      let cov = 0, color = null;
+      let cov = 0,
+        color = null;
       for (const c of cells) {
-        if (x < c.x0 - 1 || x > c.x1 + 1 || y < c.y0 - 1 || y > c.y1 + 1) continue;
+        if (x < c.x0 - 1 || x > c.x1 + 1 || y < c.y0 - 1 || y > c.y1 + 1)
+          continue;
         let hits = 0;
         for (let sy = 0; sy < S; sy++) {
           for (let sx = 0; sx < S; sx++) {
-            const px = x + (sx + 0.5) / S, py = y + (sy + 0.5) / S;
+            const px = x + (sx + 0.5) / S,
+              py = y + (sy + 0.5) / S;
             if (inRoundRect(px, py, c.x0, c.y0, c.x1, c.y1, cr)) hits++;
           }
         }
         const cv = hits / (S * S);
-        if (cv > cov) { cov = cv; color = c.color; }
+        if (cv > cov) {
+          cov = cv;
+          color = c.color;
+        }
       }
       const out = color
         ? [
@@ -100,7 +112,10 @@ function makePng(size, { maskable = false } = {}) {
             Math.round(BG[2] + (color[2] - BG[2]) * cov),
           ]
         : BG;
-      raw[p++] = out[0]; raw[p++] = out[1]; raw[p++] = out[2]; raw[p++] = 255;
+      raw[p++] = out[0];
+      raw[p++] = out[1];
+      raw[p++] = out[2];
+      raw[p++] = 255;
     }
   }
 
@@ -108,9 +123,15 @@ function makePng(size, { maskable = false } = {}) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; ihdr[9] = 6; // 8-bit RGBA
+  ihdr[8] = 8;
+  ihdr[9] = 6; // 8-bit RGBA
   const idat = deflateSync(raw, { level: 9 });
-  return Buffer.concat([sig, chunk("IHDR", ihdr), chunk("IDAT", idat), chunk("IEND", Buffer.alloc(0))]);
+  return Buffer.concat([
+    sig,
+    chunk("IHDR", ihdr),
+    chunk("IDAT", idat),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
 }
 
 const targets = [

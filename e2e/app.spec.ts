@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { createHabit, openSettings, setTheme, deleteHabit, setDashView } from "./helpers";
+import {
+  createHabit,
+  openSettings,
+  setTheme,
+  deleteHabit,
+  setDashView,
+} from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
   await page.goto("/");
@@ -13,20 +19,29 @@ test("a running timer survives a page reload", async ({ page }) => {
 
   // Reload → the timer is still running (rehydrated from persisted start timestamp)
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Meditate", level: 3 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Meditate", level: 3 }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
 });
 
-test("switching to the light theme updates the appearance", async ({ page }) => {
+test("switching to the light theme updates the appearance", async ({
+  page,
+}) => {
   await page.goto("/");
   await setTheme(page, "light");
   // The root applies data-theme=light; the CSS variable resolves to white.
-  await expect(page.locator('div[data-theme="light"]')).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator('div[data-theme="light"]')).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
 });
 
 test("smoke: app shell and PWA assets load", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /habits/i, level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /habits/i, level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /New Habit/i })).toBeVisible();
 
   // Manifest is served
@@ -53,11 +68,15 @@ test("persistence: a logged habit survives a reload", async ({ page }) => {
 
   await page.reload();
   // Value was persisted to IndexedDB and rehydrates
-  await expect(page.getByRole("heading", { name: "Pushups", level: 3 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Pushups", level: 3 }),
+  ).toBeVisible();
   await expect(page.getByText("10 reps").first()).toBeVisible();
 });
 
-test("Quick/Calendar toggle shows the heatmap and is remembered across reloads", async ({ page }) => {
+test("Quick/Calendar toggle shows the heatmap and is remembered across reloads", async ({
+  page,
+}) => {
   await page.goto("/");
   await createHabit(page, "Reading");
   // Default Quick view: no calendar cells drawn (d3 gated off while collapsed)
@@ -67,11 +86,15 @@ test("Quick/Calendar toggle shows the heatmap and is remembered across reloads",
   await expect(page.locator("svg rect.dc").first()).toBeVisible();
   // Persisted: reload stays in Calendar (cells present without toggling)
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Reading", level: 3 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Reading", level: 3 }),
+  ).toBeVisible();
   await expect(page.locator("svg rect.dc").first()).toBeVisible();
 });
 
-test("tapping a calendar day opens the editor; the entered value persists live", async ({ page }) => {
+test("tapping a calendar day opens the editor; the entered value persists live", async ({
+  page,
+}) => {
   await page.goto("/");
   await createHabit(page, "Reading"); // reps unit
   await setDashView(page, "calendar");
@@ -99,7 +122,9 @@ test("selecting a day outlines its cell", async ({ page }) => {
   await expect(cell).toHaveAttribute("stroke-width", "2.5");
 });
 
-test("backup: export then import restores a deleted habit", async ({ page }) => {
+test("backup: export then import restores a deleted habit", async ({
+  page,
+}) => {
   await page.goto("/");
   await createHabit(page, "Meditation");
 
@@ -113,10 +138,14 @@ test("backup: export then import restores a deleted habit", async ({ page }) => 
 
   // Delete the habit, then confirm it's gone
   await deleteHabit(page, "Meditation");
-  await expect(page.getByRole("heading", { name: "Meditation", level: 3 })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Meditation", level: 3 }),
+  ).toHaveCount(0);
 
   // Import the backup → habit reappears
   await openSettings(page);
   await page.getByLabel(/Import backup file/i).setInputFiles(path!);
-  await expect(page.getByRole("heading", { name: "Meditation", level: 3 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Meditation", level: 3 }),
+  ).toBeVisible();
 });

@@ -8,29 +8,62 @@ export const STORAGE_KEY = "habit-tracker-v3";
 // d3 SVG (where CSS vars can't reach) — the rest also back the CSS variables below.
 export const THEMES: Record<ThemeName, Record<string, string>> = {
   dark: {
-    bg: "#0d1117", surface: "#161b22", surfaceLight: "#1c2128",
-    border: "#30363d", borderLight: "#484f58",
-    text: "#e6edf3", muted: "#8b949e", dim: "#484f58",
-    accent: "#58a6ff", accentDim: "rgba(88,166,255,0.12)",
-    danger: "#f85149", success: "#39d353", successDim: "rgba(57,211,83,0.12)", green4: "#39d353",
-    emptyCell: "#161b22", cellStroke: "rgba(255,255,255,0.06)", futureCell: "#1c2128",
+    bg: "#0d1117",
+    surface: "#161b22",
+    surfaceLight: "#1c2128",
+    border: "#30363d",
+    borderLight: "#484f58",
+    text: "#e6edf3",
+    muted: "#8b949e",
+    dim: "#484f58",
+    accent: "#58a6ff",
+    accentDim: "rgba(88,166,255,0.12)",
+    danger: "#f85149",
+    success: "#39d353",
+    successDim: "rgba(57,211,83,0.12)",
+    green4: "#39d353",
+    emptyCell: "#161b22",
+    cellStroke: "rgba(255,255,255,0.06)",
+    futureCell: "#1c2128",
   },
   light: {
-    bg: "#ffffff", surface: "#f6f8fa", surfaceLight: "#eaeef2",
-    border: "#d0d7de", borderLight: "#afb8c1",
-    text: "#1f2328", muted: "#656d76", dim: "#8c959f",
-    accent: "#0969da", accentDim: "rgba(9,105,218,0.12)",
-    danger: "#cf222e", success: "#1a7f37", successDim: "rgba(26,127,55,0.12)", green4: "#2da44e",
-    emptyCell: "#ebedf0", cellStroke: "rgba(27,31,36,0.10)", futureCell: "#f0f2f4",
+    bg: "#ffffff",
+    surface: "#f6f8fa",
+    surfaceLight: "#eaeef2",
+    border: "#d0d7de",
+    borderLight: "#afb8c1",
+    text: "#1f2328",
+    muted: "#656d76",
+    dim: "#8c959f",
+    accent: "#0969da",
+    accentDim: "rgba(9,105,218,0.12)",
+    danger: "#cf222e",
+    success: "#1a7f37",
+    successDim: "rgba(26,127,55,0.12)",
+    green4: "#2da44e",
+    emptyCell: "#ebedf0",
+    cellStroke: "rgba(27,31,36,0.10)",
+    futureCell: "#f0f2f4",
   },
 };
 
 // UI chrome tokens. Each is a CSS variable so components keep using `C.bg` etc.
 // unchanged while the value swaps with the active theme (see THEME_CSS).
 const C_KEYS = [
-  "bg", "surface", "surfaceLight", "border", "borderLight",
-  "text", "muted", "dim", "accent", "accentDim",
-  "danger", "success", "successDim", "green4",
+  "bg",
+  "surface",
+  "surfaceLight",
+  "border",
+  "borderLight",
+  "text",
+  "muted",
+  "dim",
+  "accent",
+  "accentDim",
+  "danger",
+  "success",
+  "successDim",
+  "green4",
 ] as const;
 export const C = Object.fromEntries(
   C_KEYS.map((k) => [k, `var(--c-${k})`]),
@@ -38,16 +71,35 @@ export const C = Object.fromEntries(
 
 // :root holds the dark defaults (so vars resolve even before a theme is set, and
 // on the loading screen); [data-theme="light"] overrides them.
-const declFor = (t: ThemeName) => C_KEYS.map((k) => `--c-${k}:${THEMES[t][k]}`).join(";");
+const declFor = (t: ThemeName) =>
+  C_KEYS.map((k) => `--c-${k}:${THEMES[t][k]}`).join(";");
 export const THEME_CSS = `:root{${declFor("dark")}}[data-theme="light"]{${declFor("light")}}`;
 
 export const PALETTES = [
-  { name: "Green", shades: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"] },
-  { name: "Blue", shades: ["#161b22", "#0a3069", "#0550ae", "#1f6feb", "#58a6ff"] },
-  { name: "Purple", shades: ["#161b22", "#3b1f63", "#6639ba", "#8957e5", "#bc8cff"] },
-  { name: "Orange", shades: ["#161b22", "#5a2d0c", "#9b4215", "#d29922", "#e3b341"] },
-  { name: "Pink", shades: ["#161b22", "#5e103e", "#bf3989", "#db61a2", "#f778ba"] },
-  { name: "Red", shades: ["#161b22", "#67060c", "#bd561d", "#da3633", "#f85149"] },
+  {
+    name: "Green",
+    shades: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+  },
+  {
+    name: "Blue",
+    shades: ["#161b22", "#0a3069", "#0550ae", "#1f6feb", "#58a6ff"],
+  },
+  {
+    name: "Purple",
+    shades: ["#161b22", "#3b1f63", "#6639ba", "#8957e5", "#bc8cff"],
+  },
+  {
+    name: "Orange",
+    shades: ["#161b22", "#5a2d0c", "#9b4215", "#d29922", "#e3b341"],
+  },
+  {
+    name: "Pink",
+    shades: ["#161b22", "#5e103e", "#bf3989", "#db61a2", "#f778ba"],
+  },
+  {
+    name: "Red",
+    shades: ["#161b22", "#67060c", "#bd561d", "#da3633", "#f85149"],
+  },
 ];
 
 // Light-theme intensity ramps: empty (light grey) → pale → deep, so a higher
@@ -67,23 +119,66 @@ const LIGHT_PALETTES: Record<string, string[]> = {
 export function resolvePalette(name: string, theme: ThemeName): Palette {
   const base = PALETTES.find((p) => p.name === name) || PALETTES[0];
   if (theme === "light") {
-    return { name: base.name, shades: LIGHT_PALETTES[name] || LIGHT_PALETTES[PALETTES[0].name] };
+    return {
+      name: base.name,
+      shades: LIGHT_PALETTES[name] || LIGHT_PALETTES[PALETTES[0].name],
+    };
   }
   return base;
 }
 
-export const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-export const WK_FULL = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+export const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+export const WK_FULL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const F = "'JetBrains Mono', monospace";
 export const D3E = d3.easeCubicInOut;
 
 export const BUILTIN_UNITS: Unit[] = [
-  { id: "min", label: "Minutes", quickAdd: [15,30,60], thresholds: [15,30,60] },
-  { id: "reps", label: "Reps", quickAdd: [5,10,25], thresholds: [10,25,50] },
-  { id: "count", label: "Count", quickAdd: [1,5,10], thresholds: [1,3,5] },
+  {
+    id: "min",
+    label: "Minutes",
+    quickAdd: [15, 30, 60],
+    thresholds: [15, 30, 60],
+  },
+  {
+    id: "reps",
+    label: "Reps",
+    quickAdd: [5, 10, 25],
+    thresholds: [10, 25, 50],
+  },
+  { id: "count", label: "Count", quickAdd: [1, 5, 10], thresholds: [1, 3, 5] },
 ];
 
-export const EMOJIS = ["🎯","💪","📚","🧘","🏃","💧","🎨","✍️","🎵","💤","🍎","🧠","🌱","⚡","🔥","🏋️"];
+export const EMOJIS = [
+  "🎯",
+  "💪",
+  "📚",
+  "🧘",
+  "🏃",
+  "💧",
+  "🎨",
+  "✍️",
+  "🎵",
+  "💤",
+  "🍎",
+  "🧠",
+  "🌱",
+  "⚡",
+  "🔥",
+  "🏋️",
+];
 
 export const CSS = `
 @keyframes fadeSlideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
@@ -108,7 +203,31 @@ export const CSS = `
 input,select,textarea{font-size:16px !important}
 `;
 
-export const inpS: CSSProperties = {width:"100%",padding:"10px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:C.bg,color:C.text,fontSize:14,fontFamily:F,outline:"none",boxSizing:"border-box"};
-export const lbl: CSSProperties = {display:"block",fontSize:11,color:C.muted,fontFamily:F,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"};
+export const inpS: CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 6,
+  border: `1px solid ${C.border}`,
+  background: C.bg,
+  color: C.text,
+  fontSize: 14,
+  fontFamily: F,
+  outline: "none",
+  boxSizing: "border-box",
+};
+export const lbl: CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  color: C.muted,
+  fontFamily: F,
+  marginBottom: 6,
+  textTransform: "uppercase",
+  letterSpacing: ".08em",
+};
 
-export const DEFAULT_CONFIG: AppConfig = { numMonths: 4, monthGap: 5, theme: "dark", dashView: "quick" };
+export const DEFAULT_CONFIG: AppConfig = {
+  numMonths: 4,
+  monthGap: 5,
+  theme: "dark",
+  dashView: "quick",
+};

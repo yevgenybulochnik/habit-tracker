@@ -1,26 +1,58 @@
 import { describe, it, expect } from "vitest";
 import {
-  getUnit, getQuickAdd, isSetMetric,
-  setsVolume, setsTotalReps, setsMaxWeight,
-  metricVal, metricActive, findLastWeight,
-  setFieldsOf, aggregateSets, setVolume, setsMetricVal, primaryField, findLastSet, setUnitLabel,
+  getUnit,
+  getQuickAdd,
+  isSetMetric,
+  setsVolume,
+  setsTotalReps,
+  setsMaxWeight,
+  metricVal,
+  metricActive,
+  findLastWeight,
+  setFieldsOf,
+  aggregateSets,
+  setVolume,
+  setsMetricVal,
+  primaryField,
+  findLastSet,
+  setUnitLabel,
   setsPreset,
 } from "./metrics";
 import { BUILTIN_UNITS } from "../constants";
 import type { Metric, HabitLogs } from "../types";
 
 const minM: Metric = { id: "m1", name: "Run", unit: "min" };
-const setM: Metric = { id: "m2", name: "Bench", unit: "reps", mode: "sets", weightUnit: "lbs" };
+const setM: Metric = {
+  id: "m2",
+  name: "Bench",
+  unit: "reps",
+  mode: "sets",
+  weightUnit: "lbs",
+};
 const repsM: Metric = {
-  id: "m3", name: "Pull-ups", unit: "reps", mode: "sets",
-  setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }], setValue: "primary",
+  id: "m3",
+  name: "Pull-ups",
+  unit: "reps",
+  mode: "sets",
+  setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
+  setValue: "primary",
 };
 const timedM: Metric = {
-  id: "m4", name: "Guitar", unit: "min", mode: "sets",
-  setFields: [{ id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true }], setValue: "primary",
+  id: "m4",
+  name: "Guitar",
+  unit: "min",
+  mode: "sets",
+  setFields: [
+    { id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true },
+  ],
+  setValue: "primary",
 };
 const tempoM: Metric = {
-  id: "m5", name: "Scales", unit: "min", mode: "sets", setValue: "primary",
+  id: "m5",
+  name: "Scales",
+  unit: "min",
+  mode: "sets",
+  setValue: "primary",
   setFields: [
     { id: "bpm", label: "BPM", agg: "max" },
     { id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true },
@@ -33,7 +65,10 @@ describe("getUnit", () => {
   });
   it("falls back to a generic unit when id is unknown", () => {
     expect(getUnit("xyz", BUILTIN_UNITS)).toEqual({
-      id: "xyz", label: "xyz", quickAdd: [1, 5, 10], thresholds: [1, 3, 5],
+      id: "xyz",
+      label: "xyz",
+      quickAdd: [1, 5, 10],
+      thresholds: [1, 3, 5],
     });
   });
 });
@@ -52,7 +87,10 @@ describe("isSetMetric", () => {
 });
 
 describe("sets aggregation", () => {
-  const sets = [{ w: 100, r: 5 }, { w: 120, r: 3 }];
+  const sets = [
+    { w: 100, r: 5 },
+    { w: 120, r: 3 },
+  ];
   it("setsVolume sums weight × reps", () => {
     expect(setsVolume(sets)).toBe(100 * 5 + 120 * 3);
   });
@@ -83,20 +121,41 @@ describe("setFieldsOf", () => {
 });
 
 describe("aggregateSets", () => {
-  const sets = [{ w: 100, r: 5 }, { w: 120, r: 3 }];
-  it("sums", () => { expect(aggregateSets(sets, { id: "w", label: "", agg: "sum" })).toBe(220); });
-  it("maxes", () => { expect(aggregateSets(sets, { id: "w", label: "", agg: "max" })).toBe(120); });
-  it("takes last", () => { expect(aggregateSets(sets, { id: "w", label: "", agg: "last" })).toBe(120); });
-  it("averages", () => { expect(aggregateSets(sets, { id: "w", label: "", agg: "avg" })).toBe(110); });
+  const sets = [
+    { w: 100, r: 5 },
+    { w: 120, r: 3 },
+  ];
+  it("sums", () => {
+    expect(aggregateSets(sets, { id: "w", label: "", agg: "sum" })).toBe(220);
+  });
+  it("maxes", () => {
+    expect(aggregateSets(sets, { id: "w", label: "", agg: "max" })).toBe(120);
+  });
+  it("takes last", () => {
+    expect(aggregateSets(sets, { id: "w", label: "", agg: "last" })).toBe(120);
+  });
+  it("averages", () => {
+    expect(aggregateSets(sets, { id: "w", label: "", agg: "avg" })).toBe(110);
+  });
   it("is safe on empty/undefined", () => {
     expect(aggregateSets([], { id: "w", label: "", agg: "sum" })).toBe(0);
-    expect(aggregateSets(undefined, { id: "w", label: "", agg: "max" })).toBe(0);
+    expect(aggregateSets(undefined, { id: "w", label: "", agg: "max" })).toBe(
+      0,
+    );
   });
 });
 
 describe("setVolume", () => {
   it("sums the product of all fields across sets", () => {
-    expect(setVolume([{ w: 100, r: 5 }, { w: 120, r: 3 }], setFieldsOf(setM))).toBe(860);
+    expect(
+      setVolume(
+        [
+          { w: 100, r: 5 },
+          { w: 120, r: 3 },
+        ],
+        setFieldsOf(setM),
+      ),
+    ).toBe(860);
   });
 });
 
@@ -111,7 +170,12 @@ describe("primaryField", () => {
 
 describe("setsMetricVal", () => {
   it("weighted (default) → total volume", () => {
-    expect(setsMetricVal(setM, [{ w: 100, r: 5 }, { w: 120, r: 3 }])).toBe(860);
+    expect(
+      setsMetricVal(setM, [
+        { w: 100, r: 5 },
+        { w: 120, r: 3 },
+      ]),
+    ).toBe(860);
   });
   it("reps-only → total reps", () => {
     expect(setsMetricVal(repsM, [{ r: 12 }, { r: 8 }])).toBe(20);
@@ -120,7 +184,12 @@ describe("setsMetricVal", () => {
     expect(setsMetricVal(timedM, [{ min: 20 }, { min: 15 }])).toBe(35);
   });
   it("tempo+time → primary (minutes), ignoring the max-agg field", () => {
-    expect(setsMetricVal(tempoM, [{ bpm: 120, min: 10 }, { bpm: 90, min: 5 }])).toBe(15);
+    expect(
+      setsMetricVal(tempoM, [
+        { bpm: 120, min: 10 },
+        { bpm: 90, min: 5 },
+      ]),
+    ).toBe(15);
   });
 });
 
@@ -195,7 +264,14 @@ describe("findLastWeight", () => {
   it("returns the weight of the most recent logged set within 90 days", () => {
     const today = new Date();
     const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const logs: HabitLogs = { [key]: { m2: [{ w: 95, r: 5 }, { w: 135, r: 3 }] } };
+    const logs: HabitLogs = {
+      [key]: {
+        m2: [
+          { w: 95, r: 5 },
+          { w: 135, r: 3 },
+        ],
+      },
+    };
     expect(findLastWeight(logs, "m2")).toBe(135);
   });
   it("returns null when nothing is found", () => {

@@ -15,13 +15,20 @@ function Harness() {
   const [intensityMode, setIntensityMode] = useState<IntensityMode>("total");
   return (
     <HabitFormFields
-      name={name} setName={setName}
-      emoji={emoji} setEmoji={setEmoji}
-      description={description} setDescription={setDescription}
-      color={color} setColor={setColor}
-      metrics={metrics} setMetrics={setMetrics}
-      intensityMode={intensityMode} setIntensityMode={setIntensityMode}
-      units={BUILTIN_UNITS} onAddUnit={() => {}}
+      name={name}
+      setName={setName}
+      emoji={emoji}
+      setEmoji={setEmoji}
+      description={description}
+      setDescription={setDescription}
+      color={color}
+      setColor={setColor}
+      metrics={metrics}
+      setMetrics={setMetrics}
+      intensityMode={intensityMode}
+      setIntensityMode={setIntensityMode}
+      units={BUILTIN_UNITS}
+      onAddUnit={() => {}}
     />
   );
 }
@@ -48,7 +55,9 @@ describe("HabitFormFields", () => {
   it("reveals the sets presets when sets mode is enabled (weighted default)", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.queryByText(/Log weight × reps per set/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Log weight × reps per set/i),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
     expect(screen.getByText(/Log weight × reps per set/i)).toBeInTheDocument();
   });

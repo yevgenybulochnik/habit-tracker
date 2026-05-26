@@ -17,13 +17,13 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 
 ## Tech stack
 
-| Dependency | Role |
-| --- | --- |
-| [**React 18**](https://react.dev) + [**TypeScript**](https://www.typescriptlang.org) | UI, typed throughout |
-| [**Vite 6**](https://vite.dev) | dev server + build |
-| [**d3**](https://d3js.org) | imperative SVG rendering of the heatmap/calendar |
-| [**idb-keyval**](https://github.com/jakearchibald/idb-keyval) | tiny IndexedDB key/value wrapper for persistence |
-| [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app) | web manifest + service worker (Workbox) |
+| Dependency                                                                           | Role                                             |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| [**React 18**](https://react.dev) + [**TypeScript**](https://www.typescriptlang.org) | UI, typed throughout                             |
+| [**Vite 6**](https://vite.dev)                                                       | dev server + build                               |
+| [**d3**](https://d3js.org)                                                           | imperative SVG rendering of the heatmap/calendar |
+| [**idb-keyval**](https://github.com/jakearchibald/idb-keyval)                        | tiny IndexedDB key/value wrapper for persistence |
+| [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app)                              | web manifest + service worker (Workbox)          |
 
 Dev/test: **Vitest** + **Testing Library** (+ `fake-indexeddb`) for unit/component tests, **Playwright** for E2E.
 
@@ -47,10 +47,10 @@ The entire app state is a single JSON-serializable object, **`PersistedState`** 
 ```ts
 type PersistedState = {
   habits: Habit[];
-  logs: Logs;            // all logged values (see shape below)
-  units: Unit[];         // built-in + custom measurement units
-  config: AppConfig;     // calendar display + theme
-  timers?: Timers;       // running timers (absolute start timestamps)
+  logs: Logs; // all logged values (see shape below)
+  units: Unit[]; // built-in + custom measurement units
+  config: AppConfig; // calendar display + theme
+  timers?: Timers; // running timers (absolute start timestamps)
 };
 ```
 
@@ -60,9 +60,9 @@ type PersistedState = {
 type Metric = {
   id: string;
   name: string;
-  unit: string;          // references a Unit.id
-  mode?: "sets";         // present only for weight × reps metrics
-  weightUnit?: string;   // e.g. "lbs" | "kg" (sets mode)
+  unit: string; // references a Unit.id
+  mode?: "sets"; // present only for weight × reps metrics
+  weightUnit?: string; // e.g. "lbs" | "kg" (sets mode)
 };
 
 type Habit = {
@@ -70,20 +70,25 @@ type Habit = {
   name: string;
   emoji: string;
   description?: string;
-  color: string;                       // palette name, e.g. "Green"
+  color: string; // palette name, e.g. "Green"
   metrics: Metric[];
   intensityMode?: "total" | "coverage";
   thresholds?: number[];
 };
 
 type Unit = {
-  id: string;            // e.g. "min"
-  label: string;         // e.g. "Minutes"
-  quickAdd: number[];    // quick-add button values, e.g. [15, 30, 60]
-  thresholds: number[];  // intensity level cutoffs, e.g. [15, 30, 60]
+  id: string; // e.g. "min"
+  label: string; // e.g. "Minutes"
+  quickAdd: number[]; // quick-add button values, e.g. [15, 30, 60]
+  thresholds: number[]; // intensity level cutoffs, e.g. [15, 30, 60]
 };
 
-type AppConfig = { numMonths: number; monthGap: number; theme?: "dark" | "light"; dashView?: "quick" | "calendar" };
+type AppConfig = {
+  numMonths: number;
+  monthGap: number;
+  theme?: "dark" | "light";
+  dashView?: "quick" | "calendar";
+};
 ```
 
 ### How logs are stored (the key shape)
@@ -91,10 +96,10 @@ type AppConfig = { numMonths: number; monthGap: number; theme?: "dark" | "light"
 Logs are a **three-level nested map**: `habitId → dateKey → metricId → value`.
 
 ```ts
-type SetEntry = { w: number; r: number };          // one set: weight × reps
-type DayLog   = Record<string, number | SetEntry[]>; // metricId → value | sets
-type HabitLogs = Record<string, DayLog>;            // dateKey (YYYY-MM-DD) → DayLog
-type Logs      = Record<string, HabitLogs>;         // habitId → HabitLogs
+type SetEntry = { w: number; r: number }; // one set: weight × reps
+type DayLog = Record<string, number | SetEntry[]>; // metricId → value | sets
+type HabitLogs = Record<string, DayLog>; // dateKey (YYYY-MM-DD) → DayLog
+type Logs = Record<string, HabitLogs>; // habitId → HabitLogs
 ```
 
 - A **numeric** metric stores a plain `number` for the day.
@@ -104,6 +109,7 @@ type Logs      = Record<string, HabitLogs>;         // habitId → HabitLogs
 Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in `src/lib/`) operate on a **single `DayLog`**, while the calendar and stats operate on one habit's `HabitLogs`.
 
 **Intensity** (`logLevel`, `src/lib/stats.ts`) maps a day to a level **0–4** that picks a palette shade:
+
 - `intensityMode: "total"` — sum the day's metric values and compare against `thresholds`.
 - `intensityMode: "coverage"` — the fraction of the habit's metrics that have any activity.
 
@@ -112,22 +118,51 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 ```jsonc
 {
   "habits": [
-    { "id": "h_1", "name": "Morning Run", "emoji": "🏃", "color": "Green",
+    {
+      "id": "h_1",
+      "name": "Morning Run",
+      "emoji": "🏃",
+      "color": "Green",
       "metrics": [{ "id": "h_1_m0", "name": "Minutes", "unit": "min" }],
-      "intensityMode": "total" },
-    { "id": "h_2", "name": "Bench Press", "emoji": "🏋️", "color": "Blue",
-      "metrics": [{ "id": "h_2_m0", "name": "Reps", "unit": "reps",
-                    "mode": "sets", "weightUnit": "lbs" }],
-      "intensityMode": "total" }
+      "intensityMode": "total",
+    },
+    {
+      "id": "h_2",
+      "name": "Bench Press",
+      "emoji": "🏋️",
+      "color": "Blue",
+      "metrics": [
+        {
+          "id": "h_2_m0",
+          "name": "Reps",
+          "unit": "reps",
+          "mode": "sets",
+          "weightUnit": "lbs",
+        },
+      ],
+      "intensityMode": "total",
+    },
   ],
   "logs": {
     "h_1": { "2026-05-24": { "h_1_m0": 35 } },
-    "h_2": { "2026-05-24": { "h_2_m0": [ { "w": 135, "r": 5 }, { "w": 145, "r": 3 } ] } }
+    "h_2": {
+      "2026-05-24": {
+        "h_2_m0": [
+          { "w": 135, "r": 5 },
+          { "w": 145, "r": 3 },
+        ],
+      },
+    },
   },
   "units": [
-    { "id": "min", "label": "Minutes", "quickAdd": [15, 30, 60], "thresholds": [15, 30, 60] }
+    {
+      "id": "min",
+      "label": "Minutes",
+      "quickAdd": [15, 30, 60],
+      "thresholds": [15, 30, 60],
+    },
   ],
-  "config": { "numMonths": 4, "monthGap": 5, "theme": "dark" }
+  "config": { "numMonths": 4, "monthGap": 5, "theme": "dark" },
 }
 ```
 

@@ -28,18 +28,24 @@ export async function openSettings(page: Page) {
 
 /** Switch the dashboard view via the Quick/Calendar toggle. */
 export async function setDashView(page: Page, view: "quick" | "calendar") {
-  await page.getByRole("button", { name: view === "calendar" ? "Calendar" : "Quick" }).click();
+  await page
+    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Quick" })
+    .click();
 }
 
 export async function setTheme(page: Page, theme: "dark" | "light") {
   await openSettings(page);
-  await page.getByRole("button", { name: theme === "light" ? "Light" : "Dark" }).click();
+  await page
+    .getByRole("button", { name: theme === "light" ? "Light" : "Dark" })
+    .click();
   await page.getByRole("button", { name: "Done" }).click();
 }
 
 /** Delete a habit via the long-press → Edit modal → confirm flow. */
 export async function deleteHabit(page: Page, name: string) {
-  await page.getByRole("heading", { name, level: 3 }).dispatchEvent("mousedown");
+  await page
+    .getByRole("heading", { name, level: 3 })
+    .dispatchEvent("mousedown");
   await page.waitForTimeout(700); // long-press threshold is 500ms
   await page.getByRole("button", { name: /Delete habit/i }).click();
   await page.getByRole("button", { name: /Delete Habit/i }).click();

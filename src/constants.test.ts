@@ -1,14 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { THEMES, THEME_CSS, DEFAULT_CONFIG, resolvePalette, CSS } from "./constants";
+import {
+  THEMES,
+  THEME_CSS,
+  DEFAULT_CONFIG,
+  resolvePalette,
+  CSS,
+} from "./constants";
 
 const lum = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
-  return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return (
+    0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)
+  );
 };
 
 describe("themes", () => {
   it("defines dark and light with matching keys", () => {
-    expect(Object.keys(THEMES.light).sort()).toEqual(Object.keys(THEMES.dark).sort());
+    expect(Object.keys(THEMES.light).sort()).toEqual(
+      Object.keys(THEMES.dark).sort(),
+    );
     expect(THEMES.dark.bg).toBe("#0d1117");
     expect(THEMES.light.bg).toBe("#ffffff");
   });

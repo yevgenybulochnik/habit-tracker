@@ -6,20 +6,35 @@ import type { Habit, HabitLogs } from "../types";
 
 // "min" unit thresholds are [15, 30, 60].
 const minHabit: Habit = {
-  id: "h1", name: "Run", emoji: "🏃", color: "Green",
+  id: "h1",
+  name: "Run",
+  emoji: "🏃",
+  color: "Green",
   metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
   intensityMode: "total",
 };
 
 const coverageHabit = (n: number): Habit => ({
-  id: "h2", name: "Routine", emoji: "🧘", color: "Blue",
+  id: "h2",
+  name: "Routine",
+  emoji: "🧘",
+  color: "Blue",
   intensityMode: "coverage",
-  metrics: Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `M${i}`, unit: "count" })),
+  metrics: Array.from({ length: n }, (_, i) => ({
+    id: `c${i}`,
+    name: `M${i}`,
+    unit: "count",
+  })),
 });
 
 describe("logLevel (total mode)", () => {
   it.each([
-    [0, 0], [10, 1], [20, 2], [45, 3], [60, 4], [100, 4],
+    [0, 0],
+    [10, 1],
+    [20, 2],
+    [45, 3],
+    [60, 4],
+    [100, 4],
   ])("min total %i → level %i", (val, level) => {
     expect(logLevel(minHabit, { m1: val }, BUILTIN_UNITS)).toBe(level);
   });
@@ -78,6 +93,7 @@ describe("habitStats", () => {
 
   it("counts total active days", () => expect(stats.totalDays).toBe(5));
   it("sums total value", () => expect(stats.totalVal).toBe(150));
-  it("computes the current streak ending today", () => expect(stats.curStreak).toBe(2));
+  it("computes the current streak ending today", () =>
+    expect(stats.curStreak).toBe(2));
   it("computes the longest streak", () => expect(stats.lonStreak).toBe(3));
 });

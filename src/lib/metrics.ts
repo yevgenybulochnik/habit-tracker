@@ -1,9 +1,23 @@
-import type { DayLog, HabitLogs, Metric, SetEntry, SetField, Unit } from "../types";
+import type {
+  DayLog,
+  HabitLogs,
+  Metric,
+  SetEntry,
+  SetField,
+  Unit,
+} from "../types";
 import { dk } from "./dates";
 
 /** Resolve a unit by id, falling back to a generic count-like unit. */
 export function getUnit(id: string, units: Unit[]): Unit {
-  return units.find((u) => u.id === id) || { id, label: id, quickAdd: [1, 5, 10], thresholds: [1, 3, 5] };
+  return (
+    units.find((u) => u.id === id) || {
+      id,
+      label: id,
+      quickAdd: [1, 5, 10],
+      thresholds: [1, 3, 5],
+    }
+  );
 }
 
 export function getQuickAdd(uid: string, units: Unit[]): number[] {
@@ -24,7 +38,9 @@ export function weightedFields(weightUnit = "lbs"): SetField[] {
 
 /** Resolve a sets metric's per-set fields (defaults to weighted [weight, reps]). */
 export function setFieldsOf(m: Metric): SetField[] {
-  return m.setFields && m.setFields.length ? m.setFields : weightedFields(m.weightUnit);
+  return m.setFields && m.setFields.length
+    ? m.setFields
+    : weightedFields(m.weightUnit);
 }
 
 /** The field whose aggregate is the metric's headline value in "primary" mode. */
@@ -34,28 +50,42 @@ export function primaryField(m: Metric): SetField {
 }
 
 /** Aggregate one field across a day's sets per its agg rule. */
-export function aggregateSets(sets: SetEntry[] | undefined, field: SetField): number {
+export function aggregateSets(
+  sets: SetEntry[] | undefined,
+  field: SetField,
+): number {
   if (!Array.isArray(sets) || !sets.length) return 0;
   const vals = sets.map((s) => s[field.id] || 0);
   switch (field.agg) {
-    case "max": return Math.max(...vals);
-    case "last": return vals[vals.length - 1];
-    case "avg": return vals.reduce((a, b) => a + b, 0) / vals.length;
+    case "max":
+      return Math.max(...vals);
+    case "last":
+      return vals[vals.length - 1];
+    case "avg":
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
     case "sum":
-    default: return vals.reduce((a, b) => a + b, 0);
+    default:
+      return vals.reduce((a, b) => a + b, 0);
   }
 }
 
 /** Σ over sets of the product of all field values (e.g. weight × reps = lifting volume). */
-export function setVolume(sets: SetEntry[] | undefined, fields: SetField[]): number {
+export function setVolume(
+  sets: SetEntry[] | undefined,
+  fields: SetField[],
+): number {
   if (!Array.isArray(sets) || !sets.length) return 0;
-  return sets.reduce((sum, s) => sum + fields.reduce((p, f) => p * (s[f.id] || 0), 1), 0);
+  return sets.reduce(
+    (sum, s) => sum + fields.reduce((p, f) => p * (s[f.id] || 0), 1),
+    0,
+  );
 }
 
 /** A sets metric's headline numeric value: volume, or the primary field's aggregate. */
 export function setsMetricVal(m: Metric, sets: SetEntry[] | undefined): number {
   const fields = setFieldsOf(m);
-  if ((m.setValue ?? "volume") === "primary") return aggregateSets(sets, primaryField(m));
+  if ((m.setValue ?? "volume") === "primary")
+    return aggregateSets(sets, primaryField(m));
   return setVolume(sets, fields);
 }
 
@@ -63,24 +93,49 @@ export function setsMetricVal(m: Metric, sets: SetEntry[] | undefined): number {
 export type SetPreset = "weighted" | "reps" | "timed";
 
 /** The metric fields a sets preset writes (schema + value mode + unit). */
-export function setsPreset(kind: SetPreset, weightUnit = "lbs"): Pick<Metric, "setFields" | "setValue" | "weightUnit" | "unit"> {
+export function setsPreset(
+  kind: SetPreset,
+  weightUnit = "lbs",
+): Pick<Metric, "setFields" | "setValue" | "weightUnit" | "unit"> {
   switch (kind) {
     case "reps":
-      return { setValue: "primary", unit: "reps", setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }] };
+      return {
+        setValue: "primary",
+        unit: "reps",
+        setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
+      };
     case "timed":
-      return { setValue: "primary", unit: "min", setFields: [{ id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true }] };
+      return {
+        setValue: "primary",
+        unit: "min",
+        setFields: [
+          {
+            id: "min",
+            label: "Minutes",
+            unit: "min",
+            agg: "sum",
+            primary: true,
+          },
+        ],
+      };
     case "weighted":
     default:
       return {
-        setValue: "volume", unit: "reps", weightUnit,
-        setFields: [{ id: "w", label: "Weight", unit: weightUnit, agg: "max" }, { id: "r", label: "Reps", agg: "sum", primary: true }],
+        setValue: "volume",
+        unit: "reps",
+        weightUnit,
+        setFields: [
+          { id: "w", label: "Weight", unit: weightUnit, agg: "max" },
+          { id: "r", label: "Reps", agg: "sum", primary: true },
+        ],
       };
   }
 }
 
 /** Short unit label for a sets metric's badge, e.g. "lbs" | "reps" | "min". */
 export function setUnitLabel(m: Metric): string {
-  if ((m.setValue ?? "volume") === "volume") return setFieldsOf(m).find((f) => f.unit)?.unit || "lbs";
+  if ((m.setValue ?? "volume") === "volume")
+    return setFieldsOf(m).find((f) => f.unit)?.unit || "lbs";
   const p = primaryField(m);
   return p.unit || p.label.toLowerCase();
 }
@@ -117,7 +172,10 @@ export function metricActive(m: Metric, log: DayLog | undefined): boolean {
 }
 
 /** Most recent logged set for a metric, searching back up to 90 days. */
-export function findLastSet(logs: HabitLogs, metricId: string): SetEntry | null {
+export function findLastSet(
+  logs: HabitLogs,
+  metricId: string,
+): SetEntry | null {
   const today = new Date();
   for (let i = 0; i <= 90; i++) {
     const d = new Date(today);
@@ -129,7 +187,10 @@ export function findLastSet(logs: HabitLogs, metricId: string): SetEntry | null 
 }
 
 /** Most recent set weight for a metric (legacy weighted helper). */
-export function findLastWeight(logs: HabitLogs, metricId: string): number | null {
+export function findLastWeight(
+  logs: HabitLogs,
+  metricId: string,
+): number | null {
   const last = findLastSet(logs, metricId);
-  return last ? last.w ?? null : null;
+  return last ? (last.w ?? null) : null;
 }

@@ -6,7 +6,8 @@ export function fmtVal(v: number | undefined, unit: string): string {
   if (!v || v <= 0) return "—";
   if (unit === "min") {
     if (v < 60) return `${v}m`;
-    const h = Math.floor(v / 60), r = v % 60;
+    const h = Math.floor(v / 60),
+      r = v % 60;
     return r > 0 ? `${h}h ${r}m` : `${h}h`;
   }
   return `${v} ${unit}`;

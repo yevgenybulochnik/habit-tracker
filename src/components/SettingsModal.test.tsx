@@ -6,7 +6,15 @@ import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
 import type { PersistedState } from "../types";
 
 const sample: PersistedState = {
-  habits: [{ id: "h1", name: "Run", emoji: "🏃", color: "Green", metrics: [{ id: "m1", name: "Min", unit: "min" }] }],
+  habits: [
+    {
+      id: "h1",
+      name: "Run",
+      emoji: "🏃",
+      color: "Green",
+      metrics: [{ id: "m1", name: "Min", unit: "min" }],
+    },
+  ],
   logs: { h1: { "2026-05-24": { m1: 30 } } },
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
@@ -32,14 +40,18 @@ function renderModal(onImportState = vi.fn()) {
 
 beforeEach(() => {
   // jsdom does not implement these
-  (URL as unknown as { createObjectURL: () => string }).createObjectURL = vi.fn(() => "blob:mock");
+  (URL as unknown as { createObjectURL: () => string }).createObjectURL = vi.fn(
+    () => "blob:mock",
+  );
   (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = vi.fn();
 });
 
 describe("SettingsModal — Data backup", () => {
   it("exports a JSON download when Export is clicked", async () => {
     const user = userEvent.setup();
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
     renderModal();
     await user.click(screen.getByRole("button", { name: "Export" }));
     expect(URL.createObjectURL).toHaveBeenCalled();
@@ -50,7 +62,9 @@ describe("SettingsModal — Data backup", () => {
   it("imports a valid backup file", async () => {
     const user = userEvent.setup();
     const { onImportState } = renderModal();
-    const file = new File([JSON.stringify(sample)], "backup.json", { type: "application/json" });
+    const file = new File([JSON.stringify(sample)], "backup.json", {
+      type: "application/json",
+    });
     await user.upload(screen.getByLabelText(/Import backup file/i), file);
     await waitFor(() => expect(onImportState).toHaveBeenCalledWith(sample));
   });
@@ -58,7 +72,9 @@ describe("SettingsModal — Data backup", () => {
   it("shows an error for a malformed file and does not import", async () => {
     const user = userEvent.setup();
     const { onImportState } = renderModal();
-    const file = new File(["not json {"], "bad.json", { type: "application/json" });
+    const file = new File(["not json {"], "bad.json", {
+      type: "application/json",
+    });
     await user.upload(screen.getByLabelText(/Import backup file/i), file);
     expect(await screen.findByText(/valid backup file/i)).toBeInTheDocument();
     expect(onImportState).not.toHaveBeenCalled();
@@ -71,13 +87,21 @@ describe("SettingsModal — theme", () => {
     const onUpdateConfig = vi.fn();
     render(
       <SettingsModal
-        units={BUILTIN_UNITS} habits={sample.habits} logs={sample.logs}
-        onUpdateUnit={vi.fn()} onDeleteUnit={vi.fn()} onAddUnit={vi.fn()}
-        appConfig={DEFAULT_CONFIG} onUpdateConfig={onUpdateConfig}
-        onImportState={vi.fn()} onClose={vi.fn()}
+        units={BUILTIN_UNITS}
+        habits={sample.habits}
+        logs={sample.logs}
+        onUpdateUnit={vi.fn()}
+        onDeleteUnit={vi.fn()}
+        onAddUnit={vi.fn()}
+        appConfig={DEFAULT_CONFIG}
+        onUpdateConfig={onUpdateConfig}
+        onImportState={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Light" }));
-    expect(onUpdateConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" }));
+    expect(onUpdateConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ theme: "light" }),
+    );
   });
 });

@@ -7,24 +7,42 @@ import { todayK } from "../lib/dates";
 import type { Habit, HabitLogs } from "../types";
 
 const minHabit: Habit = {
-  id: "h1", name: "Run", emoji: "🏃", color: "Green",
+  id: "h1",
+  name: "Run",
+  emoji: "🏃",
+  color: "Green",
   metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
 };
 const setHabit: Habit = {
-  id: "h2", name: "Lift", emoji: "🏋️", color: "Blue",
-  metrics: [{ id: "m2", name: "Bench", unit: "reps", mode: "sets", weightUnit: "lbs" }],
+  id: "h2",
+  name: "Lift",
+  emoji: "🏋️",
+  color: "Blue",
+  metrics: [
+    { id: "m2", name: "Bench", unit: "reps", mode: "sets", weightUnit: "lbs" },
+  ],
 };
 const pal = PALETTES[0];
 
 function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
   const handlers = {
-    onQuickLog: vi.fn(), onQuickReset: vi.fn(), onAddSet: vi.fn(), onRemoveSet: vi.fn(),
-    onStartTimer: vi.fn(), onStopTimer: vi.fn(), ...overrides,
+    onQuickLog: vi.fn(),
+    onQuickReset: vi.fn(),
+    onAddSet: vi.fn(),
+    onRemoveSet: vi.fn(),
+    onStartTimer: vi.fn(),
+    onStopTimer: vi.fn(),
+    ...overrides,
   };
   render(
     <QuickLogSection
-      habit={habit} logs={logs} units={BUILTIN_UNITS} pal={pal}
-      timers={{}} habitId={habit.id} {...handlers}
+      habit={habit}
+      logs={logs}
+      units={BUILTIN_UNITS}
+      pal={pal}
+      timers={{}}
+      habitId={habit.id}
+      {...handlers}
     />,
   );
   return handlers;

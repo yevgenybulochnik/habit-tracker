@@ -4,7 +4,11 @@ import { getUnit, isSetMetric, metricActive, metricVal } from "./metrics";
 import { fmtSets, fmtVal } from "./format";
 
 /** Intensity level 0–4 for a habit on a given day. */
-export function logLevel(habit: Habit, log: DayLog | undefined, units: Unit[]): number {
+export function logLevel(
+  habit: Habit,
+  log: DayLog | undefined,
+  units: Unit[],
+): number {
   if (!log) return 0;
   const ms = habit.metrics || [];
   if (!ms.length) return 0;
@@ -19,14 +23,19 @@ export function logLevel(habit: Habit, log: DayLog | undefined, units: Unit[]): 
   }
   const total = ms.reduce((s, m) => s + metricVal(m, log), 0);
   if (total <= 0) return 0;
-  const thr = habit.thresholds || getUnit(ms[0]?.unit || "count", units).thresholds;
+  const thr =
+    habit.thresholds || getUnit(ms[0]?.unit || "count", units).thresholds;
   if (total < thr[0]) return 1;
   if (total < thr[1]) return 2;
   if (total < thr[2]) return 3;
   return 4;
 }
 
-export function logActive(h: Habit, log: DayLog | undefined, u: Unit[]): boolean {
+export function logActive(
+  h: Habit,
+  log: DayLog | undefined,
+  u: Unit[],
+): boolean {
   return logLevel(h, log, u) > 0;
 }
 
@@ -36,7 +45,8 @@ export function logSummary(h: Habit, log: DayLog | undefined): string {
   const parts = ms
     .filter((m) => metricActive(m, log))
     .map((m) => {
-      if (isSetMetric(m)) return `${m.name}: ${fmtSets(log[m.id] as SetEntry[], m)}`;
+      if (isSetMetric(m))
+        return `${m.name}: ${fmtSets(log[m.id] as SetEntry[], m)}`;
       return `${m.name}: ${fmtVal(log[m.id] as number, m.unit)}`;
     });
   return parts.length ? parts.join(", ") : "No entry";
@@ -51,7 +61,8 @@ export type HabitStats = {
 
 export function habitStats(h: Habit, logs: HabitLogs, u: Unit[]): HabitStats {
   const es = Object.entries(logs || {});
-  let td = 0, tv = 0;
+  let td = 0,
+    tv = 0;
   const ms = h.metrics || [];
   es.forEach(([, l]) => {
     if (logActive(h, l, u)) td++;
@@ -65,7 +76,8 @@ export function habitStats(h: Habit, logs: HabitLogs, u: Unit[]): HabitStats {
     if (logActive(h, logs[dk(d)], u)) cs2++;
     else break;
   }
-  let ls = 0, cc = 0;
+  let ls = 0,
+    cc = 0;
   for (let i = 364; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);

@@ -15,7 +15,8 @@ export default defineConfig({
       manifest: {
         name: "Habit Tracker",
         short_name: "Habits",
-        description: "Track habits with metrics, sets, streaks, and a calendar heatmap.",
+        description:
+          "Track habits with metrics, sets, streaks, and a calendar heatmap.",
         display: "standalone",
         orientation: "portrait",
         background_color: "#0d1117",

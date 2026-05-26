@@ -9,7 +9,10 @@ describe("setDayLog", () => {
   });
 
   it("preserves other habits and other dates", () => {
-    const logs: Logs = { h1: { "2026-05-01": { m1: 1 } }, h2: { "2026-05-01": { m1: 9 } } };
+    const logs: Logs = {
+      h1: { "2026-05-01": { m1: 1 } },
+      h2: { "2026-05-01": { m1: 9 } },
+    };
     const out = setDayLog(logs, "h1", "2026-05-26", { m1: 5 });
     expect(out.h1["2026-05-01"]).toEqual({ m1: 1 });
     expect(out.h2).toBe(logs.h2);
