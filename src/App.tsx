@@ -363,10 +363,10 @@ export default function App() {
     <StaggeredList keyProp="dashboard">
       {habits.map((h) => (
         <SortableHabitCard key={h.id} id={h.id}>
-          {(handle) => (
+          {(drag) => (
             <D3Calendar
               reorderMode={reorder}
-              dragHandle={reorder ? handle : undefined}
+              dragActivator={reorder ? drag : undefined}
               expanded={dashView === "calendar"}
               habit={h}
               logs={logs[h.id] || {}}
@@ -505,14 +505,26 @@ export default function App() {
                   justifyContent: "space-between",
                   gap: 8,
                   marginBottom: 16,
+                  // Fixed height so swapping the left content (segmented control
+                  // ↔ hint) doesn't shift the cards below; fade the swap in.
+                  minHeight: 34,
                 }}
               >
                 {reorder ? (
-                  <span style={{ fontSize: 12, color: C.muted, fontFamily: F }}>
+                  <span
+                    key="hint"
+                    style={{
+                      fontSize: 12,
+                      color: C.muted,
+                      fontFamily: F,
+                      animation: "fadeIn .25s ease",
+                    }}
+                  >
                     Drag the ⠿ handles to reorder
                   </span>
                 ) : (
                   <div
+                    key="views"
                     style={{
                       display: "flex",
                       background: C.surface,
@@ -520,6 +532,7 @@ export default function App() {
                       border: `1px solid ${C.border}`,
                       padding: 3,
                       gap: 2,
+                      animation: "fadeIn .25s ease",
                     }}
                   >
                     {(
@@ -564,6 +577,9 @@ export default function App() {
                       fontWeight: 600,
                       whiteSpace: "nowrap",
                       transition: "all .2s",
+                      // Fixed width so the label swap doesn't resize the button.
+                      minWidth: 96,
+                      textAlign: "center",
                     }}
                   >
                     {reorder ? "Done" : "⠿ Reorder"}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import {
   C,
@@ -22,6 +22,7 @@ import {
 } from "../lib/d3layout";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
+import type { DragActivator } from "./SortableHabitCard";
 import type {
   AppConfig,
   DayLog,
@@ -50,11 +51,11 @@ type Props = {
   appConfig?: AppConfig;
   /** When false the calendar body (controls/svg/legend) collapses; only header + quick-log show. */
   expanded?: boolean;
-  /** Optional drag handle (from the sortable wrapper) shown at the start of the header. */
-  dragHandle?: ReactNode;
   /** Reorder mode: condense to header only (collapse body + quick-log) and make
    *  the card inert to hold-to-edit / day-tap while it's being dragged. */
   reorderMode?: boolean;
+  /** Drag wiring (from the sortable wrapper); present only in reorder mode. */
+  dragActivator?: DragActivator;
 };
 
 type Tip = { label: string; date: string };
@@ -76,6 +77,18 @@ const navBtn: CSSProperties = {
   transition: "all .15s",
 };
 const legendLbl: CSSProperties = { fontSize: 9, color: C.muted, fontFamily: F };
+const gripStyle: CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: C.dim,
+  cursor: "grab",
+  padding: 0,
+  fontSize: 14,
+  lineHeight: 1,
+  flexShrink: 0,
+  display: "flex",
+  alignItems: "center",
+};
 
 export default function D3Calendar({
   habit,
@@ -93,8 +106,8 @@ export default function D3Calendar({
   habitId,
   appConfig,
   expanded = true,
-  dragHandle,
   reorderMode = false,
+  dragActivator,
 }: Props) {
   const cfg = appConfig || DEFAULT_CONFIG;
   // In reorder mode the card shows its header only — collapse the heatmap body
@@ -604,13 +617,67 @@ export default function D3Calendar({
       });
   }, [selectedDate, tKey, pal, theme]);
 
+  // Emoji + name + hint, shared between the normal (hold-to-edit) header and the
+  // reorder-mode draggable region.
+  const nameBlock = (
+    <>
+      <span
+        style={{
+          fontSize: 18,
+          transition: "transform .2s",
+          transform: pressing ? "scale(0.9)" : "scale(1)",
+        }}
+      >
+        {habit.emoji}
+      </span>
+      <div>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 14,
+            fontWeight: 600,
+            color: pressing ? C.accent : C.text,
+            fontFamily: F,
+            transition: "color .2s",
+          }}
+        >
+          {habit.name}
+        </h3>
+        {habit.description && (
+          <p
+            style={{
+              margin: "1px 0 0",
+              fontSize: 10,
+              color: C.muted,
+              fontFamily: F,
+            }}
+          >
+            {habit.description}
+          </p>
+        )}
+        <div
+          style={{
+            fontSize: 8,
+            color: C.dim,
+            fontFamily: F,
+            marginTop: 1,
+            opacity: pressing ? 1 : 0,
+            transition: "opacity .2s",
+          }}
+        >
+          hold to edit...
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div
       ref={cRef}
       style={{
         background: C.surface,
         borderRadius: 10,
-        border: `1px solid ${C.border}`,
+        border: `1px solid ${dragActivator?.isDragging ? C.accent : C.border}`,
         padding: effExpanded ? "16px 16px" : "12px 16px",
         marginBottom: effExpanded ? 16 : 10,
         transition:
@@ -630,8 +697,34 @@ export default function D3Calendar({
           transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {dragHandle}
+        {reorderMode && dragActivator ? (
+          // Whole grip+icon+name region is grabbable; grip stays the keyboard
+          // activator (focusable, role=button) so the heading isn't pruned.
+          <div
+            {...dragActivator.listeners}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: dragActivator.isDragging ? "grabbing" : "grab",
+              touchAction: "none",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              WebkitTouchCallout: "none",
+            }}
+          >
+            <button
+              ref={dragActivator.setActivatorRef}
+              {...dragActivator.attributes}
+              aria-label="Drag to reorder habit"
+              title="Drag to reorder"
+              style={gripStyle}
+            >
+              ⠿
+            </button>
+            {nameBlock}
+          </div>
+        ) : (
           <div
             style={{
               display: "flex",
@@ -651,55 +744,9 @@ export default function D3Calendar({
             onTouchEnd={cancelPress}
             onTouchCancel={cancelPress}
           >
-            <span
-              style={{
-                fontSize: 18,
-                transition: "transform .2s",
-                transform: pressing ? "scale(0.9)" : "scale(1)",
-              }}
-            >
-              {habit.emoji}
-            </span>
-            <div>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: pressing ? C.accent : C.text,
-                  fontFamily: F,
-                  transition: "color .2s",
-                }}
-              >
-                {habit.name}
-              </h3>
-              {habit.description && (
-                <p
-                  style={{
-                    margin: "1px 0 0",
-                    fontSize: 10,
-                    color: C.muted,
-                    fontFamily: F,
-                  }}
-                >
-                  {habit.description}
-                </p>
-              )}
-              <div
-                style={{
-                  fontSize: 8,
-                  color: C.dim,
-                  fontFamily: F,
-                  marginTop: 1,
-                  opacity: pressing ? 1 : 0,
-                  transition: "opacity .2s",
-                }}
-              >
-                hold to edit...
-              </div>
-            </div>
+            {nameBlock}
           </div>
-        </div>
+        )}
         <div style={{ display: "flex", gap: 12, textAlign: "right" }}>
           {[
             { l: "Days", v: stats.totalDays },
