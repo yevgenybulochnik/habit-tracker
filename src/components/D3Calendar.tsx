@@ -125,6 +125,7 @@ export default function D3Calendar({
   const [offset, setOffset] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [pressing, setPressing] = useState(false);
+  const [dragPressed, setDragPressed] = useState(false); // grip/region pressed → highlight this card
   const [svgHeight, setSvgHeight] = useState(120);
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // drives open/close animation
   const [editorDate, setEditorDate] = useState<string | null>(null); // kept mounted through the close animation
@@ -151,6 +152,11 @@ export default function D3Calendar({
       setSelectedDate(k);
     }
   };
+  // Drop the pressed highlight when leaving reorder mode.
+  useEffect(() => {
+    if (!reorderMode) setDragPressed(false);
+  }, [reorderMode]);
+
   useEffect(() => {
     // collapsing the card (Quick view or reorder mode) closes the editor
     if (!effExpanded) {
@@ -679,9 +685,9 @@ export default function D3Calendar({
       style={{
         background: C.surface,
         borderRadius: 10,
-        // Accent border whenever dragging is available (reorder mode), animated
-        // via the border-color transition below.
-        border: `1px solid ${reorderMode ? C.accent : C.border}`,
+        // Accent border only on the card being pressed/dragged (signals it's
+        // grabbable on press), animated via the border-color transition below.
+        border: `1px solid ${dragPressed || dragActivator?.isDragging ? C.accent : C.border}`,
         padding: effExpanded ? "16px 16px" : "12px 16px",
         marginBottom: effExpanded ? 16 : 10,
         transition:
@@ -706,6 +712,13 @@ export default function D3Calendar({
           // activator (focusable, role=button) so the heading isn't pruned.
           <div
             {...dragActivator.listeners}
+            onPointerDown={(e) => {
+              setDragPressed(true);
+              dragActivator.listeners.onPointerDown?.(e);
+            }}
+            onPointerUp={() => setDragPressed(false)}
+            onPointerCancel={() => setDragPressed(false)}
+            onPointerLeave={() => setDragPressed(false)}
             style={{
               display: "flex",
               alignItems: "center",
