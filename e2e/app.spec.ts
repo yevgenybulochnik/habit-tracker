@@ -164,6 +164,58 @@ test("reordering a habit card persists the new order", async ({ page }) => {
   ]);
 });
 
+test("touch-dragging a card by its name (not the grip) reorders", async ({
+  browser,
+}) => {
+  // Regression guard for the iOS issue: a touch drag started on the header
+  // text must reorder, not just one started on the grip.
+  const ctx = await browser.newContext({ hasTouch: true });
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await createHabit(page, "Alpha");
+  await createHabit(page, "Beta");
+  await page.getByRole("button", { name: /Reorder/ }).click();
+
+  const beta = await page
+    .getByRole("heading", { name: "Beta", level: 3 })
+    .boundingBox();
+  const alpha = await page
+    .getByRole("heading", { name: "Alpha", level: 3 })
+    .boundingBox();
+  if (!beta || !alpha) throw new Error("headings not found");
+  const bx = beta.x + beta.width / 2;
+  const by = beta.y + beta.height / 2;
+  const ax = alpha.x + alpha.width / 2;
+  const ay = alpha.y + alpha.height / 2;
+
+  // Real touch sequence via CDP — start on Beta's name and drag up over Alpha.
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: bx, y: by }],
+  });
+  const steps = 10;
+  for (let i = 1; i <= steps; i++) {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        { x: bx + (ax - bx) * (i / steps), y: by + (ay - by) * (i / steps) },
+      ],
+    });
+    await page.waitForTimeout(15);
+  }
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+    "Beta",
+    "Alpha",
+  ]);
+  await ctx.close();
+});
+
 test("a habit created without a metric is a daily check-off that persists", async ({
   page,
 }) => {

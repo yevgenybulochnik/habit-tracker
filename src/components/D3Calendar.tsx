@@ -729,24 +729,24 @@ export default function D3Calendar({
                 "aria-label": "Drag to reorder habit",
                 ...dragActivator.listeners,
               }
-            : {})}
-          onMouseDown={startPress}
-          onMouseUp={cancelPress}
-          onMouseLeave={() => {
-            cancelPress();
-            setDragPressed(false);
-          }}
-          onTouchStart={startPress}
-          onTouchEnd={cancelPress}
-          onTouchCancel={cancelPress}
-          // dnd-kit's own onPointerDown (from the spread above) drives the drag.
-          // Track the press for the highlight in the capture phase so it never
-          // shadows that handler.
+            : // Long-press (hold-to-edit) only outside reorder mode, so it can't
+              // clobber the Touch/Mouse sensor activators (onTouchStart/onMouseDown).
+              {
+                onMouseDown: startPress,
+                onMouseUp: cancelPress,
+                onMouseLeave: cancelPress,
+                onTouchStart: startPress,
+                onTouchEnd: cancelPress,
+                onTouchCancel: cancelPress,
+              })}
+          // Highlight the pressed card; capture phase so it never shadows the
+          // sensor activator. Pointer events fire alongside touch on iOS.
           onPointerDownCapture={() => {
             if (reorderMode) setDragPressed(true);
           }}
           onPointerUp={() => setDragPressed(false)}
           onPointerCancel={() => setDragPressed(false)}
+          onPointerLeave={() => setDragPressed(false)}
           title={reorderMode ? "Drag to reorder" : undefined}
           style={{
             display: "flex",
