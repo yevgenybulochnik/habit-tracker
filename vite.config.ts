@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["apple-touch-icon.png"],
+      includeAssets: ["apple-touch-icon-lite.png"],
       manifest: {
         name: "Habit Tracker",
         short_name: "Habits",
@@ -19,13 +19,13 @@ export default defineConfig({
           "Track habits with metrics, sets, streaks, and a calendar heatmap.",
         display: "standalone",
         orientation: "portrait",
-        background_color: "#0d1117",
-        theme_color: "#0d1117",
+        background_color: "#ffffff",
+        theme_color: "#ffffff",
         icons: [
-          { src: "pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "pwa-512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-192-lite.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512-lite.png", sizes: "512x512", type: "image/png" },
           {
-            src: "pwa-512-maskable.png",
+            src: "pwa-512-maskable-lite.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
