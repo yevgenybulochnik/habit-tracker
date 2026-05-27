@@ -201,6 +201,12 @@ export const CSS = `
 /* >=16px keeps iOS Safari from auto-zooming when an input is focused.
    !important overrides the smaller inline font sizes on individual fields. */
 input,select,textarea{font-size:16px !important}
+/* iOS: a press-and-hold otherwise selects UI text / pops the callout menu
+   (e.g. fighting the hold-to-edit gesture). The app is interactive chrome, not
+   a document, so suppress selection + callout app-wide and re-enable it only
+   for text fields. Inherited, so it cascades to every card/label. */
+[data-theme]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+[data-theme] input,[data-theme] textarea{-webkit-user-select:text;user-select:text}
 `;
 
 export const inpS: CSSProperties = {
