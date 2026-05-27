@@ -164,6 +164,28 @@ test("reordering a habit card persists the new order", async ({ page }) => {
   ]);
 });
 
+test("a habit created without a metric is a daily check-off that persists", async ({
+  page,
+}) => {
+  await page.goto("/");
+  // Create with just a name — no metric added.
+  await page.getByRole("button", { name: /New Habit/i }).click();
+  await page.getByPlaceholder(/Morning Workout/i).fill("Meditate");
+  await page.getByRole("button", { name: /^Create$/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Meditate", level: 3 }),
+  ).toBeVisible();
+
+  // Day-counter card: a single mark button, no quick-add (+N) buttons.
+  await expect(page.getByRole("button", { name: "+10" })).toHaveCount(0);
+  await page.getByRole("button", { name: /Mark today/i }).click();
+  await expect(page.getByRole("button", { name: /Done today/i })).toBeVisible();
+  await page.waitForTimeout(300); // let the IndexedDB write flush
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Done today/i })).toBeVisible();
+});
+
 test("backup: export then import restores a deleted habit", async ({
   page,
 }) => {
