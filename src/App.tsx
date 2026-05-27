@@ -13,7 +13,10 @@ import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
 import { setDayLog } from "./lib/logs";
+import { reorderById } from "./lib/reorder";
 import StaggeredList from "./components/StaggeredList";
+import SortableHabits from "./components/SortableHabits";
+import SortableHabitCard from "./components/SortableHabitCard";
 import D3Calendar from "./components/D3Calendar";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
@@ -189,6 +192,14 @@ export default function App() {
       setHabits(nh);
       setLogs(nl);
       save(nh, nl, units, appConfig);
+    },
+    [habits, logs, units, appConfig, save],
+  );
+  const reorderHabits = useCallback(
+    (activeId: string, overId: string) => {
+      const nh = reorderById(habits, activeId, overId);
+      setHabits(nh);
+      save(nh, logs, units, appConfig);
     },
     [habits, logs, units, appConfig, save],
   );
@@ -488,31 +499,41 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <StaggeredList keyProp="dashboard">
-                {habits.map((h) => (
-                  <div key={h.id}>
-                    <D3Calendar
-                      expanded={dashView === "calendar"}
-                      habit={h}
-                      logs={logs[h.id] || {}}
-                      units={units}
-                      onSaveDay={(dateKey, entry) =>
-                        saveLog(dateKey, { [h.id]: entry })
-                      }
-                      onEdit={() => setEditHabit(h)}
-                      onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
-                      onQuickReset={(mId) => quickReset(h.id, mId)}
-                      onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
-                      onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)}
-                      timers={timers}
-                      onStartTimer={(mId) => startTimer(h.id, mId)}
-                      onStopTimer={(mId) => stopTimer(h.id, mId)}
-                      habitId={h.id}
-                      appConfig={appConfig}
-                    />
-                  </div>
-                ))}
-              </StaggeredList>
+              <SortableHabits
+                ids={habits.map((h) => h.id)}
+                onReorder={reorderHabits}
+              >
+                <StaggeredList keyProp="dashboard">
+                  {habits.map((h) => (
+                    <SortableHabitCard key={h.id} id={h.id}>
+                      {(handle) => (
+                        <D3Calendar
+                          dragHandle={handle}
+                          expanded={dashView === "calendar"}
+                          habit={h}
+                          logs={logs[h.id] || {}}
+                          units={units}
+                          onSaveDay={(dateKey, entry) =>
+                            saveLog(dateKey, { [h.id]: entry })
+                          }
+                          onEdit={() => setEditHabit(h)}
+                          onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
+                          onQuickReset={(mId) => quickReset(h.id, mId)}
+                          onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
+                          onRemoveSet={(mId, idx) =>
+                            quickRemoveSet(h.id, mId, idx)
+                          }
+                          timers={timers}
+                          onStartTimer={(mId) => startTimer(h.id, mId)}
+                          onStopTimer={(mId) => stopTimer(h.id, mId)}
+                          habitId={h.id}
+                          appConfig={appConfig}
+                        />
+                      )}
+                    </SortableHabitCard>
+                  ))}
+                </StaggeredList>
+              </SortableHabits>
             </>
           )}
         </div>
