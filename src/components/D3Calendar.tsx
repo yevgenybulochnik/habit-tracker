@@ -735,11 +735,11 @@ export default function D3Calendar({
           onTouchStart={startPress}
           onTouchEnd={cancelPress}
           onTouchCancel={cancelPress}
-          onPointerDown={(e) => {
-            if (reorderMode && dragActivator) {
-              setDragPressed(true);
-              dragActivator.listeners.onPointerDown?.(e);
-            }
+          // dnd-kit's own onPointerDown (from the spread above) drives the drag.
+          // Track the press for the highlight in the capture phase so it never
+          // shadows that handler.
+          onPointerDownCapture={() => {
+            if (reorderMode) setDragPressed(true);
           }}
           onPointerUp={() => setDragPressed(false)}
           onPointerCancel={() => setDragPressed(false)}
