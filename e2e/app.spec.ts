@@ -122,6 +122,36 @@ test("selecting a day outlines its cell", async ({ page }) => {
   await expect(cell).toHaveAttribute("stroke-width", "2.5");
 });
 
+test("reordering a habit card persists the new order", async ({ page }) => {
+  await page.goto("/");
+  await createHabit(page, "Alpha");
+  await createHabit(page, "Beta");
+
+  const headings = page.getByRole("heading", { level: 3 });
+  await expect(headings).toHaveText(["Alpha", "Beta"]);
+
+  // Reorder via the keyboard sensor (also the accessible path): focus Beta's
+  // grip, Space to pick up, ArrowUp to move it above Alpha, Space to drop.
+  const handles = page.getByRole("button", { name: "Drag to reorder habit" });
+  await handles.nth(1).focus();
+  // Small waits between keys: dnd-kit measures layout asynchronously on pickup
+  // and after each move, so back-to-back presses are dropped.
+  await page.keyboard.press("Space"); // pick up Beta
+  await page.waitForTimeout(150);
+  await page.keyboard.press("ArrowUp"); // move above Alpha
+  await page.waitForTimeout(150);
+  await page.keyboard.press("Space"); // drop
+
+  await expect(headings).toHaveText(["Beta", "Alpha"]);
+  await page.waitForTimeout(300); // let the IndexedDB write flush
+
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+    "Beta",
+    "Alpha",
+  ]);
+});
+
 test("backup: export then import restores a deleted habit", async ({
   page,
 }) => {
