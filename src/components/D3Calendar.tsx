@@ -88,8 +88,6 @@ const gripStyle: CSSProperties = {
   flexShrink: 0,
   display: "flex",
   alignItems: "center",
-  // Fade the grip in when it appears on entering reorder mode.
-  animation: "fadeIn .25s ease",
 };
 
 export default function D3Calendar({
@@ -632,6 +630,7 @@ export default function D3Calendar({
       <span
         style={{
           fontSize: 18,
+          marginRight: 8,
           transition: "transform .2s",
           transform: pressing ? "scale(0.9)" : "scale(1)",
         }}
@@ -707,63 +706,68 @@ export default function D3Calendar({
           transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)",
         }}
       >
-        {reorderMode && dragActivator ? (
-          // Whole grip+icon+name region is grabbable; grip stays the keyboard
-          // activator (focusable, role=button) so the heading isn't pruned.
+        {/* One stable container in both modes so the icon+name never remount.
+            Long-press handlers stay attached (they no-op while reordering); the
+            drag listeners are present only in reorder mode. The grip lives in an
+            animated-width wrapper, so toggling slides the name rather than
+            jumping it. The grip stays the focusable keyboard activator so the
+            heading isn't pruned from the a11y tree. */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            cursor: reorderMode
+              ? dragActivator?.isDragging
+                ? "grabbing"
+                : "grab"
+              : "default",
+            touchAction: reorderMode ? "none" : undefined,
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            // iOS: long-press otherwise selects the text / shows the callout
+            // menu instead of triggering our hold-to-edit gesture.
+            WebkitTouchCallout: "none",
+          }}
+          onMouseDown={startPress}
+          onMouseUp={cancelPress}
+          onMouseLeave={cancelPress}
+          onTouchStart={startPress}
+          onTouchEnd={cancelPress}
+          onTouchCancel={cancelPress}
+          {...(dragActivator?.listeners ?? {})}
+          onPointerDown={(e) => {
+            if (reorderMode) setDragPressed(true);
+            dragActivator?.listeners.onPointerDown?.(e);
+          }}
+          onPointerUp={() => setDragPressed(false)}
+          onPointerCancel={() => setDragPressed(false)}
+          onPointerLeave={() => setDragPressed(false)}
+        >
           <div
-            {...dragActivator.listeners}
-            onPointerDown={(e) => {
-              setDragPressed(true);
-              dragActivator.listeners.onPointerDown?.(e);
-            }}
-            onPointerUp={() => setDragPressed(false)}
-            onPointerCancel={() => setDragPressed(false)}
-            onPointerLeave={() => setDragPressed(false)}
             style={{
+              width: reorderMode ? 24 : 0,
+              opacity: reorderMode ? 1 : 0,
+              overflow: "hidden",
+              flexShrink: 0,
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              cursor: dragActivator.isDragging ? "grabbing" : "grab",
-              touchAction: "none",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              WebkitTouchCallout: "none",
+              transition: "width .25s ease, opacity .25s ease",
             }}
           >
-            <button
-              ref={dragActivator.setActivatorRef}
-              {...dragActivator.attributes}
-              aria-label="Drag to reorder habit"
-              title="Drag to reorder"
-              style={gripStyle}
-            >
-              ⠿
-            </button>
-            {nameBlock}
+            {dragActivator && (
+              <button
+                ref={dragActivator.setActivatorRef}
+                {...dragActivator.attributes}
+                aria-label="Drag to reorder habit"
+                title="Drag to reorder"
+                style={gripStyle}
+              >
+                ⠿
+              </button>
+            )}
           </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "default",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              // iOS: long-press otherwise selects the text / shows the callout
-              // menu instead of triggering our hold-to-edit gesture.
-              WebkitTouchCallout: "none",
-            }}
-            onMouseDown={startPress}
-            onMouseUp={cancelPress}
-            onMouseLeave={cancelPress}
-            onTouchStart={startPress}
-            onTouchEnd={cancelPress}
-            onTouchCancel={cancelPress}
-          >
-            {nameBlock}
-          </div>
-        )}
+          {nameBlock}
+        </div>
         <div style={{ display: "flex", gap: 12, textAlign: "right" }}>
           {[
             { l: "Days", v: stats.totalDays },
