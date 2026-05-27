@@ -28,6 +28,21 @@ export function isSetMetric(m: Metric): boolean {
   return m.mode === "sets";
 }
 
+/** A binary daily check-off metric (stored as 0/1). */
+export function isDoneMetric(m: Metric): boolean {
+  return m.mode === "done";
+}
+
+/** The default metric for a habit created without any: a daily check-off. */
+export function doneMetric(): Metric {
+  return {
+    id: `m_${Date.now()}`,
+    name: "Completed",
+    mode: "done",
+    unit: "count",
+  };
+}
+
 /** The default schema for a sets metric that doesn't declare its own fields. */
 export function weightedFields(weightUnit = "lbs"): SetField[] {
   return [

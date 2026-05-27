@@ -23,8 +23,9 @@ export type Metric = {
   id: string;
   name: string;
   unit: string;
-  /** Present only for sets-mode metrics (a list of sets per day). */
-  mode?: "sets";
+  /** Metric kind. "sets" = a list of sets per day; "done" = a binary daily
+   *  check-off (stored as 0/1). Absent ⇒ a plain numeric metric. */
+  mode?: "sets" | "done";
   /** Weight unit for the default weighted schema, e.g. "lbs" | "kg". */
   weightUnit?: string;
   /** Per-set fields. Absent ⇒ the default weighted [weight, reps] schema. */

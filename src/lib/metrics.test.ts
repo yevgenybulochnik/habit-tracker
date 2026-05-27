@@ -17,6 +17,8 @@ import {
   findLastSet,
   setUnitLabel,
   setsPreset,
+  isDoneMetric,
+  doneMetric,
 } from "./metrics";
 import { BUILTIN_UNITS } from "../constants";
 import type { Metric, HabitLogs } from "../types";
@@ -58,6 +60,23 @@ const tempoM: Metric = {
     { id: "min", label: "Minutes", unit: "min", agg: "sum", primary: true },
   ],
 };
+
+describe("isDoneMetric / doneMetric", () => {
+  it("is true only for mode 'done'", () => {
+    expect(
+      isDoneMetric({ id: "d", name: "x", unit: "count", mode: "done" }),
+    ).toBe(true);
+    expect(isDoneMetric(minM)).toBe(false);
+    expect(isDoneMetric(setM)).toBe(false);
+  });
+  it("doneMetric() builds a done-mode count metric", () => {
+    const m = doneMetric();
+    expect(m.mode).toBe("done");
+    expect(m.unit).toBe("count");
+    expect(typeof m.id).toBe("string");
+    expect(m.id.length).toBeGreaterThan(0);
+  });
+});
 
 describe("getUnit", () => {
   it("returns the matching unit", () => {
