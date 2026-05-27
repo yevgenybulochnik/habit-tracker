@@ -4,6 +4,7 @@ import { C, F } from "../constants";
 import {
   getQuickAdd,
   isSetMetric,
+  isDoneMetric,
   metricActive,
   findLastSet,
   setUnitLabel,
@@ -83,6 +84,7 @@ export default function QuickLogSection({
   const level = logLevel(habit, todayLog, units);
   const priIsMin = ms[0]?.unit === "min";
   const priIsSets = ms[0]?.mode === "sets";
+  const priIsDone = compact && isDoneMetric(ms[0]);
   const timerKey = (mId: string) => `${habitId}:${mId}`;
 
   const qAdd = (mId: string, amt: number) => {
@@ -93,6 +95,7 @@ export default function QuickLogSection({
 
   const summary = (() => {
     if (!hasAny) return null;
+    if (priIsDone) return null; // the toggle button shows its own state
     if (compact) {
       if (priIsSets) return fmtSets(todayLog[ms[0].id] as SetEntry[], ms[0]);
       return fmtVal(
@@ -149,8 +152,34 @@ export default function QuickLogSection({
         </div>
       )}
 
-      {/* Single metric: sets or normal */}
-      {compact && priIsSets ? (
+      {/* Single metric: daily check-off, sets, or normal */}
+      {priIsDone ? (
+        <button
+          onClick={() => (hasAny ? onQuickReset(ms[0].id) : qAdd(ms[0].id, 1))}
+          style={{
+            width: "100%",
+            padding: "10px 0",
+            borderRadius: 6,
+            border: `1px solid ${hasAny ? pal.shades[3] : C.border}`,
+            background: hasAny ? pal.shades[2] : C.bg,
+            color: hasAny ? "#fff" : C.muted,
+            cursor: "pointer",
+            fontSize: 13,
+            fontFamily: F,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            transition: "all .2s cubic-bezier(.22,1,.36,1)",
+          }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1 }}>
+            {hasAny ? "✓" : "○"}
+          </span>
+          {hasAny ? "Done today" : "Mark today"}
+        </button>
+      ) : compact && priIsSets ? (
         <>
           <div
             style={{

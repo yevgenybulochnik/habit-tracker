@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { C, F, inpS } from "../constants";
 import {
   isSetMetric,
+  isDoneMetric,
   getQuickAdd,
   findLastSet,
   setUnitLabel,
@@ -199,24 +200,63 @@ export default function DayEditor({
               </div>
             );
           }
+          const nameLabel = (
+            <span
+              style={{
+                fontSize: 11,
+                color: C.muted,
+                fontFamily: F,
+                minWidth: 70,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {m.name}
+            </span>
+          );
+          if (isDoneMetric(m)) {
+            const marked = parseInt((local[m.id] as string) || "0", 10) > 0;
+            return (
+              <div
+                key={m.id}
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
+                {nameLabel}
+                <button
+                  onClick={() => setV(m.id, marked ? "0" : "1")}
+                  style={{
+                    flex: 1,
+                    padding: "8px 0",
+                    borderRadius: 6,
+                    border: `1px solid ${marked ? pal.shades[3] : C.border}`,
+                    background: marked ? pal.shades[2] : C.bg,
+                    color: marked ? "#fff" : C.muted,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: F,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    transition: "all .2s",
+                  }}
+                >
+                  <span style={{ fontSize: 13, lineHeight: 1 }}>
+                    {marked ? "✓" : "○"}
+                  </span>
+                  {marked ? "Done" : "Mark done"}
+                </button>
+              </div>
+            );
+          }
           return (
             <div
               key={m.id}
               style={{ display: "flex", alignItems: "center", gap: 8 }}
             >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: C.muted,
-                  fontFamily: F,
-                  minWidth: 70,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {m.name}
-              </span>
+              {nameLabel}
               <div style={{ position: "relative", flex: 1 }}>
                 <input
                   type="text"

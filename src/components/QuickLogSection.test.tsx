@@ -22,6 +22,14 @@ const setHabit: Habit = {
     { id: "m2", name: "Bench", unit: "reps", mode: "sets", weightUnit: "lbs" },
   ],
 };
+const doneHabit: Habit = {
+  id: "h3",
+  name: "Meditate",
+  emoji: "🧘",
+  color: "Purple",
+  intensityMode: "coverage",
+  metrics: [{ id: "m3", name: "Completed", unit: "count", mode: "done" }],
+};
 const pal = PALETTES[0];
 
 function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
@@ -81,5 +89,19 @@ describe("QuickLogSection", () => {
     await user.type(screen.getByPlaceholderText("Reps"), "5");
     await user.click(screen.getByRole("button", { name: "+ Set" }));
     expect(onAddSet).toHaveBeenCalledWith("m2", { w: 135, r: 5 });
+  });
+
+  it("marks the day via a single toggle for a done metric (unmarked → +1)", async () => {
+    const user = userEvent.setup();
+    const { onQuickLog } = renderQL(doneHabit, {});
+    await user.click(screen.getByRole("button", { name: /Mark today/i }));
+    expect(onQuickLog).toHaveBeenCalledWith("m3", 1);
+  });
+
+  it("clears a marked done metric via the toggle (marked → reset)", async () => {
+    const user = userEvent.setup();
+    const { onQuickReset } = renderQL(doneHabit, { [todayK()]: { m3: 1 } });
+    await user.click(screen.getByRole("button", { name: /Done today/i }));
+    expect(onQuickReset).toHaveBeenCalledWith("m3");
   });
 });
