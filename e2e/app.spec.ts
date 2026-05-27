@@ -130,9 +130,17 @@ test("reordering a habit card persists the new order", async ({ page }) => {
   const headings = page.getByRole("heading", { level: 3 });
   await expect(headings).toHaveText(["Alpha", "Beta"]);
 
+  // Handles only exist inside reorder mode — not during normal viewing.
+  const handles = page.getByRole("button", { name: "Drag to reorder habit" });
+  await expect(handles).toHaveCount(0);
+
+  // Enter reorder mode → grip handles appear (cards condense; the collapse is
+  // an overflow-clip animation, which Playwright can't assert as hidden).
+  await page.getByRole("button", { name: /Reorder/ }).click();
+  await expect(handles).toHaveCount(2);
+
   // Reorder via the keyboard sensor (also the accessible path): focus Beta's
   // grip, Space to pick up, ArrowUp to move it above Alpha, Space to drop.
-  const handles = page.getByRole("button", { name: "Drag to reorder habit" });
   await handles.nth(1).focus();
   // Small waits between keys: dnd-kit measures layout asynchronously on pickup
   // and after each move, so back-to-back presses are dropped.
@@ -143,6 +151,10 @@ test("reordering a habit card persists the new order", async ({ page }) => {
   await page.keyboard.press("Space"); // drop
 
   await expect(headings).toHaveText(["Beta", "Alpha"]);
+
+  // Leave reorder mode → cards expand back, handles gone.
+  await page.getByRole("button", { name: /Done/ }).click();
+  await expect(handles).toHaveCount(0);
   await page.waitForTimeout(300); // let the IndexedDB write flush
 
   await page.reload();
