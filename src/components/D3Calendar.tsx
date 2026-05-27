@@ -52,6 +52,9 @@ type Props = {
   expanded?: boolean;
   /** Optional drag handle (from the sortable wrapper) shown at the start of the header. */
   dragHandle?: ReactNode;
+  /** Reorder mode: condense to header only (collapse body + quick-log) and make
+   *  the card inert to hold-to-edit / day-tap while it's being dragged. */
+  reorderMode?: boolean;
 };
 
 type Tip = { label: string; date: string };
@@ -91,8 +94,12 @@ export default function D3Calendar({
   appConfig,
   expanded = true,
   dragHandle,
+  reorderMode = false,
 }: Props) {
   const cfg = appConfig || DEFAULT_CONFIG;
+  // In reorder mode the card shows its header only — collapse the heatmap body
+  // and quick-log, and reuse the existing expand/collapse animation.
+  const effExpanded = expanded && !reorderMode;
   const NUM_MONTHS = cfg.numMonths || 4;
   const svgRef = useRef<SVGSVGElement>(null),
     cRef = useRef<HTMLDivElement>(null);
@@ -118,6 +125,7 @@ export default function D3Calendar({
   };
   // Reassigned each render so the d3 click handler always sees current state.
   tapRef.current = (k: string) => {
+    if (reorderMode) return; // day-tap is inert while reordering
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
@@ -129,15 +137,16 @@ export default function D3Calendar({
     }
   };
   useEffect(() => {
-    // collapsing the card closes the editor
-    if (!expanded) {
+    // collapsing the card (Quick view or reorder mode) closes the editor
+    if (!effExpanded) {
       setSelectedDate(null);
       setEditorDate(null);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     }
-  }, [expanded]);
+  }, [effExpanded]);
 
   const startPress = () => {
+    if (reorderMode) return; // hold-to-edit is inert while reordering
     setPressing(true);
     longPressRef.current = setTimeout(() => {
       setPressing(false);
@@ -235,7 +244,7 @@ export default function D3Calendar({
   }, []);
 
   useEffect(() => {
-    if (!expanded || !svgRef.current) return; // calendar body not rendered when collapsed
+    if (!effExpanded || !svgRef.current) return; // body not rendered when collapsed/reordering
     // d3 selection is kept loosely typed: the data-join/animation logic is
     // ported verbatim from the prototype to preserve identical behavior.
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -559,7 +568,7 @@ export default function D3Calendar({
       .style("opacity", 1);
     /* eslint-enable @typescript-eslint/no-explicit-any */
   }, [
-    expanded,
+    effExpanded,
     view,
     offset,
     zoomed,
@@ -602,8 +611,8 @@ export default function D3Calendar({
         background: C.surface,
         borderRadius: 10,
         border: `1px solid ${C.border}`,
-        padding: expanded ? "16px 16px" : "12px 16px",
-        marginBottom: expanded ? 16 : 10,
+        padding: effExpanded ? "16px 16px" : "12px 16px",
+        marginBottom: effExpanded ? 16 : 10,
         transition:
           "padding .45s cubic-bezier(.22,1,.36,1), margin-bottom .45s cubic-bezier(.22,1,.36,1), border-color .3s",
         position: "relative",
@@ -615,7 +624,7 @@ export default function D3Calendar({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: expanded ? 12 : 2,
+          marginBottom: effExpanded ? 12 : 2,
           flexWrap: "wrap",
           gap: 10,
           transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)",
@@ -729,8 +738,8 @@ export default function D3Calendar({
       <div
         style={{
           display: "grid",
-          gridTemplateRows: expanded ? "1fr" : "0fr",
-          opacity: expanded ? 1 : 0,
+          gridTemplateRows: effExpanded ? "1fr" : "0fr",
+          opacity: effExpanded ? 1 : 0,
           transition:
             "grid-template-rows .45s cubic-bezier(.22,1,.36,1), opacity .3s ease",
         }}
@@ -916,13 +925,13 @@ export default function D3Calendar({
         <div
           style={{
             display: "grid",
-            gridTemplateRows: selectedDate ? "0fr" : "1fr",
+            gridTemplateRows: reorderMode || selectedDate ? "0fr" : "1fr",
             transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1)",
           }}
         >
           <div style={gridInner}>
             <QuickLogSection
-              dense={!expanded}
+              dense={!effExpanded}
               habit={habit}
               logs={logs}
               units={units}

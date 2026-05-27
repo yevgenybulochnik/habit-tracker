@@ -73,6 +73,7 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [showUnits, setShowUnits] = useState(false);
+  const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
@@ -354,6 +355,43 @@ export default function App() {
       </div>
     );
 
+  // The card list. In reorder mode each card condenses (reorderMode) and gets a
+  // drag handle; otherwise it renders normally with no dnd machinery at all.
+  const habitList = (
+    <StaggeredList keyProp="dashboard">
+      {habits.map((h) => {
+        const card = (handle?: React.ReactNode) => (
+          <D3Calendar
+            reorderMode={reorder}
+            dragHandle={handle}
+            expanded={dashView === "calendar"}
+            habit={h}
+            logs={logs[h.id] || {}}
+            units={units}
+            onSaveDay={(dateKey, entry) => saveLog(dateKey, { [h.id]: entry })}
+            onEdit={() => setEditHabit(h)}
+            onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
+            onQuickReset={(mId) => quickReset(h.id, mId)}
+            onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
+            onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)}
+            timers={timers}
+            onStartTimer={(mId) => startTimer(h.id, mId)}
+            onStopTimer={(mId) => stopTimer(h.id, mId)}
+            habitId={h.id}
+            appConfig={appConfig}
+          />
+        );
+        return reorder ? (
+          <SortableHabitCard key={h.id} id={h.id}>
+            {(handle) => card(handle)}
+          </SortableHabitCard>
+        ) : (
+          <div key={h.id}>{card()}</div>
+        );
+      })}
+    </StaggeredList>
+  );
+
   return (
     <div
       data-theme={theme}
@@ -464,76 +502,85 @@ export default function App() {
               <div
                 style={{
                   display: "flex",
-                  background: C.surface,
-                  borderRadius: 8,
-                  border: `1px solid ${C.border}`,
-                  padding: 3,
-                  gap: 2,
-                  width: "fit-content",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
                   marginBottom: 16,
                 }}
               >
-                {(
-                  [
-                    { id: "quick", label: "Quick" },
-                    { id: "calendar", label: "Calendar" },
-                  ] as const
-                ).map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setDashView(v.id)}
+                {reorder ? (
+                  <span style={{ fontSize: 12, color: C.muted, fontFamily: F }}>
+                    Drag the ⠿ handles to reorder
+                  </span>
+                ) : (
+                  <div
                     style={{
-                      padding: "6px 16px",
+                      display: "flex",
+                      background: C.surface,
+                      borderRadius: 8,
+                      border: `1px solid ${C.border}`,
+                      padding: 3,
+                      gap: 2,
+                    }}
+                  >
+                    {(
+                      [
+                        { id: "quick", label: "Quick" },
+                        { id: "calendar", label: "Calendar" },
+                      ] as const
+                    ).map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setDashView(v.id)}
+                        style={{
+                          padding: "6px 16px",
+                          borderRadius: 6,
+                          border: "none",
+                          background: dashView === v.id ? C.bg : "transparent",
+                          color: dashView === v.id ? C.text : C.muted,
+                          fontWeight: dashView === v.id ? 600 : 400,
+                          fontSize: 12,
+                          fontFamily: F,
+                          cursor: "pointer",
+                          transition: "all .2s",
+                        }}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {habits.length > 1 && (
+                  <button
+                    onClick={() => setReorder((r) => !r)}
+                    style={{
+                      padding: "6px 14px",
                       borderRadius: 6,
-                      border: "none",
-                      background: dashView === v.id ? C.bg : "transparent",
-                      color: dashView === v.id ? C.text : C.muted,
-                      fontWeight: dashView === v.id ? 600 : 400,
+                      border: `1px solid ${reorder ? C.accent : C.border}`,
+                      background: reorder ? C.accentDim : C.surface,
+                      color: reorder ? C.accent : C.muted,
+                      cursor: "pointer",
                       fontSize: 12,
                       fontFamily: F,
-                      cursor: "pointer",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
                       transition: "all .2s",
                     }}
                   >
-                    {v.label}
+                    {reorder ? "Done" : "⠿ Reorder"}
                   </button>
-                ))}
+                )}
               </div>
-              <SortableHabits
-                ids={habits.map((h) => h.id)}
-                onReorder={reorderHabits}
-              >
-                <StaggeredList keyProp="dashboard">
-                  {habits.map((h) => (
-                    <SortableHabitCard key={h.id} id={h.id}>
-                      {(handle) => (
-                        <D3Calendar
-                          dragHandle={handle}
-                          expanded={dashView === "calendar"}
-                          habit={h}
-                          logs={logs[h.id] || {}}
-                          units={units}
-                          onSaveDay={(dateKey, entry) =>
-                            saveLog(dateKey, { [h.id]: entry })
-                          }
-                          onEdit={() => setEditHabit(h)}
-                          onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
-                          onQuickReset={(mId) => quickReset(h.id, mId)}
-                          onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
-                          onRemoveSet={(mId, idx) =>
-                            quickRemoveSet(h.id, mId, idx)
-                          }
-                          timers={timers}
-                          onStartTimer={(mId) => startTimer(h.id, mId)}
-                          onStopTimer={(mId) => stopTimer(h.id, mId)}
-                          habitId={h.id}
-                          appConfig={appConfig}
-                        />
-                      )}
-                    </SortableHabitCard>
-                  ))}
-                </StaggeredList>
-              </SortableHabits>
+              {reorder ? (
+                <SortableHabits
+                  ids={habits.map((h) => h.id)}
+                  onReorder={reorderHabits}
+                >
+                  {habitList}
+                </SortableHabits>
+              ) : (
+                habitList
+              )}
             </>
           )}
         </div>
