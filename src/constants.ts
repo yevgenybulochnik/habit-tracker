@@ -207,6 +207,10 @@ input,select,textarea{font-size:16px !important}
    for text fields. Inherited, so it cascades to every card/label. */
 [data-theme]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 [data-theme] input,[data-theme] textarea{-webkit-user-select:text;user-select:text}
+/* iOS: while reordering, the whole drag region AND its children must disable
+   touch panning, or a drag started on the icon/name is stolen by page scroll
+   (touch-action isn't inherited, so cover descendants explicitly). */
+.reorder-drag,.reorder-drag *{touch-action:none}
 `;
 
 export const inpS: CSSProperties = {

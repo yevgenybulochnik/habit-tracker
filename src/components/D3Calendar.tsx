@@ -713,6 +713,10 @@ export default function D3Calendar({
           // listeners AND the activator ref live on the same element (dnd-kit's
           // intended pattern — a split ref/listeners made the first drag flaky).
           // role is stripped so the inner <h3> stays a real heading.
+          // .reorder-drag sets touch-action:none on this region + descendants
+          // (iOS won't inherit it) so a touch-drag from the icon/name isn't
+          // hijacked by page scroll.
+          className={reorderMode ? "reorder-drag" : undefined}
           ref={
             reorderMode && dragActivator
               ? dragActivator.setActivatorRef
