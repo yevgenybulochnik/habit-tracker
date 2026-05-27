@@ -44,7 +44,10 @@ export default function SortableHabitCard({ id, children }: Props) {
   } = useSortable({ id });
 
   const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    // Translate only — cards vary in height, and CSS.Transform would add a
+    // scaleX/scaleY (derived from neighbouring sizes) that visibly stretches or
+    // squishes a card as it passes one of a different size.
+    transform: CSS.Translate.toString(transform),
     transition,
     // Lift the dragged card above its neighbours.
     zIndex: isDragging ? 10 : undefined,
