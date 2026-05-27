@@ -41,6 +41,18 @@ describe("logLevel (total mode)", () => {
   it("returns 0 for no log", () => {
     expect(logLevel(minHabit, undefined, BUILTIN_UNITS)).toBe(0);
   });
+  it("a marked daily check-off lands at the middle shade (level 2)", () => {
+    const doneH: Habit = {
+      id: "hd",
+      name: "Meditate",
+      emoji: "🧘",
+      color: "Green",
+      intensityMode: "total",
+      metrics: [{ id: "d", name: "Completed", unit: "count", mode: "done" }],
+    };
+    expect(logLevel(doneH, { d: 0 }, BUILTIN_UNITS)).toBe(0);
+    expect(logLevel(doneH, { d: 1 }, BUILTIN_UNITS)).toBe(2);
+  });
 });
 
 describe("logLevel (coverage mode)", () => {

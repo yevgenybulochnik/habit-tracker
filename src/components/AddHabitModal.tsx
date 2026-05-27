@@ -39,7 +39,8 @@ export default function AddHabitModal({
     setTimeout(onClose, 350);
   };
   // Name is enough — a habit created without a metric defaults to a daily
-  // check-off (one "done" metric, coverage intensity so a marked day is full).
+  // check-off (one "done" metric). In total mode the count unit's thresholds
+  // ([1,3,5]) put a marked day at the middle palette shade.
   const canCreate = !!name.trim();
   return (
     <ModalShell onClose={hClose} closing={closing}>
@@ -96,7 +97,7 @@ export default function AddHabitModal({
                 description: desc.trim(),
                 color,
                 metrics: noMetrics ? [doneMetric()] : metrics,
-                intensityMode: noMetrics ? "coverage" : intMode,
+                intensityMode: intMode,
               });
               hClose();
             }
