@@ -513,12 +513,7 @@ export default function App() {
                 {reorder ? (
                   <span
                     key="hint"
-                    style={{
-                      fontSize: 12,
-                      color: C.muted,
-                      fontFamily: F,
-                      animation: "fadeIn .25s ease",
-                    }}
+                    style={{ fontSize: 12, color: C.muted, fontFamily: F }}
                   >
                     Drag the ⠿ handles to reorder
                   </span>
@@ -532,7 +527,6 @@ export default function App() {
                       border: `1px solid ${C.border}`,
                       padding: 3,
                       gap: 2,
-                      animation: "fadeIn .25s ease",
                     }}
                   >
                     {(

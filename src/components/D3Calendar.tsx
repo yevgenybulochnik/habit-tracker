@@ -88,6 +88,8 @@ const gripStyle: CSSProperties = {
   flexShrink: 0,
   display: "flex",
   alignItems: "center",
+  // Fade the grip in when it appears on entering reorder mode.
+  animation: "fadeIn .25s ease",
 };
 
 export default function D3Calendar({
@@ -677,7 +679,9 @@ export default function D3Calendar({
       style={{
         background: C.surface,
         borderRadius: 10,
-        border: `1px solid ${dragActivator?.isDragging ? C.accent : C.border}`,
+        // Accent border whenever dragging is available (reorder mode), animated
+        // via the border-color transition below.
+        border: `1px solid ${reorderMode ? C.accent : C.border}`,
         padding: effExpanded ? "16px 16px" : "12px 16px",
         marginBottom: effExpanded ? 16 : 10,
         transition:
