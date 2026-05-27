@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import * as d3 from "d3";
 import {
   C,
@@ -50,6 +50,8 @@ type Props = {
   appConfig?: AppConfig;
   /** When false the calendar body (controls/svg/legend) collapses; only header + quick-log show. */
   expanded?: boolean;
+  /** Optional drag handle (from the sortable wrapper) shown at the start of the header. */
+  dragHandle?: ReactNode;
 };
 
 type Tip = { label: string; date: string };
@@ -88,6 +90,7 @@ export default function D3Calendar({
   habitId,
   appConfig,
   expanded = true,
+  dragHandle,
 }: Props) {
   const cfg = appConfig || DEFAULT_CONFIG;
   const NUM_MONTHS = cfg.numMonths || 4;
@@ -618,67 +621,70 @@ export default function D3Calendar({
           transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            cursor: "default",
-            userSelect: "none",
-            WebkitUserSelect: "none",
-          }}
-          onMouseDown={startPress}
-          onMouseUp={cancelPress}
-          onMouseLeave={cancelPress}
-          onTouchStart={startPress}
-          onTouchEnd={cancelPress}
-          onTouchCancel={cancelPress}
-        >
-          <span
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {dragHandle}
+          <div
             style={{
-              fontSize: 18,
-              transition: "transform .2s",
-              transform: pressing ? "scale(0.9)" : "scale(1)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "default",
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
+            onMouseDown={startPress}
+            onMouseUp={cancelPress}
+            onMouseLeave={cancelPress}
+            onTouchStart={startPress}
+            onTouchEnd={cancelPress}
+            onTouchCancel={cancelPress}
           >
-            {habit.emoji}
-          </span>
-          <div>
-            <h3
+            <span
               style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 600,
-                color: pressing ? C.accent : C.text,
-                fontFamily: F,
-                transition: "color .2s",
+                fontSize: 18,
+                transition: "transform .2s",
+                transform: pressing ? "scale(0.9)" : "scale(1)",
               }}
             >
-              {habit.name}
-            </h3>
-            {habit.description && (
-              <p
+              {habit.emoji}
+            </span>
+            <div>
+              <h3
                 style={{
-                  margin: "1px 0 0",
-                  fontSize: 10,
-                  color: C.muted,
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: pressing ? C.accent : C.text,
                   fontFamily: F,
+                  transition: "color .2s",
                 }}
               >
-                {habit.description}
-              </p>
-            )}
-            <div
-              style={{
-                fontSize: 8,
-                color: C.dim,
-                fontFamily: F,
-                marginTop: 1,
-                opacity: pressing ? 1 : 0,
-                transition: "opacity .2s",
-              }}
-            >
-              hold to edit...
+                {habit.name}
+              </h3>
+              {habit.description && (
+                <p
+                  style={{
+                    margin: "1px 0 0",
+                    fontSize: 10,
+                    color: C.muted,
+                    fontFamily: F,
+                  }}
+                >
+                  {habit.description}
+                </p>
+              )}
+              <div
+                style={{
+                  fontSize: 8,
+                  color: C.dim,
+                  fontFamily: F,
+                  marginTop: 1,
+                  opacity: pressing ? 1 : 0,
+                  transition: "opacity .2s",
+                }}
+              >
+                hold to edit...
+              </div>
             </div>
           </div>
         </div>
