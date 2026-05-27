@@ -631,6 +631,9 @@ export default function D3Calendar({
               cursor: "default",
               userSelect: "none",
               WebkitUserSelect: "none",
+              // iOS: long-press otherwise selects the text / shows the callout
+              // menu instead of triggering our hold-to-edit gesture.
+              WebkitTouchCallout: "none",
             }}
             onMouseDown={startPress}
             onMouseUp={cancelPress}
