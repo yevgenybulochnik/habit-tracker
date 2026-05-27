@@ -355,40 +355,39 @@ export default function App() {
       </div>
     );
 
-  // The card list. In reorder mode each card condenses (reorderMode) and gets a
-  // drag handle; otherwise it renders normally with no dnd machinery at all.
+  // The card list. The sortable wrapper + DnD context stay mounted in both
+  // modes so toggling only flips props on the same D3Calendar instance — the
+  // card animates its height down to the header (grid-template-rows) instead of
+  // remounting. The grip handle is only rendered while reordering.
   const habitList = (
     <StaggeredList keyProp="dashboard">
-      {habits.map((h) => {
-        const card = (handle?: React.ReactNode) => (
-          <D3Calendar
-            reorderMode={reorder}
-            dragHandle={handle}
-            expanded={dashView === "calendar"}
-            habit={h}
-            logs={logs[h.id] || {}}
-            units={units}
-            onSaveDay={(dateKey, entry) => saveLog(dateKey, { [h.id]: entry })}
-            onEdit={() => setEditHabit(h)}
-            onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
-            onQuickReset={(mId) => quickReset(h.id, mId)}
-            onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
-            onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)}
-            timers={timers}
-            onStartTimer={(mId) => startTimer(h.id, mId)}
-            onStopTimer={(mId) => stopTimer(h.id, mId)}
-            habitId={h.id}
-            appConfig={appConfig}
-          />
-        );
-        return reorder ? (
-          <SortableHabitCard key={h.id} id={h.id}>
-            {(handle) => card(handle)}
-          </SortableHabitCard>
-        ) : (
-          <div key={h.id}>{card()}</div>
-        );
-      })}
+      {habits.map((h) => (
+        <SortableHabitCard key={h.id} id={h.id}>
+          {(handle) => (
+            <D3Calendar
+              reorderMode={reorder}
+              dragHandle={reorder ? handle : undefined}
+              expanded={dashView === "calendar"}
+              habit={h}
+              logs={logs[h.id] || {}}
+              units={units}
+              onSaveDay={(dateKey, entry) =>
+                saveLog(dateKey, { [h.id]: entry })
+              }
+              onEdit={() => setEditHabit(h)}
+              onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
+              onQuickReset={(mId) => quickReset(h.id, mId)}
+              onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
+              onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)}
+              timers={timers}
+              onStartTimer={(mId) => startTimer(h.id, mId)}
+              onStopTimer={(mId) => stopTimer(h.id, mId)}
+              habitId={h.id}
+              appConfig={appConfig}
+            />
+          )}
+        </SortableHabitCard>
+      ))}
     </StaggeredList>
   );
 
@@ -571,16 +570,12 @@ export default function App() {
                   </button>
                 )}
               </div>
-              {reorder ? (
-                <SortableHabits
-                  ids={habits.map((h) => h.id)}
-                  onReorder={reorderHabits}
-                >
-                  {habitList}
-                </SortableHabits>
-              ) : (
-                habitList
-              )}
+              <SortableHabits
+                ids={habits.map((h) => h.id)}
+                onReorder={reorderHabits}
+              >
+                {habitList}
+              </SortableHabits>
             </>
           )}
         </div>
