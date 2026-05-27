@@ -11,9 +11,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, "..", "public");
 mkdirSync(PUBLIC, { recursive: true });
 
-const BG = [13, 17, 23]; // #0d1117 app background
-const EMPTY = [22, 27, 34]; // #161b22 empty heatmap cell
-const GREEN = [57, 211, 83]; // #39d353 active (level 4) cell
+// Color schemes matching the app's themes. "lite" mirrors the light theme:
+// white background, pale empty cells, a medium green for active cells.
+const SCHEMES = {
+  dark: {
+    bg: [13, 17, 23], // #0d1117 app background
+    empty: [22, 27, 34], // #161b22 empty heatmap cell
+    green: [57, 211, 83], // #39d353 active (level 4) cell
+  },
+  lite: {
+    bg: [255, 255, 255], // #ffffff light background
+    empty: [235, 237, 240], // #ebedf0 empty cell (light theme)
+    green: [45, 164, 78], // #2da44e active cell (light theme)
+  },
+};
 const ACTIVE = new Set([1, 2, 4, 9]); // 1-indexed, row-major; 9 = last block
 
 // CRC32
@@ -57,7 +68,10 @@ function inRoundRect(x, y, x0, y0, x1, y1, r) {
   return true; // edge/interior
 }
 
-function makePng(size, { maskable = false } = {}) {
+function makePng(size, { maskable = false, scheme = SCHEMES.dark } = {}) {
+  const BG = scheme.bg,
+    EMPTY = scheme.empty,
+    GREEN = scheme.green;
   // Smaller grid (more padding) for maskable so it sits inside the safe zone.
   const pad = size * (maskable ? 0.22 : 0.14);
   const gap = size * 0.05;
@@ -139,6 +153,11 @@ const targets = [
   ["pwa-512.png", 512, {}],
   ["pwa-512-maskable.png", 512, { maskable: true }],
   ["apple-touch-icon.png", 180, {}],
+  // Lite (light-theme) variants.
+  ["pwa-192-lite.png", 192, { scheme: SCHEMES.lite }],
+  ["pwa-512-lite.png", 512, { scheme: SCHEMES.lite }],
+  ["pwa-512-maskable-lite.png", 512, { maskable: true, scheme: SCHEMES.lite }],
+  ["apple-touch-icon-lite.png", 180, { scheme: SCHEMES.lite }],
 ];
 for (const [name, size, opts] of targets) {
   writeFileSync(join(PUBLIC, name), makePng(size, opts));
