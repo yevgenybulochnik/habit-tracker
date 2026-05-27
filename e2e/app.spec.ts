@@ -188,12 +188,14 @@ test("touch-dragging a card by its name (not the grip) reorders", async ({
   const ax = alpha.x + alpha.width / 2;
   const ay = alpha.y + alpha.height / 2;
 
-  // Real touch sequence via CDP — start on Beta's name and drag up over Alpha.
+  // Real touch sequence via CDP — start on Beta's name, hold past the
+  // press-and-hold delay, then drag up over Alpha.
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x: bx, y: by }],
   });
+  await page.waitForTimeout(260); // exceed the TouchSensor delay before moving
   const steps = 10;
   for (let i = 1; i <= steps; i++) {
     await cdp.send("Input.dispatchTouchEvent", {

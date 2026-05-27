@@ -33,7 +33,13 @@ type Props = {
 export default function SortableHabits({ ids, onReorder, children }: Props) {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 8 } }),
+    // Touch: press-and-hold to pick up. A delay (rather than a distance) avoids
+    // the scroll-vs-drag ambiguity on iOS — with a distance constraint the
+    // pre-activation move can start a native scroll that then runs alongside
+    // the drag. tolerance cancels the hold if the finger pans away first.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
