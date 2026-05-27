@@ -78,11 +78,7 @@ const navBtn: CSSProperties = {
 };
 const legendLbl: CSSProperties = { fontSize: 9, color: C.muted, fontFamily: F };
 const gripStyle: CSSProperties = {
-  border: "none",
-  background: "transparent",
   color: C.dim,
-  cursor: "grab",
-  padding: 0,
   fontSize: 14,
   lineHeight: 1,
   flexShrink: 0,
@@ -713,6 +709,41 @@ export default function D3Calendar({
             jumping it. The grip stays the focusable keyboard activator so the
             heading isn't pruned from the a11y tree. */}
         <div
+          // The whole grip+icon+name region is the single drag activator:
+          // listeners AND the activator ref live on the same element (dnd-kit's
+          // intended pattern — a split ref/listeners made the first drag flaky).
+          // role is stripped so the inner <h3> stays a real heading.
+          ref={
+            reorderMode && dragActivator
+              ? dragActivator.setActivatorRef
+              : undefined
+          }
+          {...(reorderMode && dragActivator
+            ? {
+                ...dragActivator.attributes,
+                role: undefined,
+                "aria-label": "Drag to reorder habit",
+                ...dragActivator.listeners,
+              }
+            : {})}
+          onMouseDown={startPress}
+          onMouseUp={cancelPress}
+          onMouseLeave={() => {
+            cancelPress();
+            setDragPressed(false);
+          }}
+          onTouchStart={startPress}
+          onTouchEnd={cancelPress}
+          onTouchCancel={cancelPress}
+          onPointerDown={(e) => {
+            if (reorderMode && dragActivator) {
+              setDragPressed(true);
+              dragActivator.listeners.onPointerDown?.(e);
+            }
+          }}
+          onPointerUp={() => setDragPressed(false)}
+          onPointerCancel={() => setDragPressed(false)}
+          title={reorderMode ? "Drag to reorder" : undefined}
           style={{
             display: "flex",
             alignItems: "center",
@@ -728,20 +759,6 @@ export default function D3Calendar({
             // menu instead of triggering our hold-to-edit gesture.
             WebkitTouchCallout: "none",
           }}
-          onMouseDown={startPress}
-          onMouseUp={cancelPress}
-          onMouseLeave={cancelPress}
-          onTouchStart={startPress}
-          onTouchEnd={cancelPress}
-          onTouchCancel={cancelPress}
-          {...(dragActivator?.listeners ?? {})}
-          onPointerDown={(e) => {
-            if (reorderMode) setDragPressed(true);
-            dragActivator?.listeners.onPointerDown?.(e);
-          }}
-          onPointerUp={() => setDragPressed(false)}
-          onPointerCancel={() => setDragPressed(false)}
-          onPointerLeave={() => setDragPressed(false)}
         >
           <div
             style={{
@@ -754,17 +771,9 @@ export default function D3Calendar({
               transition: "width .25s ease, opacity .25s ease",
             }}
           >
-            {dragActivator && (
-              <button
-                ref={dragActivator.setActivatorRef}
-                {...dragActivator.attributes}
-                aria-label="Drag to reorder habit"
-                title="Drag to reorder"
-                style={gripStyle}
-              >
-                ⠿
-              </button>
-            )}
+            <span style={gripStyle} aria-hidden="true">
+              ⠿
+            </span>
           </div>
           {nameBlock}
         </div>

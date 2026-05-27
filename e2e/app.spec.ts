@@ -131,11 +131,11 @@ test("reordering a habit card persists the new order", async ({ page }) => {
   await expect(headings).toHaveText(["Alpha", "Beta"]);
 
   // Handles only exist inside reorder mode — not during normal viewing.
-  const handles = page.getByRole("button", { name: "Drag to reorder habit" });
+  const handles = page.locator('[aria-label="Drag to reorder habit"]');
   await expect(handles).toHaveCount(0);
 
-  // Enter reorder mode → grip handles appear (cards condense; the collapse is
-  // an overflow-clip animation, which Playwright can't assert as hidden).
+  // Enter reorder mode → the draggable header regions appear (cards condense;
+  // the collapse is an overflow-clip animation Playwright can't assert hidden).
   await page.getByRole("button", { name: /Reorder/ }).click();
   await expect(handles).toHaveCount(2);
 
