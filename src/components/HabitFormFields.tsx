@@ -201,7 +201,8 @@ export default function HabitFormFields({
             }}
           >
             <div style={{ fontSize: 11, color: C.muted, fontFamily: F }}>
-              No metrics yet — add at least one to create this habit
+              No metrics — this habit will be a simple daily check-off. Add one
+              to track an amount instead.
             </div>
           </div>
         )}
@@ -498,7 +499,7 @@ export default function HabitFormFields({
           }}
         >
           {metrics.length === 0
-            ? "Add a metric name and unit, then click + Add"
+            ? "Leave empty for a daily check-off, or add a metric to track an amount."
             : metrics.length === 1
               ? "Single metric = simple tracker. Add more for compound habits."
               : `${metrics.length} metrics configured.`}

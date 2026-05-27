@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C, F } from "../constants";
+import { doneMetric } from "../lib/metrics";
 import ModalShell from "./ModalShell";
 import HabitFormFields from "./HabitFormFields";
 import type { IntensityMode, Metric, Unit } from "../types";
@@ -37,7 +38,9 @@ export default function AddHabitModal({
     setClosing(true);
     setTimeout(onClose, 350);
   };
-  const canCreate = !!name.trim() && metrics.length > 0;
+  // Name is enough — a habit created without a metric defaults to a daily
+  // check-off (one "done" metric, coverage intensity so a marked day is full).
+  const canCreate = !!name.trim();
   return (
     <ModalShell onClose={hClose} closing={closing}>
       <h2
@@ -86,13 +89,14 @@ export default function AddHabitModal({
         <button
           onClick={() => {
             if (canCreate) {
+              const noMetrics = metrics.length === 0;
               onAdd({
                 name: name.trim(),
                 emoji,
                 description: desc.trim(),
                 color,
-                metrics,
-                intensityMode: intMode,
+                metrics: noMetrics ? [doneMetric()] : metrics,
+                intensityMode: noMetrics ? "coverage" : intMode,
               });
               hClose();
             }
