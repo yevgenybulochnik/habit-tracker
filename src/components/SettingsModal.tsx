@@ -1,89 +1,10 @@
 import { useState, useMemo, useRef } from "react";
-import type { CSSProperties } from "react";
-import { C, F, inpS, BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
 import { todayK } from "../lib/dates";
 import ModalShell from "./ModalShell";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
-
-// Repeated static style objects, lifted out of the JSX below. Dynamic bits
-// (active-state colors, hover handlers) stay inline at each call site.
-const sectionHdr: CSSProperties = {
-  fontSize: 11,
-  color: C.accent,
-  fontFamily: F,
-  fontWeight: 600,
-  marginBottom: 10,
-  textTransform: "uppercase",
-  letterSpacing: ".06em",
-};
-const panel: CSSProperties = {
-  padding: "12px 14px",
-  borderRadius: 8,
-  border: `1px solid ${C.border}`,
-  background: C.bg,
-};
-const rowTitle: CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: C.text,
-  fontFamily: F,
-};
-const rowDesc: CSSProperties = {
-  fontSize: 9,
-  color: C.dim,
-  fontFamily: F,
-  marginTop: 2,
-};
-const fieldLbl: CSSProperties = {
-  fontSize: 10,
-  color: C.muted,
-  fontFamily: F,
-  marginBottom: 3,
-};
-const inpSm: CSSProperties = { ...inpS, fontSize: 12 };
-const stepBtn: CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: 4,
-  border: `1px solid ${C.border}`,
-  background: C.surface,
-  color: C.muted,
-  cursor: "pointer",
-  fontSize: 13,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: F,
-  transition: "all .15s",
-};
-const iconBtn24: CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: 4,
-  background: "transparent",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-const pillBtn: CSSProperties = {
-  padding: "5px 12px",
-  borderRadius: 4,
-  cursor: "pointer",
-  fontSize: 11,
-  fontFamily: F,
-};
-const dataBtn: CSSProperties = {
-  padding: "7px 14px",
-  borderRadius: 6,
-  border: `1px solid ${C.border}`,
-  background: C.surface,
-  color: C.text,
-  cursor: "pointer",
-  fontSize: 12,
-  fontWeight: 600,
-  fontFamily: F,
-};
+import modal from "./modalForm.module.css";
+import styles from "./SettingsModal.module.css";
 
 type Props = {
   units: Unit[];
@@ -223,61 +144,24 @@ export default function SettingsModal({
 
   return (
     <ModalShell onClose={hClose} closing={closing} width={520}>
-      <h2
-        style={{
-          margin: "0 0 20px",
-          fontSize: 18,
-          fontWeight: 600,
-          color: C.text,
-          fontFamily: F,
-        }}
-      >
-        Settings
-      </h2>
+      <h2 className={modal.title}>Settings</h2>
 
       {/* ── Appearance ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={sectionHdr}>Appearance</div>
-        <div
-          style={{
-            ...panel,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+      <div className={styles.section}>
+        <div className={styles.hdr}>Appearance</div>
+        <div className={styles.panelRow}>
           <div>
-            <div style={rowTitle}>Theme</div>
-            <div style={rowDesc}>Light or dark appearance</div>
+            <div className={styles.rowTitle}>Theme</div>
+            <div className={styles.rowDesc}>Light or dark appearance</div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              background: C.surface,
-              borderRadius: 6,
-              border: `1px solid ${C.border}`,
-              padding: 2,
-              gap: 2,
-            }}
-          >
+          <div className={styles.seg}>
             {(["dark", "light"] as const).map((t) => {
               const active = (cfg.theme || "dark") === t;
               return (
                 <button
                   key={t}
                   onClick={() => onUpdateConfig({ ...cfg, theme: t })}
-                  style={{
-                    padding: "5px 14px",
-                    borderRadius: 4,
-                    border: "none",
-                    background: active ? C.accentDim : "transparent",
-                    color: active ? C.accent : C.muted,
-                    cursor: "pointer",
-                    fontSize: 11,
-                    fontFamily: F,
-                    fontWeight: active ? 600 : 400,
-                    transition: "all .15s",
-                  }}
+                  className={`${styles.segBtn}${active ? ` ${styles.on}` : ""}`}
                 >
                   {t === "dark" ? "Dark" : "Light"}
                 </button>
@@ -288,102 +172,55 @@ export default function SettingsModal({
       </div>
 
       {/* ── Calendar Display ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={sectionHdr}>Calendar Display</div>
-        <div style={panel}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
+      <div className={styles.section}>
+        <div className={styles.hdr}>Calendar Display</div>
+        <div className={styles.panel}>
+          <div className={`${styles.calRow} ${styles.calRowGap}`}>
             <div>
-              <div style={rowTitle}>Months to display</div>
-              <div style={rowDesc}>
+              <div className={styles.rowTitle}>Months to display</div>
+              <div className={styles.rowDesc}>
                 Number of months shown in the heatmap view
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div className={styles.stepGroup}>
               <button
-                onClick={() => {
-                  const v = Math.max(2, cfg.numMonths - 1);
-                  onUpdateConfig({ ...cfg, numMonths: v });
-                }}
-                style={stepBtn}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = C.accent;
-                  e.currentTarget.style.color = C.accent;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = C.border;
-                  e.currentTarget.style.color = C.muted;
-                }}
+                onClick={() =>
+                  onUpdateConfig({
+                    ...cfg,
+                    numMonths: Math.max(2, cfg.numMonths - 1),
+                  })
+                }
+                className={styles.stepBtn}
               >
                 -
               </button>
-              <span
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: C.text,
-                  fontFamily: F,
-                  minWidth: 24,
-                  textAlign: "center",
-                }}
-              >
-                {cfg.numMonths}
-              </span>
+              <span className={styles.stepVal}>{cfg.numMonths}</span>
               <button
-                onClick={() => {
-                  const v = Math.min(12, cfg.numMonths + 1);
-                  onUpdateConfig({ ...cfg, numMonths: v });
-                }}
-                style={stepBtn}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = C.accent;
-                  e.currentTarget.style.color = C.accent;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = C.border;
-                  e.currentTarget.style.color = C.muted;
-                }}
+                onClick={() =>
+                  onUpdateConfig({
+                    ...cfg,
+                    numMonths: Math.min(12, cfg.numMonths + 1),
+                  })
+                }
+                className={styles.stepBtn}
               >
                 +
               </button>
             </div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
+          <div className={styles.calRow}>
             <div>
-              <div style={rowTitle}>Month spacing</div>
-              <div style={rowDesc}>
+              <div className={styles.rowTitle}>Month spacing</div>
+              <div className={styles.rowDesc}>
                 Gap between month blocks in heatmap (px)
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div className={styles.gapGroup}>
               {[0, 3, 5, 8, 12].map((v) => (
                 <button
                   key={v}
                   onClick={() => onUpdateConfig({ ...cfg, monthGap: v })}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: 4,
-                    fontSize: 10,
-                    fontFamily: F,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    border: `1px solid ${cfg.monthGap === v ? C.accent : C.border}`,
-                    background: cfg.monthGap === v ? C.accentDim : C.surface,
-                    color: cfg.monthGap === v ? C.accent : C.muted,
-                    transition: "all .15s",
-                  }}
+                  className={`${styles.gapBtn}${cfg.monthGap === v ? ` ${styles.on}` : ""}`}
                 >
                   {v}
                 </button>
@@ -394,8 +231,8 @@ export default function SettingsModal({
       </div>
 
       {/* ── Units ── */}
-      <div style={sectionHdr}>Units</div>
-      <div style={{ marginBottom: 20 }}>
+      <div className={styles.hdr}>Units</div>
+      <div className={styles.block}>
         {units.map((u) => {
           const inUse = usedUnits.has(u.id);
           const isBuiltin = builtinIds.has(u.id);
@@ -403,133 +240,65 @@ export default function SettingsModal({
           return (
             <div
               key={u.id}
-              style={{
-                marginBottom: 6,
-                borderRadius: 8,
-                border: `1px solid ${isEditing ? C.accent : C.border}`,
-                background: isEditing ? C.accentDim : C.bg,
-                padding: "10px 14px",
-                transition: "all .2s",
-              }}
+              className={`${styles.unit}${isEditing ? ` ${styles.unitEditing}` : ""}`}
             >
               {isEditing ? (
                 <div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={fieldLbl}>Label</div>
+                  <div className={styles.editGrid}>
+                    <div>
+                      <div className={styles.fieldLbl}>Label</div>
                       <input
                         value={eLabel}
                         onChange={(e) => setELabel(e.target.value)}
-                        style={inpSm}
+                        className={styles.smInput}
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={fieldLbl}>Quick-add</div>
+                    <div>
+                      <div className={styles.fieldLbl}>Quick-add</div>
                       <input
                         value={eQA}
                         onChange={(e) => setEQA(e.target.value)}
-                        style={inpSm}
+                        className={styles.smInput}
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={fieldLbl}>Thresholds</div>
+                    <div>
+                      <div className={styles.fieldLbl}>Thresholds</div>
                       <input
                         value={eThr}
                         onChange={(e) => setEThr(e.target.value)}
-                        style={inpSm}
+                        className={styles.smInput}
                       />
                     </div>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 6,
-                      justifyContent: "flex-end",
-                    }}
-                  >
+                  <div className={styles.editActions}>
                     <button
                       onClick={() => setEditId(null)}
-                      style={{
-                        ...pillBtn,
-                        border: `1px solid ${C.border}`,
-                        background: "transparent",
-                        color: C.muted,
-                      }}
+                      className={styles.pillCancel}
                     >
                       Cancel
                     </button>
-                    <button
-                      onClick={saveEdit}
-                      style={{
-                        ...pillBtn,
-                        border: "none",
-                        background: C.accent,
-                        color: "#fff",
-                        fontWeight: 600,
-                      }}
-                    >
+                    <button onClick={saveEdit} className={styles.pillSave}>
                       Save
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: C.text,
-                      fontFamily: F,
-                      minWidth: 80,
-                    }}
-                  >
-                    {u.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: C.dim,
-                      fontFamily: F,
-                      background: C.surface,
-                      padding: "2px 8px",
-                      borderRadius: 3,
-                    }}
-                  >
-                    {u.id}
-                  </span>
-                  <span style={{ fontSize: 10, color: C.dim, fontFamily: F }}>
+                <div className={styles.unitDisplay}>
+                  <span className={styles.unitLabel}>{u.label}</span>
+                  <span className={styles.unitId}>{u.id}</span>
+                  <span className={styles.unitMeta}>
                     +{u.quickAdd.join("/")}
                   </span>
-                  <span style={{ fontSize: 10, color: C.dim, fontFamily: F }}>
+                  <span className={styles.unitMeta}>
                     thr: {u.thresholds.join("/")}
                   </span>
-                  {inUse && (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        color: C.success,
-                        fontFamily: F,
-                        marginLeft: "auto",
-                      }}
-                    >
-                      in use
-                    </span>
-                  )}
+                  {inUse && <span className={styles.inUse}>in use</span>}
                   <div
-                    style={{
-                      marginLeft: inUse ? "0" : "auto",
-                      display: "flex",
-                      gap: 4,
-                    }}
+                    className={`${styles.iconActions}${inUse ? "" : ` ${styles.iconActionsPush}`}`}
                   >
                     <button
                       onClick={() => startEdit(u)}
-                      style={{
-                        ...iconBtn24,
-                        border: `1px solid ${C.border}`,
-                        color: C.muted,
-                        fontSize: 11,
-                      }}
+                      className={styles.editIcon}
                       title="Edit"
                     >
                       ✎
@@ -537,18 +306,7 @@ export default function SettingsModal({
                     {!isBuiltin && !inUse && (
                       <button
                         onClick={() => onDeleteUnit(u.id)}
-                        style={{
-                          ...iconBtn24,
-                          border: `1px solid transparent`,
-                          color: C.dim,
-                          fontSize: 13,
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = C.danger)
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = C.dim)
-                        }
+                        className={styles.delIcon}
                         title="Delete"
                       >
                         ×
@@ -563,91 +321,67 @@ export default function SettingsModal({
       </div>
 
       {/* Add new unit */}
-      <div
-        style={{
-          padding: "14px 16px",
-          borderRadius: 8,
-          border: `1px dashed ${C.border}`,
-          background: C.bg,
-        }}
-      >
-        <div style={{ ...sectionHdr, color: C.muted }}>Add New Unit</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLbl}>ID</div>
+      <div className={styles.addPanel}>
+        <div className={styles.hdrMuted}>Add New Unit</div>
+        <div className={styles.addGrid}>
+          <div>
+            <div className={styles.fieldLbl}>ID</div>
             <input
               value={newId}
               onChange={(e) => setNewId(e.target.value)}
               placeholder="lbs"
-              style={inpSm}
+              className={styles.smInput}
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLbl}>Label</div>
+          <div>
+            <div className={styles.fieldLbl}>Label</div>
             <input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="Pounds"
-              style={inpSm}
+              className={styles.smInput}
             />
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLbl}>Quick-add</div>
+        <div className={`${styles.addGrid} ${styles.addGridLast}`}>
+          <div>
+            <div className={styles.fieldLbl}>Quick-add</div>
             <input
               value={newQA}
               onChange={(e) => setNewQA(e.target.value)}
-              style={inpSm}
+              className={styles.smInput}
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLbl}>Thresholds</div>
+          <div>
+            <div className={styles.fieldLbl}>Thresholds</div>
             <input
               value={newThr}
               onChange={(e) => setNewThr(e.target.value)}
-              style={inpSm}
+              className={styles.smInput}
             />
           </div>
         </div>
-        <button
-          onClick={addNew}
-          style={{
-            padding: "7px 16px",
-            borderRadius: 6,
-            border: "none",
-            background: C.accent,
-            color: "#fff",
-            cursor: "pointer",
-            fontSize: 12,
-            fontWeight: 600,
-            fontFamily: F,
-          }}
-        >
+        <button onClick={addNew} className={styles.addUnitBtn}>
           Add Unit
         </button>
       </div>
 
       {/* ── Data (backup) ── */}
-      <div style={{ marginTop: 20 }}>
-        <div style={sectionHdr}>Data</div>
-        <div style={panel}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
-            <div style={{ fontSize: 11, color: C.muted, fontFamily: F }}>
+      <div className={styles.dataTop}>
+        <div className={styles.hdr}>Data</div>
+        <div className={styles.panel}>
+          <div className={styles.dataRow}>
+            <div className={styles.dataDesc}>
               Back up or restore all habits, logs, units and settings.
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button onClick={doExport} style={dataBtn}>
+            <div className={styles.dataBtns}>
+              <button onClick={doExport} className={styles.dataBtn}>
                 Export
               </button>
-              <button onClick={() => fileRef.current?.click()} style={dataBtn}>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className={styles.dataBtn}
+              >
                 Import
               </button>
               <input
@@ -664,37 +398,12 @@ export default function SettingsModal({
               />
             </div>
           </div>
-          {importErr && (
-            <div
-              style={{
-                fontSize: 11,
-                color: C.danger,
-                fontFamily: F,
-                marginTop: 10,
-              }}
-            >
-              {importErr}
-            </div>
-          )}
+          {importErr && <div className={styles.importErr}>{importErr}</div>}
         </div>
       </div>
 
-      <div
-        style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}
-      >
-        <button
-          onClick={hClose}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: `1px solid ${C.border}`,
-            background: "transparent",
-            color: C.muted,
-            cursor: "pointer",
-            fontSize: 13,
-            fontFamily: F,
-          }}
-        >
+      <div className={modal.footer}>
+        <button onClick={hClose} className={modal.cancelBtn}>
           Done
         </button>
       </div>

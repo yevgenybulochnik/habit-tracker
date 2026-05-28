@@ -1,0 +1,300 @@
+.section {
+  margin-bottom: 20px;
+}
+.hdr {
+  font-size: 11px;
+  color: var(--c-accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.hdrMuted {
+  composes: hdr;
+  color: var(--c-muted);
+}
+.panel {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+}
+.panelRow {
+  composes: panel;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rowTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.rowDesc {
+  font-size: 9px;
+  color: var(--c-dim);
+  margin-top: 2px;
+}
+
+/* Theme segmented control */
+.seg {
+  display: flex;
+  background: var(--c-surface);
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  padding: 2px;
+  gap: 2px;
+}
+.segBtn {
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+.segBtn.on {
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+/* Calendar display rows */
+.calRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.calRowGap {
+  margin-bottom: 12px;
+}
+.stepGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.stepBtn:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.stepVal {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-text);
+  min-width: 24px;
+  text-align: center;
+}
+.gapGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gapBtn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  transition: all 0.15s;
+}
+.gapBtn.on {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+}
+
+/* Units list */
+.block {
+  margin-bottom: 20px;
+}
+.unit {
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  padding: 10px 14px;
+  transition: all 0.2s;
+}
+.unitEditing {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+}
+.editGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.fieldLbl {
+  font-size: 10px;
+  color: var(--c-muted);
+  margin-bottom: 3px;
+}
+.smInput {
+  composes: inp from "../styles/shared.module.css";
+  font-size: 12px;
+}
+.editActions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.pillBtn {
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.pillCancel {
+  composes: pillBtn;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+}
+.pillSave {
+  composes: pillBtn;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  font-weight: 600;
+}
+.unitDisplay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.unitLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 80px;
+}
+.unitId {
+  font-size: 10px;
+  color: var(--c-dim);
+  background: var(--c-surface);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.unitMeta {
+  font-size: 10px;
+  color: var(--c-dim);
+}
+.inUse {
+  font-size: 9px;
+  color: var(--c-success);
+  margin-left: auto;
+}
+.iconActions {
+  display: flex;
+  gap: 4px;
+}
+.iconActionsPush {
+  margin-left: auto;
+}
+.iconBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editIcon {
+  composes: iconBtn;
+  border: 1px solid var(--c-border);
+  color: var(--c-muted);
+  font-size: 11px;
+}
+.delIcon {
+  composes: iconBtn;
+  border: 1px solid transparent;
+  color: var(--c-dim);
+  font-size: 13px;
+}
+.delIcon:hover {
+  color: var(--c-danger);
+}
+
+/* Add new unit */
+.addPanel {
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px dashed var(--c-border);
+  background: var(--c-bg);
+}
+.addGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.addGridLast {
+  margin-bottom: 10px;
+}
+.addUnitBtn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Data / backup */
+.dataTop {
+  margin-top: 20px;
+}
+.dataRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dataDesc {
+  font-size: 11px;
+  color: var(--c-muted);
+}
+.dataBtns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dataBtn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.importErr {
+  font-size: 11px;
+  color: var(--c-danger);
+  margin-top: 10px;
+}
