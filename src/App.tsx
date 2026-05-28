@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { CSSProperties } from "react";
 import {
-  C,
-  F,
   CSS,
   THEME_CSS,
   THEMES,
@@ -33,37 +30,7 @@ import type {
   Unit,
 } from "./types";
 import type { NewHabit } from "./components/AddHabitModal";
-
-// Header action buttons (static; hover handlers stay inline at the call sites).
-const iconBtn: CSSProperties = {
-  width: 36,
-  height: 36,
-  borderRadius: 6,
-  border: `1px solid ${C.border}`,
-  background: C.surface,
-  color: C.dim,
-  cursor: "pointer",
-  fontSize: 15,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  transition: "all .2s",
-};
-const newHabitBtn: CSSProperties = {
-  padding: "9px 18px",
-  borderRadius: 6,
-  border: `1px solid ${C.border}`,
-  background: C.surface,
-  color: C.text,
-  cursor: "pointer",
-  fontSize: 13,
-  fontFamily: F,
-  fontWeight: 500,
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  transition: "all .2s",
-};
+import styles from "./App.module.css";
 
 export default function App() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -333,25 +300,8 @@ export default function App() {
 
   if (loading)
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: C.bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            color: C.muted,
-            fontFamily: F,
-            fontSize: 14,
-            animation: "fadeIn .5s ease",
-          }}
-        >
-          Loading...
-        </div>
+      <div className={styles.loading}>
+        <div className={styles.loadingText}>Loading...</div>
       </div>
     );
 
@@ -392,143 +342,53 @@ export default function App() {
   );
 
   return (
-    <div
-      data-theme={theme}
-      style={{
-        minHeight: "100vh",
-        background: C.bg,
-        color: C.text,
-        fontFamily: F,
-      }}
-    >
+    <div data-theme={theme} className={styles.root}>
       <style>{CSS + THEME_CSS}</style>
-      <div
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding:
-            "calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))",
-        }}
-      >
+      <div className={styles.container}>
         {/* Header */}
-        <div
-          className="stagger-child"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
+        <div className={`stagger-child ${styles.header}`}>
           <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 26,
-                fontWeight: 700,
-                letterSpacing: "-.02em",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
+            <h1 className={styles.title}>
               <BrandMark />
               Habits
             </h1>
-            <p style={{ margin: "4px 0 0 28px", fontSize: 12, color: C.muted }}>
+            <p className={styles.subtitle}>
               {habits.length > 0
                 ? `${completed}/${habits.length} completed today`
                 : "Start tracking"}
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className={styles.headerActions}>
             <button
               onClick={() => setShowUnits(true)}
               title="Settings"
-              style={iconBtn}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.muted;
-                e.currentTarget.style.color = C.text;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.color = C.dim;
-              }}
+              className={styles.iconBtn}
             >
               ⚙
             </button>
-            <button
-              onClick={() => setShowAdd(true)}
-              style={newHabitBtn}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.accent;
-                e.currentTarget.style.color = C.accent;
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.color = C.text;
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New Habit
+            <button onClick={() => setShowAdd(true)} className={styles.newBtn}>
+              <span className={styles.newBtnPlus}>+</span> New Habit
             </button>
           </div>
         </div>
 
         {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
-        <div style={{ minHeight: 200 }}>
+        <div className={styles.content}>
           {habits.length === 0 ? (
-            <div
-              style={{
-                background: C.surface,
-                borderRadius: 10,
-                border: `1px dashed ${C.border}`,
-                padding: "60px 20px",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-              <div style={{ fontSize: 16, color: C.muted, marginBottom: 8 }}>
-                No habits yet
-              </div>
-              <div style={{ fontSize: 12, color: C.dim }}>
-                Click "New Habit" to start
-              </div>
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>📊</div>
+              <div className={styles.emptyTitle}>No habits yet</div>
+              <div className={styles.emptyHint}>Click "New Habit" to start</div>
             </div>
           ) : (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  marginBottom: 16,
-                  // Fixed height so swapping the left content (segmented control
-                  // ↔ hint) doesn't shift the cards below; fade the swap in.
-                  minHeight: 34,
-                }}
-              >
+              <div className={styles.controls}>
                 {reorder ? (
-                  <span
-                    key="hint"
-                    style={{ fontSize: 12, color: C.muted, fontFamily: F }}
-                  >
+                  <span key="hint" className={styles.reorderHint}>
                     Drag the ⠿ handles to reorder
                   </span>
                 ) : (
-                  <div
-                    key="views"
-                    style={{
-                      display: "flex",
-                      background: C.surface,
-                      borderRadius: 8,
-                      border: `1px solid ${C.border}`,
-                      padding: 3,
-                      gap: 2,
-                    }}
-                  >
+                  <div key="views" className={styles.viewSeg}>
                     {(
                       [
                         { id: "quick", label: "Quick" },
@@ -538,18 +398,7 @@ export default function App() {
                       <button
                         key={v.id}
                         onClick={() => setDashView(v.id)}
-                        style={{
-                          padding: "6px 16px",
-                          borderRadius: 6,
-                          border: "none",
-                          background: dashView === v.id ? C.bg : "transparent",
-                          color: dashView === v.id ? C.text : C.muted,
-                          fontWeight: dashView === v.id ? 600 : 400,
-                          fontSize: 12,
-                          fontFamily: F,
-                          cursor: "pointer",
-                          transition: "all .2s",
-                        }}
+                        className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
                       >
                         {v.label}
                       </button>
@@ -559,22 +408,7 @@ export default function App() {
                 {habits.length > 1 && (
                   <button
                     onClick={() => setReorder((r) => !r)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 6,
-                      border: `1px solid ${reorder ? C.accent : C.border}`,
-                      background: reorder ? C.accentDim : C.surface,
-                      color: reorder ? C.accent : C.muted,
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontFamily: F,
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      transition: "all .2s",
-                      // Fixed width so the label swap doesn't resize the button.
-                      minWidth: 96,
-                      textAlign: "center",
-                    }}
+                    className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
                   >
                     {reorder ? "Done" : "⠿ Reorder"}
                   </button>
@@ -590,16 +424,7 @@ export default function App() {
           )}
         </div>
 
-        <div
-          className="stagger-child"
-          style={{
-            textAlign: "center",
-            marginTop: 32,
-            fontSize: 11,
-            color: C.dim,
-            animationDelay: "500ms",
-          }}
-        >
+        <div className={`stagger-child ${styles.footer}`}>
           tap a day to log it · long-press a habit to edit · ‹› to navigate
         </div>
       </div>
