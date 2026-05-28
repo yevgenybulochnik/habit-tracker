@@ -312,20 +312,23 @@ test("month navigation and zoom keep rendering the heatmap", async ({
   await page.goto("/");
   await createHabit(page, "Reading");
   await setDashView(page, "calendar");
-  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+  // Exclude width=0 rects — exit-transitioning cells linger briefly in the DOM
+  // and Playwright treats them as "hidden", which can race the visibility check.
+  const aliveCell = page.locator('svg rect.dc:not([width="0"])').first();
+  await expect(aliveCell).toBeVisible();
 
   // Navigate back one window — layout re-renders for the past period.
   await page.getByRole("button", { name: "‹" }).click();
-  await page.waitForTimeout(900); // let exit/enter transitions settle
-  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+  await page.waitForTimeout(1200); // let exit/enter transitions settle
+  await expect(aliveCell).toBeVisible();
 
   // Forward back to the present (offset 0), then forward again zooms into a
   // single-month calendar (zoomed = true, numM = 1).
   await page.getByRole("button", { name: "›" }).click();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1200);
   await page.getByRole("button", { name: "›" }).click();
-  await page.waitForTimeout(900);
-  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+  await page.waitForTimeout(1200);
+  await expect(aliveCell).toBeVisible();
 });
 
 test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorder", async ({
@@ -348,4 +351,132 @@ test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorde
   await expect(
     page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
   ).toHaveCount(0);
+});
+
+test("sets-mode habit: create, log a set, persists across reload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /New Habit/i }).click();
+  await page.getByPlaceholder(/Morning Workout/i).fill("Bench");
+  await page.getByPlaceholder(/Metric name/i).fill("Press");
+  // Flip the metric to sets mode (Weighted preset is the default).
+  await page.getByRole("button", { name: /Enable sets mode/i }).click();
+  await page.getByRole("button", { name: /^\+ Add$/ }).click();
+  await page.getByRole("button", { name: /^Create$/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Bench", level: 3 }),
+  ).toBeVisible();
+
+  // Add a set 135×5 via the SetInput on the dashboard card.
+  await page.getByPlaceholder("Weight").fill("135");
+  await page.getByPlaceholder("Reps").fill("5");
+  await page.getByRole("button", { name: /\+ Set/ }).click();
+  await expect(page.getByText("135 lbs").first()).toBeVisible();
+  await expect(page.getByText("5 reps").first()).toBeVisible();
+
+  // Persisted across reload (sets stored as { w, r } per set in IndexedDB).
+  await page.waitForTimeout(300);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Bench", level: 3 }),
+  ).toBeVisible();
+  await expect(page.getByText("135 lbs").first()).toBeVisible();
+});
+
+test("edit habit: long-press → rename → Save persists", async ({ page }) => {
+  await page.goto("/");
+  await createHabit(page, "Old");
+
+  // Long-press the heading to trigger the edit modal (500ms threshold).
+  await page
+    .getByRole("heading", { name: "Old", level: 3 })
+    .dispatchEvent("mousedown");
+  await page.waitForTimeout(700);
+  await expect(
+    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+  ).toBeVisible();
+
+  // Rename and save.
+  await page.getByPlaceholder(/Morning Workout/i).fill("New");
+  await page.getByRole("button", { name: /^Save$/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "New", level: 3 }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Old", level: 3 }),
+  ).toHaveCount(0);
+
+  await page.waitForTimeout(300);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "New", level: 3 }),
+  ).toBeVisible();
+});
+
+test("custom unit in Settings is usable by a new habit", async ({ page }) => {
+  await page.goto("/");
+  await openSettings(page);
+  // Fill the "Add New Unit" form (ID + Label; defaults stay for QA/thresholds).
+  await page.getByPlaceholder("lbs").fill("lbs2");
+  await page.getByPlaceholder("Pounds").fill("Pounds2");
+  await page.getByRole("button", { name: "Add Unit" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+
+  // Create a habit that uses the custom unit.
+  await page.getByRole("button", { name: /New Habit/i }).click();
+  await page.getByPlaceholder(/Morning Workout/i).fill("Weighty");
+  await page.getByPlaceholder(/Metric name/i).fill("Weight");
+  await page.getByRole("combobox").selectOption("lbs2");
+  await page.getByRole("button", { name: /^\+ Add$/ }).click();
+  await page.getByRole("button", { name: /^Create$/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Weighty", level: 3 }),
+  ).toBeVisible();
+  // Custom unit's default quickAdd is [1, 5, 10] → its quick-add buttons appear.
+  await expect(page.getByRole("button", { name: "+5" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "+10" })).toBeVisible();
+});
+
+test("quick-reset (↺) clears today's value and persists the reset", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Pushups");
+  await page.getByRole("button", { name: "+10" }).first().click();
+  await expect(page.getByText("10 reps").first()).toBeVisible();
+
+  // Reset → today's value cleared.
+  await page.getByRole("button", { name: "↺" }).click();
+  await expect(page.getByText(/10 reps/)).toHaveCount(0);
+
+  await page.waitForTimeout(300);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Pushups", level: 3 }),
+  ).toBeVisible();
+  await expect(page.getByText(/10 reps/)).toHaveCount(0);
+});
+
+test("stopping a timer logs the elapsed minutes (≥ 1) and they persist", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Meditate", { metricName: "Minutes", unit: "min" });
+  await page.getByRole("button", { name: /Timer/ }).click();
+  await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
+
+  // Stop almost immediately — stopTimer logs Math.max(1, round(elapsed/60)) so
+  // it always records at least 1 minute.
+  await page.waitForTimeout(500);
+  await page.getByRole("button", { name: /Stop/ }).click();
+  // fmtVal(1, "min") === "1m" — the QuickLogSection header summary shows it.
+  await expect(page.getByText("1m").first()).toBeVisible();
+
+  await page.waitForTimeout(300);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Meditate", level: 3 }),
+  ).toBeVisible();
+  await expect(page.getByText("1m").first()).toBeVisible();
 });
