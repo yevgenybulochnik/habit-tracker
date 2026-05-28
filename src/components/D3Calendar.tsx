@@ -127,6 +127,8 @@ export default function D3Calendar({
   const tapRef = useRef<(k: string) => void>(() => {});
   const selectedDateRef = useRef<string | null>(null); // current selection for the (build-once) hover handlers
   selectedDateRef.current = selectedDate;
+  const logsRef = useRef(logs); // current logs for the build-once hover tooltip (build no longer re-runs on logs)
+  logsRef.current = logs;
 
   const closeEditor = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -362,7 +364,7 @@ export default function D3Calendar({
       })
       .on("mouseenter", (ev: any, d: any) => {
         if (d.future) return;
-        const label = logSummary(habit, logs[d.key]);
+        const label = logSummary(habit, logsRef.current[d.key]);
         setTip(
           label === "No entry"
             ? null
@@ -582,6 +584,10 @@ export default function D3Calendar({
       .attr("y", (d: any) => d.y)
       .style("opacity", 1);
     /* eslint-enable @typescript-eslint/no-explicit-any */
+    // NOTE: `logs` is intentionally NOT a dependency — a live edit must not
+    // re-run this heavy build (layout + ripple), which would also wipe the
+    // selection outline. Cell/day-number fills are recolored by the cheap
+    // effect below; the hover tooltip reads logs via logsRef.
   }, [
     effExpanded,
     view,
@@ -589,13 +595,37 @@ export default function D3Calendar({
     zoomed,
     cw,
     days,
-    logs,
     habit,
     pal,
     units,
     tKey,
     cfg,
   ]);
+
+  // Cheap recolor: update only cell + day-number fills when the logs (or
+  // palette/theme) change, without re-running the heavy build. Leaves stroke
+  // untouched, so the selected-day outline survives a live edit.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const sh = pal.shades;
+    const Tc = THEMES[theme];
+    const greyFill = Tc.futureCell;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    d3.select(svg)
+      .selectAll<SVGRectElement, any>(".dc")
+      .attr("fill", (d: any) =>
+        d.future ? greyFill : sh[logLevel(habit, logs[d.key], units)],
+      );
+    // Day numbers (calendar view); their datum key is `dn-<dateKey>`.
+    d3.select(svg)
+      .selectAll<SVGTextElement, any>(".dn")
+      .attr("fill", (d: any) => {
+        const lvl = logLevel(habit, logs[d.key.slice(3)], units);
+        return d.future ? Tc.dim : lvl > 0 ? "#fff" : Tc.muted;
+      });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+  }, [logs, habit, pal, units, theme]);
 
   // Outline the selected day's cell — separate cheap effect (restroke only, no
   // data re-join/ripple). Runs on selection/theme change.

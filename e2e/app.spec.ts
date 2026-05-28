@@ -122,6 +122,26 @@ test("selecting a day outlines its cell", async ({ page }) => {
   await expect(cell).toHaveAttribute("stroke-width", "2.5");
 });
 
+test("the selected day's outline survives a live edit, and the cell recolors", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Reading"); // reps unit
+  await setDashView(page, "calendar");
+  const cell = page.locator("svg rect.dc").nth(20);
+  await cell.click(); // open the editor for that past day
+  await page.mouse.move(5, 5); // clear hover
+  await expect(cell).toHaveAttribute("stroke-width", "2.5");
+  const emptyFill = await cell.getAttribute("fill");
+
+  // Live-edit the day; the cell must recolor AND keep its selection outline.
+  await page.getByPlaceholder("0").fill("23");
+  await page.waitForTimeout(400); // let the live write + recolor settle
+  await page.mouse.move(6, 6); // clear hover again
+  await expect(cell).toHaveAttribute("stroke-width", "2.5"); // outline preserved
+  await expect(cell).not.toHaveAttribute("fill", emptyFill ?? ""); // recolored
+});
+
 test("reordering a habit card persists the new order", async ({ page }) => {
   await page.goto("/");
   await createHabit(page, "Alpha");
