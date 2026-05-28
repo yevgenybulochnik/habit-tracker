@@ -1,0 +1,118 @@
+.wrap {
+  border-top: 1px solid var(--c-border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.title {
+  font-size: 11px;
+  color: var(--de-accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.close {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--c-dim);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.close:hover {
+  color: var(--c-text);
+}
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.setHead {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 4px;
+}
+.setBadge {
+  font-size: 9px;
+  color: var(--c-accent);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.name {
+  font-size: 11px;
+  color: var(--c-muted);
+  min-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.field {
+  position: relative;
+  flex: 1;
+}
+.numInput {
+  composes: inp from "../styles/shared.module.css";
+  font-weight: 600;
+  padding-right: 40px;
+}
+.unitSuffix {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--c-dim);
+  pointer-events: none;
+}
+.qaRow {
+  display: flex;
+  gap: 3px;
+}
+.qaBtn {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 10px;
+}
+.doneBtn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.doneBtn.marked {
+  border-color: var(--de-a3);
+  background: var(--de-a2);
+  color: #fff;
+}
+.doneIcon {
+  font-size: 13px;
+  line-height: 1;
+}

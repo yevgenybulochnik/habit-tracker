@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { C, F, inpS } from "../constants";
 import {
   isSetMetric,
   isDoneMetric,
@@ -18,20 +17,9 @@ import type {
   SetEntry,
   Unit,
 } from "../types";
+import styles from "./DayEditor.module.css";
 
 type LocalVal = string | SetEntry[];
-
-// Static quick-add (+N) preset button used in the per-metric row.
-const qaBtn: CSSProperties = {
-  padding: "6px 8px",
-  borderRadius: 4,
-  border: `1px solid ${C.border}`,
-  background: C.bg,
-  color: C.muted,
-  cursor: "pointer",
-  fontSize: 10,
-  fontFamily: F,
-};
 
 type Props = {
   habit: Habit;
@@ -120,72 +108,31 @@ export default function DayEditor({
     year: "numeric",
   });
 
+  // Per-habit palette → CSS vars consumed by the title + done toggle.
+  const palVars = {
+    "--de-accent": pal.shades[4],
+    "--de-a3": pal.shades[3],
+    "--de-a2": pal.shades[2],
+  } as CSSProperties;
+
   return (
-    <div
-      style={{
-        borderTop: `1px solid ${C.border}`,
-        marginTop: 10,
-        paddingTop: 10,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 8,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            color: pal.shades[4],
-            fontFamily: F,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: ".06em",
-          }}
-        >
+    <div className={styles.wrap} style={palVars}>
+      <div className={styles.head}>
+        <span className={styles.title}>
           {isToday ? "Edit today" : `Edit · ${disp}`}
         </span>
-        <button
-          onClick={onClose}
-          title="Close"
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 4,
-            border: "none",
-            background: "transparent",
-            color: C.dim,
-            cursor: "pointer",
-            fontSize: 14,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}
-        >
+        <button onClick={onClose} title="Close" className={styles.close}>
           ×
         </button>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className={styles.metrics}>
         {ms.map((m) => {
           if (isSetMetric(m)) {
             return (
               <div key={m.id}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: C.text,
-                    fontFamily: F,
-                    marginBottom: 4,
-                  }}
-                >
+                <div className={styles.setHead}>
                   {m.name}{" "}
-                  <span style={{ fontSize: 9, color: C.accent }}>
+                  <span className={styles.setBadge}>
                     SETS · {setUnitLabel(m)}
                   </span>
                 </div>
@@ -200,90 +147,43 @@ export default function DayEditor({
               </div>
             );
           }
-          const nameLabel = (
-            <span
-              style={{
-                fontSize: 11,
-                color: C.muted,
-                fontFamily: F,
-                minWidth: 70,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {m.name}
-            </span>
-          );
+          const nameLabel = <span className={styles.name}>{m.name}</span>;
           if (isDoneMetric(m)) {
             const marked = parseInt((local[m.id] as string) || "0", 10) > 0;
             return (
-              <div
-                key={m.id}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
-              >
+              <div key={m.id} className={styles.row}>
                 {nameLabel}
                 <button
                   onClick={() => setV(m.id, marked ? "0" : "1")}
-                  style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    borderRadius: 6,
-                    border: `1px solid ${marked ? pal.shades[3] : C.border}`,
-                    background: marked ? pal.shades[2] : C.bg,
-                    color: marked ? "#fff" : C.muted,
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontFamily: F,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    transition: "all .2s",
-                  }}
+                  className={`${styles.doneBtn}${marked ? ` ${styles.marked}` : ""}`}
                 >
-                  <span style={{ fontSize: 13, lineHeight: 1 }}>
-                    {marked ? "✓" : "○"}
-                  </span>
+                  <span className={styles.doneIcon}>{marked ? "✓" : "○"}</span>
                   {marked ? "Done" : "Mark done"}
                 </button>
               </div>
             );
           }
           return (
-            <div
-              key={m.id}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
+            <div key={m.id} className={styles.row}>
               {nameLabel}
-              <div style={{ position: "relative", flex: 1 }}>
+              <div className={styles.field}>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={(local[m.id] as string) || ""}
                   onChange={(e) => setV(m.id, e.target.value)}
                   placeholder="0"
-                  style={{ ...inpS, fontWeight: 600, paddingRight: 40 }}
+                  className={styles.numInput}
                 />
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 10,
-                    color: C.dim,
-                    fontFamily: F,
-                    pointerEvents: "none",
-                  }}
-                >
-                  {m.unit}
-                </span>
+                <span className={styles.unitSuffix}>{m.unit}</span>
               </div>
-              <div style={{ display: "flex", gap: 3 }}>
+              <div className={styles.qaRow}>
                 {getQuickAdd(m.unit, units).map((n) => (
-                  <button key={n} onClick={() => qAdd(m.id, n)} style={qaBtn}>
+                  <button
+                    key={n}
+                    onClick={() => qAdd(m.id, n)}
+                    className={styles.qaBtn}
+                  >
                     +{n}
                   </button>
                 ))}
