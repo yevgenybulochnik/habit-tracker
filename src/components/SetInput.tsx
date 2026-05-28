@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, Fragment } from "react";
-import { C, F, inpS } from "../constants";
+import type { CSSProperties } from "react";
 import { setFieldsOf } from "../lib/metrics";
 import { fmtSets } from "../lib/format";
 import type { Metric, Palette, SetEntry } from "../types";
+import styles from "./SetInput.module.css";
 
 type Props = {
   metric: Metric;
@@ -86,111 +87,54 @@ export default function SetInput({
   const product = (s: SetEntry) =>
     fields.reduce((p, f) => p * (s[f.id] || 0), 1);
 
+  // Per-habit palette → CSS vars (set on the root so rows inherit them).
+  const palVars = {
+    "--set-bg": `${pal.shades[1]}33`,
+    "--set-accent": pal.shades[4],
+    "--set-a3": pal.shades[3],
+    "--set-a4": pal.shades[4],
+  } as CSSProperties;
+
   return (
-    <div>
+    <div style={palVars}>
       {/* Existing sets */}
       {hasSets && (
         <div style={{ marginBottom: 6 }}>
           {sets!.map((s, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 8px",
-                borderRadius: 4,
-                background: `${pal.shades[1]}33`,
-                marginBottom: 3,
-                animation: "fadeIn .2s ease",
-              }}
-            >
-              <span
-                style={{ fontSize: 9, color: C.dim, fontFamily: F, width: 16 }}
-              >
-                #{i + 1}
-              </span>
+            <div key={i} className={styles.row}>
+              <span className={styles.idx}>#{i + 1}</span>
               {fields.map((f, fi) => (
                 <Fragment key={f.id}>
-                  {fi > 0 && (
-                    <span
-                      style={{ fontSize: 9, color: C.muted, fontFamily: F }}
-                    >
-                      ×
-                    </span>
-                  )}
+                  {fi > 0 && <span className={styles.times}>×</span>}
                   <span
-                    style={{
-                      fontSize: 11,
-                      color: fi === 0 && useVol ? pal.shades[4] : C.text,
-                      fontFamily: F,
-                      fontWeight: 600,
-                    }}
+                    className={`${styles.val}${fi === 0 && useVol ? ` ${styles.valPrimary}` : ""}`}
                   >
                     {s[f.id]} {unitOf(f)}
                   </span>
                 </Fragment>
               ))}
               {useVol && fields.length > 1 && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    color: C.dim,
-                    fontFamily: F,
-                    marginLeft: "auto",
-                  }}
-                >
+                <span className={styles.product}>
                   {product(s).toLocaleString()}
                 </span>
               )}
               <button
                 onClick={() => onRemoveSet(metric.id, i)}
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 3,
-                  border: "none",
-                  background: "transparent",
-                  color: C.dim,
-                  cursor: "pointer",
-                  fontSize: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "color .15s",
-                  marginLeft: useVol && fields.length > 1 ? 0 : "auto",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = C.danger)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}
+                className={`${styles.del}${useVol && fields.length > 1 ? "" : ` ${styles.delPush}`}`}
               >
                 ×
               </button>
             </div>
           ))}
-          <div
-            style={{
-              fontSize: 9,
-              color: pal.shades[4],
-              fontFamily: F,
-              fontWeight: 600,
-              textAlign: "right",
-              marginTop: 2,
-            }}
-          >
-            {fmtSets(sets, metric)}
-          </div>
+          <div className={styles.total}>{fmtSets(sets, metric)}</div>
         </div>
       )}
       {/* Add set form: one input per field */}
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+      <div className={styles.addRow}>
         {fields.map((f, fi) => (
           <Fragment key={f.id}>
-            {fi > 0 && (
-              <span style={{ fontSize: 10, color: C.dim, fontFamily: F }}>
-                ×
-              </span>
-            )}
-            <div style={{ position: "relative", flex: 1 }}>
+            {fi > 0 && <span className={styles.times}>×</span>}
+            <div className={styles.field}>
               <input
                 type="text"
                 inputMode="numeric"
@@ -198,55 +142,13 @@ export default function SetInput({
                 onChange={(e) => setField(f.id, e.target.value)}
                 placeholder={f.label}
                 onKeyDown={(e) => e.key === "Enter" && add()}
-                style={{
-                  ...inpS,
-                  fontSize: 12,
-                  padding: f.unit ? "6px 28px 6px 8px" : "6px 8px",
-                }}
+                className={`${styles.fieldInput}${f.unit ? ` ${styles.fieldInputUnit}` : ""}`}
               />
-              {f.unit && (
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 6,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 9,
-                    color: C.dim,
-                    fontFamily: F,
-                    pointerEvents: "none",
-                  }}
-                >
-                  {f.unit}
-                </span>
-              )}
+              {f.unit && <span className={styles.unitSuffix}>{f.unit}</span>}
             </div>
           </Fragment>
         ))}
-        <button
-          onClick={add}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 5,
-            border: `1px solid ${C.border}`,
-            background: C.bg,
-            color: C.muted,
-            cursor: "pointer",
-            fontSize: 10,
-            fontFamily: F,
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-            transition: "all .15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = pal.shades[3];
-            e.currentTarget.style.color = pal.shades[4];
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = C.border;
-            e.currentTarget.style.color = C.muted;
-          }}
-        >
+        <button onClick={add} className={styles.addBtn}>
           + Set
         </button>
       </div>

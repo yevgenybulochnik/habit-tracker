@@ -1,0 +1,101 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--set-bg);
+  margin-bottom: 3px;
+  animation: fadeIn 0.2s ease;
+}
+.idx {
+  font-size: 9px;
+  color: var(--c-dim);
+  width: 16px;
+}
+.times {
+  font-size: 9px;
+  color: var(--c-muted);
+}
+.val {
+  font-size: 11px;
+  color: var(--c-text);
+  font-weight: 600;
+}
+.valPrimary {
+  color: var(--set-accent);
+}
+.product {
+  font-size: 9px;
+  color: var(--c-dim);
+  margin-left: auto;
+}
+.del {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--c-dim);
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.del:hover {
+  color: var(--c-danger);
+}
+.delPush {
+  margin-left: auto;
+}
+.total {
+  font-size: 9px;
+  color: var(--set-accent);
+  font-weight: 600;
+  text-align: right;
+  margin-top: 2px;
+}
+.addRow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.field {
+  position: relative;
+  flex: 1;
+}
+.fieldInput {
+  composes: inp from "../styles/shared.module.css";
+  font-size: 12px;
+  padding: 6px 8px;
+}
+.fieldInputUnit {
+  padding-right: 28px;
+}
+.unitSuffix {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--c-dim);
+  pointer-events: none;
+}
+.addBtn {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.addBtn:hover {
+  border-color: var(--set-a3);
+  color: var(--set-a4);
+}
