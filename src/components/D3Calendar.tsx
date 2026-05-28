@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import {
-  C,
   F,
   MONTHS,
   WK_FULL,
@@ -23,6 +22,7 @@ import {
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
 import type { DragActivator } from "./SortableHabitCard";
+import styles from "./D3Calendar.module.css";
 import type {
   AppConfig,
   DayLog,
@@ -59,32 +59,6 @@ type Props = {
 };
 
 type Tip = { label: string; date: string };
-
-// Repeated static styles in the JSX below (the d3 effect is left untouched).
-// The inner element of each grid collapse-wrapper, the two nav arrows (shared
-// base, with enabled/disabled colors spread on), and the legend end labels.
-const gridInner: CSSProperties = { overflow: "hidden", minHeight: 0 };
-const navBtn: CSSProperties = {
-  width: 22,
-  height: 22,
-  borderRadius: 4,
-  background: C.bg,
-  fontSize: 11,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: F,
-  transition: "all .15s",
-};
-const legendLbl: CSSProperties = { fontSize: 9, color: C.muted, fontFamily: F };
-const gripStyle: CSSProperties = {
-  color: C.dim,
-  fontSize: 14,
-  lineHeight: 1,
-  flexShrink: 0,
-  display: "flex",
-  alignItems: "center",
-};
 
 export default function D3Calendar({
   habit,
@@ -650,87 +624,33 @@ export default function D3Calendar({
   }, [selectedDate, tKey, pal, theme]);
 
   // Emoji + name + hint, shared between the normal (hold-to-edit) header and the
-  // reorder-mode draggable region.
+  // reorder-mode draggable region. The `pressing` state is applied as a class on
+  // the drag-region container so CSS drives the emoji/name/hint transitions.
   const nameBlock = (
     <>
-      <span
-        style={{
-          fontSize: 18,
-          marginRight: 8,
-          transition: "transform .2s",
-          transform: pressing ? "scale(0.9)" : "scale(1)",
-        }}
-      >
-        {habit.emoji}
-      </span>
+      <span className={styles.emoji}>{habit.emoji}</span>
       <div>
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 600,
-            color: pressing ? C.accent : C.text,
-            fontFamily: F,
-            transition: "color .2s",
-          }}
-        >
-          {habit.name}
-        </h3>
+        <h3 className={styles.name}>{habit.name}</h3>
         {habit.description && (
-          <p
-            style={{
-              margin: "1px 0 0",
-              fontSize: 10,
-              color: C.muted,
-              fontFamily: F,
-            }}
-          >
-            {habit.description}
-          </p>
+          <p className={styles.desc}>{habit.description}</p>
         )}
-        <div
-          style={{
-            fontSize: 8,
-            color: C.dim,
-            fontFamily: F,
-            marginTop: 1,
-            opacity: pressing ? 1 : 0,
-            transition: "opacity .2s",
-          }}
-        >
-          hold to edit...
-        </div>
+        <div className={styles.holdHint}>hold to edit...</div>
       </div>
     </>
   );
 
+  const dragging = dragPressed || dragActivator?.isDragging;
+  const palVars = { "--p4": pal.shades[4] } as CSSProperties;
+
   return (
     <div
       ref={cRef}
-      style={{
-        background: C.surface,
-        borderRadius: 10,
-        // Accent border only on the card being pressed/dragged (signals it's
-        // grabbable on press), animated via the border-color transition below.
-        border: `1px solid ${dragPressed || dragActivator?.isDragging ? C.accent : C.border}`,
-        padding: effExpanded ? "16px 16px" : "12px 16px",
-        marginBottom: effExpanded ? 16 : 10,
-        transition:
-          "padding .45s cubic-bezier(.22,1,.36,1), margin-bottom .45s cubic-bezier(.22,1,.36,1), border-color .3s",
-        position: "relative",
-      }}
+      className={`${styles.card}${effExpanded ? "" : ` ${styles.compact}`}${dragging ? ` ${styles.dragging}` : ""}`}
+      style={palVars}
     >
       {/* Header: name + stats */}
       <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: effExpanded ? 12 : 2,
-          flexWrap: "wrap",
-          gap: 10,
-          transition: "margin-bottom .45s cubic-bezier(.22,1,.36,1)",
-        }}
+        className={`${styles.header}${effExpanded ? "" : ` ${styles.compact}`}`}
       >
         {/* One stable container in both modes so the icon+name never remount.
             Long-press handlers stay attached (they no-op while reordering); the
@@ -746,7 +666,7 @@ export default function D3Calendar({
           // .reorder-drag sets touch-action:none on this region + descendants
           // (iOS won't inherit it) so a touch-drag from the icon/name isn't
           // hijacked by page scroll.
-          className={reorderMode ? "reorder-drag" : undefined}
+          className={`${reorderMode ? "reorder-drag " : ""}${styles.dragRegion}${reorderMode ? ` ${styles.reorder}` : ""}${dragActivator?.isDragging ? ` ${styles.grabbing}` : ""}${pressing ? ` ${styles.pressing}` : ""}`}
           ref={
             reorderMode && dragActivator
               ? dragActivator.setActivatorRef
@@ -778,67 +698,25 @@ export default function D3Calendar({
           onPointerCancel={() => setDragPressed(false)}
           onPointerLeave={() => setDragPressed(false)}
           title={reorderMode ? "Drag to reorder" : undefined}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            cursor: reorderMode
-              ? dragActivator?.isDragging
-                ? "grabbing"
-                : "grab"
-              : "default",
-            touchAction: reorderMode ? "none" : undefined,
-            userSelect: "none",
-            WebkitUserSelect: "none",
-            // iOS: long-press otherwise selects the text / shows the callout
-            // menu instead of triggering our hold-to-edit gesture.
-            WebkitTouchCallout: "none",
-          }}
         >
           <div
-            style={{
-              width: reorderMode ? 24 : 0,
-              opacity: reorderMode ? 1 : 0,
-              overflow: "hidden",
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              transition: "width .25s ease, opacity .25s ease",
-            }}
+            className={`${styles.gripWrap}${reorderMode ? ` ${styles.show}` : ""}`}
           >
-            <span style={gripStyle} aria-hidden="true">
+            <span className={styles.grip} aria-hidden="true">
               ⠿
             </span>
           </div>
           {nameBlock}
         </div>
-        <div style={{ display: "flex", gap: 12, textAlign: "right" }}>
+        <div className={styles.stats}>
           {[
             { l: "Days", v: stats.totalDays },
             { l: sLabel, v: sVal },
             { l: "Streak", v: `${stats.curStreak}d` },
           ].map((s) => (
             <div key={s.l}>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: pal.shades[4],
-                  fontFamily: F,
-                }}
-              >
-                {s.v}
-              </div>
-              <div
-                style={{
-                  fontSize: 8,
-                  color: C.muted,
-                  fontFamily: F,
-                  letterSpacing: ".04em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {s.l}
-              </div>
+              <div className={styles.statVal}>{s.v}</div>
+              <div className={styles.statLbl}>{s.l}</div>
             </div>
           ))}
         </div>
@@ -846,36 +724,11 @@ export default function D3Calendar({
 
       {/* Calendar body animates open/closed via grid-template-rows 0fr↔1fr
           (stays mounted so both directions transition; avoids the iOS reveal-flash). */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateRows: effExpanded ? "1fr" : "0fr",
-          opacity: effExpanded ? 1 : 0,
-          transition:
-            "grid-template-rows .45s cubic-bezier(.22,1,.36,1), opacity .3s ease",
-        }}
-      >
-        <div style={gridInner}>
+      <div className={`${styles.body}${effExpanded ? ` ${styles.open}` : ""}`}>
+        <div className={styles.inner}>
           {/* Controls: view toggle + range + nav arrows */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 8,
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                background: C.bg,
-                borderRadius: 5,
-                border: `1px solid ${C.border}`,
-                padding: 2,
-                gap: 2,
-              }}
-            >
+          <div className={styles.controls}>
+            <div className={styles.viewSeg}>
               {[
                 { id: "heatmap", label: "Heat" },
                 { id: "calendar", label: "Cal" },
@@ -888,77 +741,22 @@ export default function D3Calendar({
                       if (!disabled) setView(v.id as "heatmap" | "calendar");
                     }}
                     disabled={disabled}
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 3,
-                      border: "none",
-                      background: view === v.id ? C.surface : "transparent",
-                      color: disabled ? C.dim : view === v.id ? C.text : C.dim,
-                      cursor: disabled ? "default" : "pointer",
-                      fontSize: 9,
-                      fontFamily: F,
-                      fontWeight: view === v.id ? 600 : 400,
-                      transition: "all .2s",
-                      boxShadow:
-                        view === v.id ? "0 1px 2px rgba(0,0,0,.3)" : "none",
-                      opacity: disabled ? 0.35 : 1,
-                    }}
+                    className={`${styles.viewBtn}${view === v.id ? ` ${styles.on}` : ""}`}
                   >
                     {v.label}
                   </button>
                 );
               })}
             </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: C.muted,
-                fontFamily: F,
-                fontWeight: 500,
-              }}
-            >
-              {rangeLabel}
-            </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                onClick={navBack}
-                style={{
-                  ...navBtn,
-                  border: `1px solid ${C.border}`,
-                  color: C.muted,
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = C.accent;
-                  e.currentTarget.style.color = C.accent;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = C.border;
-                  e.currentTarget.style.color = C.muted;
-                }}
-              >
+            <div className={styles.range}>{rangeLabel}</div>
+            <div className={styles.navGroup}>
+              <button onClick={navBack} className={styles.navBtn}>
                 ‹
               </button>
               <button
                 onClick={navFwd}
                 disabled={!canFwd}
-                style={{
-                  ...navBtn,
-                  border: `1px solid ${canFwd ? C.border : C.bg}`,
-                  color: canFwd ? C.muted : C.dim,
-                  cursor: canFwd ? "pointer" : "default",
-                  opacity: canFwd ? 1 : 0.35,
-                }}
-                onMouseEnter={(e) => {
-                  if (canFwd) {
-                    e.currentTarget.style.borderColor = C.accent;
-                    e.currentTarget.style.color = C.accent;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = canFwd ? C.border : C.bg;
-                  e.currentTarget.style.color = canFwd ? C.muted : C.dim;
-                }}
+                className={styles.navBtn}
               >
                 ›
               </button>
@@ -970,35 +768,20 @@ export default function D3Calendar({
             ref={svgRef}
             width={cw}
             height={svgHeight}
-            style={{
-              display: "block",
-              transition: "height .5s cubic-bezier(.22,1,.36,1)",
-            }}
+            className={styles.svg}
           />
 
           {/* Legend */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: 5,
-              marginTop: 8,
-            }}
-          >
-            <span style={legendLbl}>Less</span>
+          <div className={styles.legend}>
+            <span className={styles.legendLbl}>Less</span>
             {pal.shades.map((c, i) => (
               <div
                 key={i}
-                style={{
-                  width: 11,
-                  height: 11,
-                  borderRadius: 2,
-                  background: c,
-                }}
+                className={styles.legendCell}
+                style={{ background: c }}
               />
             ))}
-            <span style={legendLbl}>More</span>
+            <span className={styles.legendLbl}>More</span>
           </div>
         </div>
       </div>
@@ -1007,15 +790,9 @@ export default function D3Calendar({
           It and the quick-log both stay mounted and cross-swap heights so
           selecting/closing animates smoothly; editorDate lingers through close. */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateRows: selectedDate ? "1fr" : "0fr",
-          opacity: selectedDate ? 1 : 0,
-          transition:
-            "grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease",
-        }}
+        className={`${styles.editor}${selectedDate ? ` ${styles.open}` : ""}`}
       >
-        <div style={gridInner}>
+        <div className={styles.inner}>
           {editorDate && onSaveDay && (
             <DayEditor
               key={editorDate}
@@ -1034,13 +811,9 @@ export default function D3Calendar({
       {/* Quick-log for today — stays mounted; collapses while editing a day */}
       {onQuickLog && (
         <div
-          style={{
-            display: "grid",
-            gridTemplateRows: reorderMode || selectedDate ? "0fr" : "1fr",
-            transition: "grid-template-rows .4s cubic-bezier(.22,1,.36,1)",
-          }}
+          className={`${styles.quicklog}${reorderMode || selectedDate ? ` ${styles.closed}` : ""}`}
         >
-          <div style={gridInner}>
+          <div className={styles.inner}>
             <QuickLogSection
               dense={!effExpanded}
               habit={habit}
@@ -1080,28 +853,9 @@ export default function D3Calendar({
 
       {/* Tooltip */}
       {tip && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 16,
-            pointerEvents: "none",
-            background: C.surfaceLight,
-            border: `1px solid ${C.borderLight}`,
-            borderRadius: 6,
-            padding: "5px 9px",
-            fontSize: 10,
-            color: C.text,
-            fontFamily: F,
-            boxShadow: "0 4px 12px rgba(0,0,0,.4)",
-            zIndex: 10,
-            maxWidth: 260,
-          }}
-        >
+        <div className={styles.tip}>
           <div>{tip.label}</div>
-          <div style={{ fontSize: 9, color: C.muted, marginTop: 1 }}>
-            {tip.date}
-          </div>
+          <div className={styles.tipDate}>{tip.date}</div>
         </div>
       )}
     </div>
