@@ -1,18 +1,9 @@
 import { useState } from "react";
-import type { CSSProperties } from "react";
-import { C, F } from "../constants";
 import ModalShell from "./ModalShell";
 import HabitFormFields from "./HabitFormFields";
 import type { Habit, IntensityMode, Metric, Unit } from "../types";
-
-// Shared base for the danger-zone confirm pair (Keep it / Delete Habit).
-const dzBtn: CSSProperties = {
-  padding: "6px 14px",
-  borderRadius: 5,
-  cursor: "pointer",
-  fontSize: 11,
-  fontFamily: F,
-};
+import modal from "./modalForm.module.css";
+import styles from "./EditHabitModal.module.css";
 
 type Props = {
   habit: Habit;
@@ -54,17 +45,7 @@ export default function EditHabitModal({
   };
   return (
     <ModalShell onClose={hClose} closing={closing}>
-      <h2
-        style={{
-          margin: "0 0 20px",
-          fontSize: 18,
-          fontWeight: 600,
-          color: C.text,
-          fontFamily: F,
-        }}
-      >
-        Edit Habit
-      </h2>
+      <h2 className={modal.title}>Edit Habit</h2>
       <HabitFormFields
         name={name}
         setName={setName}
@@ -84,100 +65,33 @@ export default function EditHabitModal({
 
       {/* Danger zone */}
       <div
-        style={{
-          marginBottom: 20,
-          padding: "14px 16px",
-          borderRadius: 8,
-          border: `1px solid ${confirmDelete ? C.danger : C.border}`,
-          background: confirmDelete ? "rgba(248,81,73,0.06)" : C.bg,
-          transition: "all .2s",
-        }}
+        className={`${styles.danger}${confirmDelete ? ` ${styles.dangerActive}` : ""}`}
       >
         {confirmDelete ? (
           <div>
-            <div
-              style={{
-                fontSize: 13,
-                color: C.danger,
-                fontFamily: F,
-                fontWeight: 600,
-                marginBottom: 8,
-              }}
-            >
-              Delete "{habit.name}"?
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: C.muted,
-                fontFamily: F,
-                marginBottom: 12,
-              }}
-            >
+            <div className={styles.delTitle}>Delete "{habit.name}"?</div>
+            <div className={styles.delDesc}>
               This will permanently remove the habit and all its logged data.
               This cannot be undone.
             </div>
-            <div
-              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-            >
+            <div className={styles.dzRow}>
               <button
                 onClick={() => setConfirmDelete(false)}
-                style={{
-                  ...dzBtn,
-                  border: `1px solid ${C.border}`,
-                  background: "transparent",
-                  color: C.muted,
-                }}
+                className={styles.keepBtn}
               >
                 Keep it
               </button>
-              <button
-                onClick={handleDelete}
-                style={{
-                  ...dzBtn,
-                  border: "none",
-                  background: C.danger,
-                  color: "#fff",
-                  fontWeight: 600,
-                }}
-              >
+              <button onClick={handleDelete} className={styles.deleteBtn}>
                 Delete Habit
               </button>
             </div>
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontSize: 11, color: C.dim, fontFamily: F }}>
-              Remove this habit and all data
-            </span>
+          <div className={styles.idle}>
+            <span className={styles.hint}>Remove this habit and all data</span>
             <button
               onClick={() => setConfirmDelete(true)}
-              style={{
-                padding: "5px 12px",
-                borderRadius: 5,
-                border: `1px solid ${C.border}`,
-                background: "transparent",
-                color: C.danger,
-                cursor: "pointer",
-                fontSize: 11,
-                fontFamily: F,
-                fontWeight: 500,
-                transition: "all .15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.danger;
-                e.currentTarget.style.background = "rgba(248,81,73,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.background = "transparent";
-              }}
+              className={styles.delTrigger}
             >
               Delete habit
             </button>
@@ -185,49 +99,25 @@ export default function EditHabitModal({
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <button
-          onClick={hClose}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: `1px solid ${C.border}`,
-            background: "transparent",
-            color: C.muted,
-            cursor: "pointer",
-            fontSize: 13,
-            fontFamily: F,
-          }}
-        >
+      <div className={modal.footer}>
+        <button onClick={hClose} className={modal.cancelBtn}>
           Cancel
         </button>
         <button
+          disabled={!canSave}
           onClick={() => {
-            if (canSave) {
-              onSave({
-                ...habit,
-                name: name.trim(),
-                emoji,
-                description: desc.trim(),
-                color,
-                metrics,
-                intensityMode: intMode,
-              });
-              hClose();
-            }
+            onSave({
+              ...habit,
+              name: name.trim(),
+              emoji,
+              description: desc.trim(),
+              color,
+              metrics,
+              intensityMode: intMode,
+            });
+            hClose();
           }}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: canSave ? C.accent : C.borderLight,
-            color: canSave ? "#fff" : C.dim,
-            cursor: canSave ? "pointer" : "not-allowed",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: F,
-            transition: "all .2s",
-          }}
+          className={modal.primaryBtn}
         >
           Save
         </button>

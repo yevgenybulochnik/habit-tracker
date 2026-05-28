@@ -1,0 +1,71 @@
+.danger {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  transition: all 0.2s;
+}
+.dangerActive {
+  border-color: var(--c-danger);
+  background: rgba(248, 81, 73, 0.06);
+}
+.delTitle {
+  font-size: 13px;
+  color: var(--c-danger);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.delDesc {
+  font-size: 11px;
+  color: var(--c-muted);
+  margin-bottom: 12px;
+}
+.dzRow {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.dzBtn {
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.keepBtn {
+  composes: dzBtn;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+}
+.deleteBtn {
+  composes: dzBtn;
+  border: none;
+  background: var(--c-danger);
+  color: #fff;
+  font-weight: 600;
+}
+.idle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hint {
+  font-size: 11px;
+  color: var(--c-dim);
+}
+.delTrigger {
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-danger);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.delTrigger:hover {
+  border-color: var(--c-danger);
+  background: rgba(248, 81, 73, 0.08);
+}

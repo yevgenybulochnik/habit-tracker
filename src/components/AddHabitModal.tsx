@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { C, F } from "../constants";
 import { doneMetric } from "../lib/metrics";
 import ModalShell from "./ModalShell";
 import HabitFormFields from "./HabitFormFields";
 import type { IntensityMode, Metric, Unit } from "../types";
+import modal from "./modalForm.module.css";
 
 export type NewHabit = {
   name: string;
@@ -44,17 +44,7 @@ export default function AddHabitModal({
   const canCreate = !!name.trim();
   return (
     <ModalShell onClose={hClose} closing={closing}>
-      <h2
-        style={{
-          margin: "0 0 20px",
-          fontSize: 18,
-          fontWeight: 600,
-          color: C.text,
-          fontFamily: F,
-        }}
-      >
-        New Habit
-      </h2>
+      <h2 className={modal.title}>New Habit</h2>
       <HabitFormFields
         name={name}
         setName={setName}
@@ -71,49 +61,25 @@ export default function AddHabitModal({
         units={units}
         onAddUnit={onAddUnit}
       />
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <button
-          onClick={hClose}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: `1px solid ${C.border}`,
-            background: "transparent",
-            color: C.muted,
-            cursor: "pointer",
-            fontSize: 13,
-            fontFamily: F,
-          }}
-        >
+      <div className={modal.footer}>
+        <button onClick={hClose} className={modal.cancelBtn}>
           Cancel
         </button>
         <button
+          disabled={!canCreate}
           onClick={() => {
-            if (canCreate) {
-              const noMetrics = metrics.length === 0;
-              onAdd({
-                name: name.trim(),
-                emoji,
-                description: desc.trim(),
-                color,
-                metrics: noMetrics ? [doneMetric()] : metrics,
-                intensityMode: intMode,
-              });
-              hClose();
-            }
+            const noMetrics = metrics.length === 0;
+            onAdd({
+              name: name.trim(),
+              emoji,
+              description: desc.trim(),
+              color,
+              metrics: noMetrics ? [doneMetric()] : metrics,
+              intensityMode: intMode,
+            });
+            hClose();
           }}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: canCreate ? C.accent : C.borderLight,
-            color: canCreate ? "#fff" : C.dim,
-            cursor: canCreate ? "pointer" : "not-allowed",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: F,
-            transition: "all .2s",
-          }}
+          className={modal.primaryBtn}
         >
           Create
         </button>

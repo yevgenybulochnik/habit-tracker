@@ -1,0 +1,37 @@
+/* Shared modal chrome: title + footer action buttons. */
+.title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.cancelBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+.primaryBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.primaryBtn:disabled {
+  background: var(--c-borderLight);
+  color: var(--c-dim);
+  cursor: not-allowed;
+}
