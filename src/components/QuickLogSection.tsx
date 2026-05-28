@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import { C, F } from "../constants";
 import {
   getQuickAdd,
   isSetMetric,
@@ -22,26 +21,7 @@ import type {
   Timers,
   Unit,
 } from "../types";
-
-// Static skeletons for repeated bits; the color/fill that varies per state is
-// spread on at each call site (intensity bars, completion checkboxes).
-const barSeg: CSSProperties = {
-  flex: 1,
-  height: 3,
-  borderRadius: 2,
-  transition: "background .4s",
-};
-const checkBox: CSSProperties = {
-  width: 14,
-  height: 14,
-  borderRadius: 3,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  transition: "all .2s",
-  flexShrink: 0,
-};
-const checkMark: CSSProperties = { fontSize: 8, color: "#fff" };
+import styles from "./QuickLogSection.module.css";
 
 type Props = {
   habit: Habit;
@@ -106,49 +86,30 @@ export default function QuickLogSection({
     return `${ms.filter((m) => metricActive(m, todayLog)).length}/${ms.length}`;
   })();
 
+  // Per-habit palette → CSS vars used throughout (hover/active/tap states).
+  const palVars = {
+    "--p1": pal.shades[1],
+    "--p2": pal.shades[2],
+    "--p3": pal.shades[3],
+    "--p4": pal.shades[4],
+    "--p1a": `${pal.shades[1]}44`,
+  } as CSSProperties;
+
+  // Intensity-bar segment background is per-segment, so it stays inline.
+  const barBg = (on: boolean, shade: number) =>
+    on ? pal.shades[shade] : "var(--c-bg)";
+
   return (
     <div
-      style={{
-        borderTop: `1px solid ${C.border}`,
-        marginTop: dense ? 8 : 10,
-        paddingTop: dense ? 8 : 10,
-      }}
+      className={`${styles.wrap}${dense ? ` ${styles.dense}` : ""}`}
+      style={palVars}
     >
       {(!dense || hasAny) && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: dense ? "flex-end" : "space-between",
-            marginBottom: 6,
-          }}
-        >
+        <div className={`${styles.header}${dense ? ` ${styles.dense}` : ""}`}>
           {!dense && (
-            <span
-              style={{
-                fontSize: 8,
-                color: C.dim,
-                fontFamily: F,
-                textTransform: "uppercase",
-                letterSpacing: ".06em",
-              }}
-            >
-              Quick log today
-            </span>
+            <span className={styles.headerLabel}>Quick log today</span>
           )}
-          {hasAny && (
-            <span
-              style={{
-                fontSize: 11,
-                color: pal.shades[4],
-                fontFamily: F,
-                fontWeight: 700,
-                animation: "fadeIn .3s ease",
-              }}
-            >
-              {summary}
-            </span>
-          )}
+          {hasAny && <span className={styles.summary}>{summary}</span>}
         </div>
       )}
 
@@ -156,60 +117,16 @@ export default function QuickLogSection({
       {priIsDone ? (
         <button
           onClick={() => (hasAny ? onQuickReset(ms[0].id) : qAdd(ms[0].id, 1))}
-          style={{
-            width: "100%",
-            padding: "10px 0",
-            borderRadius: 6,
-            border: `1px solid ${hasAny ? pal.shades[3] : C.border}`,
-            background: hasAny ? pal.shades[2] : C.bg,
-            color: hasAny ? "#fff" : C.muted,
-            cursor: "pointer",
-            fontSize: 13,
-            fontFamily: F,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            transition: "all .2s cubic-bezier(.22,1,.36,1)",
-          }}
+          className={`${styles.doneToggle}${hasAny ? ` ${styles.on}` : ""}`}
         >
-          <span style={{ fontSize: 14, lineHeight: 1 }}>
-            {hasAny ? "✓" : "○"}
-          </span>
+          <span className={styles.doneIcon}>{hasAny ? "✓" : "○"}</span>
           {hasAny ? "Done today" : "Mark today"}
         </button>
       ) : compact && priIsSets ? (
         <>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginBottom: 6,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 11,
-                fontFamily: F,
-                fontWeight: 600,
-                color: C.text,
-              }}
-            >
-              {ms[0].name}
-            </span>
-            <span
-              style={{
-                fontSize: 9,
-                color: C.accent,
-                fontFamily: F,
-                padding: "1px 5px",
-                borderRadius: 2,
-                background: C.accentDim,
-                fontWeight: 600,
-              }}
-            >
+          <div className={styles.setsRow}>
+            <span className={styles.setsName}>{ms[0].name}</span>
+            <span className={styles.setsBadge}>
               SETS · {setUnitLabel(ms[0])}
             </span>
           </div>
@@ -221,51 +138,26 @@ export default function QuickLogSection({
             onRemoveSet={onRemoveSet}
             lastSet={findLastSet(logs, ms[0].id)}
           />
-          <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+          <div className={styles.bars}>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                style={{
-                  ...barSeg,
-                  background: level >= i ? pal.shades[i] : C.bg,
-                }}
+                className={styles.barSeg}
+                style={{ background: barBg(level >= i, i) }}
               />
             ))}
           </div>
         </>
       ) : compact ? (
         <>
-          <div style={{ display: "flex", gap: 4 }}>
+          <div className={styles.qaRow}>
             {getQuickAdd(ms[0].unit, units).map((n) => {
               const isA = justTapped === `${ms[0].id}-${n}`;
               return (
                 <button
                   key={n}
                   onClick={() => qAdd(ms[0].id, n)}
-                  style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    borderRadius: 6,
-                    border: `1px solid ${hasAny ? pal.shades[2] : C.border}`,
-                    background: isA ? pal.shades[2] : C.bg,
-                    color: isA ? "#fff" : hasAny ? pal.shades[4] : C.muted,
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontFamily: F,
-                    fontWeight: 600,
-                    transition: "all .2s cubic-bezier(.22,1,.36,1)",
-                    transform: isA ? "scale(.95)" : "scale(1)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = pal.shades[3];
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = hasAny
-                      ? pal.shades[2]
-                      : C.border;
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  className={`${styles.qaBtn}${hasAny ? ` ${styles.has}` : ""}${isA ? ` ${styles.tapped}` : ""}`}
                 >
                   +{n}
                 </button>
@@ -274,26 +166,7 @@ export default function QuickLogSection({
             {hasAny && (
               <button
                 onClick={() => onQuickReset(ms[0].id)}
-                style={{
-                  width: 34,
-                  padding: "8px 0",
-                  borderRadius: 6,
-                  border: `1px solid ${C.border}`,
-                  background: C.bg,
-                  color: C.dim,
-                  cursor: "pointer",
-                  fontSize: 10,
-                  fontFamily: F,
-                  transition: "all .15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = C.danger;
-                  e.currentTarget.style.borderColor = C.danger;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = C.dim;
-                  e.currentTarget.style.borderColor = C.border;
-                }}
+                className={styles.resetBtn}
               >
                 ↺
               </button>
@@ -308,14 +181,12 @@ export default function QuickLogSection({
               compact={true}
             />
           )}
-          <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+          <div className={styles.bars}>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                style={{
-                  ...barSeg,
-                  background: level >= i ? pal.shades[i] : C.bg,
-                }}
+                className={styles.barSeg}
+                style={{ background: barBg(level >= i, i) }}
               />
             ))}
           </div>
@@ -323,7 +194,7 @@ export default function QuickLogSection({
       ) : (
         <>
           {/* Multi-metric */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className={styles.metricsCol}>
             {ms.map((m) => {
               const isSets = isSetMetric(m);
               if (isSets) {
@@ -332,63 +203,24 @@ export default function QuickLogSection({
                 return (
                   <div
                     key={m.id}
-                    style={{
-                      padding: "6px 8px",
-                      borderRadius: 6,
-                      background: hasSets2 ? `${pal.shades[1]}44` : C.bg,
-                      border: `1px solid ${hasSets2 ? pal.shades[1] : C.border}`,
-                      transition: "all .2s",
-                    }}
+                    className={`${styles.metricCard}${hasSets2 ? ` ${styles.active}` : ""}`}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        marginBottom: 4,
-                      }}
-                    >
+                    <div className={styles.setsHdr}>
                       <div
-                        style={{
-                          ...checkBox,
-                          border: `2px solid ${hasSets2 ? pal.shades[3] : C.border}`,
-                          background: hasSets2 ? pal.shades[3] : "transparent",
-                        }}
+                        className={`${styles.checkbox}${hasSets2 ? ` ${styles.on}` : ""}`}
                       >
-                        {hasSets2 && <span style={checkMark}>✓</span>}
+                        {hasSets2 && (
+                          <span className={styles.checkMark}>✓</span>
+                        )}
                       </div>
                       <span
-                        style={{
-                          fontSize: 10,
-                          fontFamily: F,
-                          fontWeight: 500,
-                          color: hasSets2 ? C.text : C.muted,
-                        }}
+                        className={`${styles.metricLabel}${hasSets2 ? ` ${styles.on}` : ""}`}
                       >
                         {m.name}
                       </span>
-                      <span
-                        style={{
-                          fontSize: 9,
-                          color: C.accent,
-                          fontFamily: F,
-                          padding: "1px 5px",
-                          borderRadius: 2,
-                          background: C.accentDim,
-                        }}
-                      >
-                        SETS
-                      </span>
+                      <span className={styles.miniBadge}>SETS</span>
                       {hasSets2 && (
-                        <span
-                          style={{
-                            fontSize: 9,
-                            color: pal.shades[4],
-                            fontFamily: F,
-                            fontWeight: 600,
-                            marginLeft: "auto",
-                          }}
-                        >
+                        <span className={styles.setsSummary}>
                           {fmtSets(sets, m)}
                         </span>
                       )}
@@ -410,54 +242,24 @@ export default function QuickLogSection({
               return (
                 <div
                   key={m.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "5px 8px",
-                    borderRadius: 6,
-                    background: done ? `${pal.shades[1]}44` : C.bg,
-                    border: `1px solid ${done ? pal.shades[1] : C.border}`,
-                    transition: "all .2s",
-                  }}
+                  className={`${styles.metricRow}${done ? ` ${styles.active}` : ""}`}
                 >
                   <div
-                    style={{
-                      ...checkBox,
-                      border: `2px solid ${done ? pal.shades[3] : C.border}`,
-                      background: done ? pal.shades[3] : "transparent",
-                    }}
+                    className={`${styles.checkbox}${done ? ` ${styles.on}` : ""}`}
                   >
-                    {done && <span style={checkMark}>✓</span>}
+                    {done && <span className={styles.checkMark}>✓</span>}
                   </div>
                   <span
-                    style={{
-                      fontSize: 10,
-                      fontFamily: F,
-                      fontWeight: 500,
-                      color: done ? C.text : C.muted,
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
+                    className={`${styles.normName}${done ? ` ${styles.on}` : ""}`}
                   >
                     {m.name}
                   </span>
                   {done && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: pal.shades[4],
-                        fontFamily: F,
-                        fontWeight: 600,
-                        animation: "fadeIn .3s ease",
-                      }}
-                    >
+                    <span className={styles.normVal}>
                       {fmtVal(val, m.unit)}
                     </span>
                   )}
-                  <div style={{ display: "flex", gap: 3 }}>
+                  <div className={styles.metricActions}>
                     {isMin && (
                       <TimerButton
                         startTime={timers?.[timerKey(m.id)]}
@@ -475,25 +277,7 @@ export default function QuickLogSection({
                           <button
                             key={n}
                             onClick={() => qAdd(m.id, n)}
-                            style={{
-                              padding: "3px 7px",
-                              borderRadius: 4,
-                              border: `1px solid ${done ? pal.shades[1] : C.border}`,
-                              background: isA ? pal.shades[2] : C.bg,
-                              color: isA ? "#fff" : C.muted,
-                              cursor: "pointer",
-                              fontSize: 9,
-                              fontFamily: F,
-                              transition: "all .15s",
-                              transform: isA ? "scale(.9)" : "scale(1)",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform =
-                                "translateY(-1px)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "scale(1)";
-                            }}
+                            className={`${styles.miniQa}${done ? ` ${styles.has}` : ""}${isA ? ` ${styles.tapped}` : ""}`}
                           >
                             +{n}
                           </button>
@@ -502,23 +286,7 @@ export default function QuickLogSection({
                     {done && (
                       <button
                         onClick={() => onQuickReset(m.id)}
-                        style={{
-                          padding: "3px 5px",
-                          borderRadius: 4,
-                          border: "1px solid transparent",
-                          background: "transparent",
-                          color: C.dim,
-                          cursor: "pointer",
-                          fontSize: 9,
-                          fontFamily: F,
-                          transition: "all .15s",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = C.danger)
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = C.dim)
-                        }
+                        className={styles.miniReset}
                       >
                         ↺
                       </button>
@@ -528,14 +296,12 @@ export default function QuickLogSection({
               );
             })}
           </div>
-          <div style={{ display: "flex", gap: 3, marginTop: 4 }}>
+          <div className={`${styles.bars} ${styles.barsTight}`}>
             {ms.map((m) => (
               <div
                 key={m.id}
-                style={{
-                  ...barSeg,
-                  background: metricActive(m, todayLog) ? pal.shades[3] : C.bg,
-                }}
+                className={styles.barSeg}
+                style={{ background: barBg(metricActive(m, todayLog), 3) }}
               />
             ))}
           </div>

@@ -1,0 +1,269 @@
+.wrap {
+  border-top: 1px solid var(--c-border);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.wrap.dense {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.header.dense {
+  justify-content: flex-end;
+}
+.headerLabel {
+  font-size: 8px;
+  color: var(--c-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.summary {
+  font-size: 11px;
+  color: var(--p4);
+  font-weight: 700;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Daily check-off toggle */
+.doneToggle {
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.doneToggle.on {
+  border-color: var(--p3);
+  background: var(--p2);
+  color: #fff;
+}
+.doneIcon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Compact sets header */
+.setsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.setsName {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.setsBadge {
+  font-size: 9px;
+  color: var(--c-accent);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--c-accentDim);
+  font-weight: 600;
+}
+
+/* Intensity bars */
+.bars {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.barsTight {
+  margin-top: 4px;
+}
+.barSeg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  transition: background 0.4s;
+}
+
+/* Compact quick-add */
+.qaRow {
+  display: flex;
+  gap: 4px;
+}
+.qaBtn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.qaBtn.has {
+  border-color: var(--p2);
+  color: var(--p4);
+}
+.qaBtn:hover {
+  border-color: var(--p3);
+  transform: translateY(-1px);
+}
+.qaBtn.tapped {
+  background: var(--p2);
+  color: #fff;
+  transform: scale(0.95);
+}
+.resetBtn {
+  width: 34px;
+  padding: 8px 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-dim);
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.15s;
+}
+.resetBtn:hover {
+  color: var(--c-danger);
+  border-color: var(--c-danger);
+}
+
+/* Multi-metric */
+.metricsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.metricCard {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  transition: all 0.2s;
+}
+.metricRow {
+  composes: metricCard;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+}
+.active {
+  background: var(--p1a);
+  border-color: var(--p1);
+}
+.setsHdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  border: 2px solid var(--c-border);
+  background: transparent;
+}
+.checkbox.on {
+  border-color: var(--p3);
+  background: var(--p3);
+}
+.checkMark {
+  font-size: 8px;
+  color: #fff;
+}
+.metricLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+.metricLabel.on {
+  color: var(--c-text);
+}
+.miniBadge {
+  font-size: 9px;
+  color: var(--c-accent);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--c-accentDim);
+}
+.setsSummary {
+  font-size: 9px;
+  color: var(--p4);
+  font-weight: 600;
+  margin-left: auto;
+}
+.normName {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--c-muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.normName.on {
+  color: var(--c-text);
+}
+.normVal {
+  font-size: 10px;
+  color: var(--p4);
+  font-weight: 600;
+  animation: fadeIn 0.3s ease;
+}
+.metricActions {
+  display: flex;
+  gap: 3px;
+}
+.miniQa {
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 9px;
+  transition: all 0.15s;
+}
+.miniQa.has {
+  border-color: var(--p1);
+}
+.miniQa:hover {
+  transform: translateY(-1px);
+}
+.miniQa.tapped {
+  background: var(--p2);
+  color: #fff;
+  transform: scale(0.9);
+}
+.miniReset {
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-dim);
+  cursor: pointer;
+  font-size: 9px;
+  transition: all 0.15s;
+}
+.miniReset:hover {
+  color: var(--c-danger);
+}
