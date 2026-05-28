@@ -287,3 +287,65 @@ test("backup: export then import restores a deleted habit", async ({
     page.getByRole("heading", { name: "Meditation", level: 3 }),
   ).toBeVisible();
 });
+
+test("switching theme recolors the heatmap cells (cheap fill effect)", async ({
+  page,
+}) => {
+  // Guards the D3Calendar fill split: theme is a dep of the cheap fill effect,
+  // and a stale-fill regression would be invisible to the page-bg theme test.
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await page.getByRole("button", { name: "+10" }).first().click(); // give today a level>0
+  await setDashView(page, "calendar");
+  const today = page.locator("svg rect.dc[stroke-width='1.5']");
+  await expect(today).toHaveCount(1);
+  const darkFill = await today.getAttribute("fill");
+  await setTheme(page, "light");
+  await expect(today).not.toHaveAttribute("fill", darkFill ?? "");
+});
+
+test("month navigation and zoom keep rendering the heatmap", async ({
+  page,
+}) => {
+  // Guards that the heavy build still fires on structural deps (offset/zoomed)
+  // after `logs` was removed from its dependency list.
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await setDashView(page, "calendar");
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+
+  // Navigate back one window — layout re-renders for the past period.
+  await page.getByRole("button", { name: "‹" }).click();
+  await page.waitForTimeout(900); // let exit/enter transitions settle
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+
+  // Forward back to the present (offset 0), then forward again zooms into a
+  // single-month calendar (zoomed = true, numM = 1).
+  await page.getByRole("button", { name: "›" }).click();
+  await page.waitForTimeout(900);
+  await page.getByRole("button", { name: "›" }).click();
+  await page.waitForTimeout(900);
+  await expect(page.locator("svg rect.dc").first()).toBeVisible();
+});
+
+test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorder", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Alpha");
+  // With only one habit, there's nothing to reorder — toggle isn't shown.
+  await expect(page.getByRole("button", { name: /Reorder/ })).toHaveCount(0);
+
+  await createHabit(page, "Beta");
+  await expect(page.getByRole("button", { name: /Reorder/ })).toBeVisible();
+
+  // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit modal).
+  await page.getByRole("button", { name: /Reorder/ }).click();
+  await page
+    .getByRole("heading", { name: "Alpha", level: 3 })
+    .dispatchEvent("mousedown");
+  await page.waitForTimeout(700); // exceed the 500ms long-press threshold
+  await expect(
+    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+  ).toHaveCount(0);
+});
