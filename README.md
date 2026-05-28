@@ -25,6 +25,8 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 | [**idb-keyval**](https://github.com/jakearchibald/idb-keyval)                        | tiny IndexedDB key/value wrapper for persistence |
 | [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app)                              | web manifest + service worker (Workbox)          |
 
+Styling is **CSS Modules** (`*.module.css`, colocated per component) over a small global layer of theme CSS variables + keyframes; no CSS framework.
+
 Dev/test: **Vitest** + **Testing Library** (+ `fake-indexeddb`) for unit/component tests, **Playwright** for E2E, **Prettier** for formatting (default 80-col).
 
 ## Getting started

@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import type { AppConfig, Palette, ThemeName, Unit } from "./types";
 
@@ -213,27 +212,7 @@ input,select,textarea{font-size:16px !important}
 .reorder-drag,.reorder-drag *{touch-action:none}
 `;
 
-export const inpS: CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 6,
-  border: `1px solid ${C.border}`,
-  background: C.bg,
-  color: C.text,
-  fontSize: 14,
-  fontFamily: F,
-  outline: "none",
-  boxSizing: "border-box",
-};
-export const lbl: CSSProperties = {
-  display: "block",
-  fontSize: 11,
-  color: C.muted,
-  fontFamily: F,
-  marginBottom: 6,
-  textTransform: "uppercase",
-  letterSpacing: ".08em",
-};
+// (Form input/label styles now live in src/styles/shared.module.css.)
 
 export const DEFAULT_CONFIG: AppConfig = {
   numMonths: 4,

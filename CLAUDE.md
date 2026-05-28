@@ -103,15 +103,29 @@ Tapping a calendar day opens an inline `DayEditor` for that date (exact-value en
 back-dating). Selection highlight and `pal` are kept out of the main build (separate effect /
 `useMemo`) so a tap doesn't re-ripple the heatmap.
 
-**Styling.** All styling is **inline styles** plus one injected `<style>` block (the `CSS`
-const, holding keyframes). Design tokens live in `src/constants.ts`: `C` (colors), `PALETTES`,
-`F` (font), and the shared `inpS`/`lbl` style objects (typed `React.CSSProperties` so spreads
-like `{...inpS, fontSize: 12}` don't widen literal unions). No CSS framework. **Repeated static
-style objects within a component are lifted to named `const`s at the top of that file** (typed
-`CSSProperties`), with the per-state bits spread on at the call site (`{...navBtn, color: ...}`);
-e.g. `sectionHdr`/`panel` in `SettingsModal`, `navBtn` in `D3Calendar`. Imperative
-`onMouseEnter`/`onMouseLeave` hover handlers (`e.currentTarget.style.*`) and one-off styles stay
-inline — extraction targets repetition, not every literal.
+**Styling — CSS Modules.** Each component has a colocated `Component.module.css`; the
+component imports `styles` and sets `className={styles.x}` (Vite types `*.module.css` via
+`vite/client`; no config). Equal-width / wrapping layouts use **CSS grid** (e.g. the emoji
+picker and intensity selector in `HabitFormFields`, the unit forms in `SettingsModal`). State
+is expressed as **modifier classes** (`className={`${styles.btn}${on ? " "+styles.on : ""}`}`)
+and hover/focus via **`:hover`/`:focus-visible`** (not `onMouseEnter` handlers). Shared form
+classes (`inp`, `lbl`) live in `src/styles/shared.module.css` and are pulled in with `composes:`.
+
+There are two things CSS Modules **don't** own:
+
+- **Theme tokens + keyframes stay global**, still defined in `src/constants.ts` and injected once
+  via `<style>{CSS + THEME_CSS}</style>` in `App` (`THEME_CSS` sets the `--c-*` vars on
+  `:root`/`[data-theme="light"]`; `CSS` holds `@keyframes` + global resets + the
+  `.stagger-child`/`.reorder-drag` utility classes). Module classes consume `var(--c-*)` and
+  reference the global keyframe names. The app font is set once on `App`'s root class and
+  inherited.
+- **Runtime values** — per-habit palette colours (`pal.shades[i]`), dnd-kit transforms, and the
+  d3 SVG — can't be static classes. Palette colours are passed as **inline CSS custom
+  properties** consumed by a class (`style={{ "--p4": pal.shades[4] }}` → `.x { color: var(--p4) }`);
+  see `--p*` in `QuickLogSection`, `--tb-a*`/`--set-*`/`--de-*` in the timer/set/day-editor
+  modules. The **d3 layer in `D3Calendar` stays imperative** (only its React chrome is a module);
+  `BrandMark` (size-driven, runtime-generated keyframes) and the dnd transform on
+  `SortableHabitCard` also stay inline. No CSS framework.
 
 **PWA.** Configured in `vite.config.ts` via `vite-plugin-pwa` (`autoUpdate`, standalone
 manifest, font runtime-cache). iOS home-screen meta tags and `viewport-fit=cover` are in
