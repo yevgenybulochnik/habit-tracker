@@ -1,26 +1,10 @@
 import { useState, useEffect } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { C, F, EMOJIS, PALETTES, inpS, lbl } from "../constants";
+import { EMOJIS, PALETTES } from "../constants";
 import { getUnit, setsPreset, setUnitLabel } from "../lib/metrics";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
-
-// Repeated static styles in the custom-unit sub-form. Selection-driven styles
-// (emoji/color/preset buttons) stay inline since they hinge on current state.
-const fieldLbl: CSSProperties = {
-  fontSize: 10,
-  color: C.muted,
-  fontFamily: F,
-  marginBottom: 4,
-};
-const inpSm: CSSProperties = { ...inpS, fontSize: 12 };
-const cuBtn: CSSProperties = {
-  padding: "6px 14px",
-  borderRadius: 5,
-  cursor: "pointer",
-  fontSize: 11,
-  fontFamily: F,
-};
+import styles from "./HabitFormFields.module.css";
 
 type Props = {
   name: string;
@@ -120,167 +104,84 @@ export default function HabitFormFields({
 
   return (
     <>
-      <div style={{ marginBottom: 16 }}>
-        <label style={lbl}>Icon</label>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className={styles.field}>
+        <label className={styles.label}>Icon</label>
+        <div className={styles.emojiGrid}>
           {EMOJIS.map((e) => (
             <button
               key={e}
               onClick={() => setEmoji(e)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 6,
-                border: `1.5px solid ${emoji === e ? C.accent : C.border}`,
-                background: emoji === e ? C.accentDim : C.bg,
-                fontSize: 18,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all .2s",
-              }}
+              className={`${styles.emojiBtn}${emoji === e ? ` ${styles.sel}` : ""}`}
             >
               {e}
             </button>
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={lbl}>Name</label>
+      <div className={styles.field}>
+        <label className={styles.label}>Name</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Morning Workout, Reading"
-          style={inpS}
+          className={styles.input}
         />
       </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={lbl}>Description (optional)</label>
+      <div className={styles.field}>
+        <label className={styles.label}>Description (optional)</label>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Short note"
-          style={inpS}
+          className={styles.input}
         />
       </div>
-      <div style={{ marginBottom: 20 }}>
-        <label style={lbl}>Color</label>
-        <div style={{ display: "flex", gap: 8 }}>
+      <div className={styles.fieldLg}>
+        <label className={styles.label}>Color</label>
+        <div className={styles.colorRow}>
           {PALETTES.map((c) => (
             <button
               key={c.name}
               onClick={() => setColor(c.name)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 6,
-                background: c.shades[3],
-                border: `2px solid ${color === c.name ? "#fff" : "transparent"}`,
-                cursor: "pointer",
-                transition: "all .25s",
-                transform: color === c.name ? "scale(1.2)" : "scale(1)",
-              }}
+              className={`${styles.swatch}${color === c.name ? ` ${styles.sel}` : ""}`}
+              style={{ "--sw": c.shades[3] } as CSSProperties}
             />
           ))}
         </div>
       </div>
 
       {/* Metrics */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={lbl}>What do you measure?</label>
+      <div className={styles.field}>
+        <label className={styles.label}>What do you measure?</label>
         {metrics.length === 0 && (
-          <div
-            style={{
-              padding: "16px 12px",
-              borderRadius: 6,
-              border: `1px dashed ${C.border}`,
-              background: C.bg,
-              textAlign: "center",
-              marginBottom: 8,
-            }}
-          >
-            <div style={{ fontSize: 11, color: C.muted, fontFamily: F }}>
+          <div className={styles.empty}>
+            <div className={styles.emptyText}>
               No metrics — this habit will be a simple daily check-off. Add one
               to track an amount instead.
             </div>
           </div>
         )}
         {metrics.map((m) => (
-          <div
-            key={m.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 6,
-              padding: "8px 12px",
-              borderRadius: 6,
-              background: C.bg,
-              border: `1px solid ${C.border}`,
-            }}
-          >
-            <span
-              style={{ flex: 1, fontSize: 13, color: C.text, fontFamily: F }}
-            >
-              {m.name}
-            </span>
+          <div key={m.id} className={styles.metricRow}>
+            <span className={styles.metricName}>{m.name}</span>
             {m.mode === "sets" && (
-              <span
-                style={{
-                  fontSize: 9,
-                  color: C.accent,
-                  fontFamily: F,
-                  padding: "2px 6px",
-                  borderRadius: 3,
-                  background: C.accentDim,
-                  fontWeight: 600,
-                }}
-              >
-                SETS · {setUnitLabel(m)}
-              </span>
+              <span className={styles.setsBadge}>SETS · {setUnitLabel(m)}</span>
             )}
-            <span
-              style={{
-                fontSize: 10,
-                color: C.dim,
-                fontFamily: F,
-                padding: "2px 8px",
-                borderRadius: 3,
-                background: C.surface,
-              }}
-            >
+            <span className={styles.unitBadge}>
               {getUnit(m.unit, units).label}
             </span>
-            <button
-              onClick={() => rmMetric(m.id)}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 4,
-                border: "none",
-                background: "transparent",
-                color: C.dim,
-                cursor: "pointer",
-                fontSize: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = C.danger)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}
-            >
+            <button onClick={() => rmMetric(m.id)} className={styles.rmBtn}>
               ×
             </button>
           </div>
         ))}
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        <div className={styles.addRow}>
           <input
             value={newMN}
             onChange={(e) => setNewMN(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addMetric()}
             placeholder="Metric name (e.g. Bench Press, Squats)"
-            style={{ ...inpS, fontSize: 13, flex: 1 }}
+            className={styles.addInput}
           />
           <select
             value={newMU}
@@ -288,7 +189,7 @@ export default function HabitFormFields({
               if (e.target.value === "__custom__") setShowCU(true);
               else setNewMU(e.target.value);
             }}
-            style={{ ...inpS, width: 100, fontSize: 12, cursor: "pointer" }}
+            className={styles.unitSelect}
           >
             {units.map((u) => (
               <option key={u.id} value={u.id}>
@@ -297,55 +198,23 @@ export default function HabitFormFields({
             ))}
             <option value="__custom__">+ Custom...</option>
           </select>
-          <button
-            onClick={addMetric}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              border: `1px solid ${C.border}`,
-              background: C.bg,
-              color: C.muted,
-              cursor: "pointer",
-              fontSize: 12,
-              fontFamily: F,
-              whiteSpace: "nowrap",
-            }}
-          >
+          <button onClick={addMetric} className={styles.addBtn}>
             + Add
           </button>
         </div>
         {/* Sets mode toggle + schema preset */}
-        <div style={{ marginTop: 8 }}>
+        <div className={styles.setsWrap}>
           <button
             onClick={() =>
               setNewMode((p) => (p === "sets" ? "normal" : "sets"))
             }
-            style={{
-              padding: "5px 12px",
-              borderRadius: 5,
-              fontSize: 10,
-              fontFamily: F,
-              fontWeight: 600,
-              cursor: "pointer",
-              border: `1px solid ${newMode === "sets" ? C.accent : C.border}`,
-              background: newMode === "sets" ? C.accentDim : "transparent",
-              color: newMode === "sets" ? C.accent : C.muted,
-              transition: "all .2s",
-            }}
+            className={`${styles.toggleBtn}${newMode === "sets" ? ` ${styles.on}` : ""}`}
           >
             {newMode === "sets" ? "◼ Sets mode ON" : "○ Enable sets mode"}
           </button>
           {newMode === "sets" && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginTop: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ display: "flex", gap: 4 }}>
+            <div className={styles.presetWrap}>
+              <div className={styles.presetGrid}>
                 {(
                   [
                     ["weighted", "Weighted"],
@@ -356,18 +225,7 @@ export default function HabitFormFields({
                   <button
                     key={k}
                     onClick={() => setNewPreset(k)}
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: 5,
-                      fontSize: 10,
-                      fontFamily: F,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: `1px solid ${newPreset === k ? C.accent : C.border}`,
-                      background: newPreset === k ? C.accentDim : "transparent",
-                      color: newPreset === k ? C.accent : C.muted,
-                      transition: "all .2s",
-                    }}
+                    className={`${styles.presetBtn}${newPreset === k ? ` ${styles.on}` : ""}`}
                   >
                     {l}
                   </button>
@@ -377,19 +235,13 @@ export default function HabitFormFields({
                 <select
                   value={newWU}
                   onChange={(e) => setNewWU(e.target.value)}
-                  style={{
-                    ...inpS,
-                    width: 70,
-                    fontSize: 11,
-                    padding: "5px 8px",
-                    cursor: "pointer",
-                  }}
+                  className={styles.wuSelect}
                 >
                   <option value="lbs">lbs</option>
                   <option value="kg">kg</option>
                 </select>
               )}
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: F }}>
+              <span className={styles.presetHint}>
                 {newPreset === "weighted"
                   ? "Log weight × reps per set"
                   : newPreset === "reps"
@@ -400,103 +252,61 @@ export default function HabitFormFields({
           )}
         </div>
         {showCU && (
-          <div
-            style={{
-              marginTop: 10,
-              padding: "14px 16px",
-              borderRadius: 8,
-              border: `1px solid ${C.accent}`,
-              background: C.accentDim,
-              animation: "fadeIn .3s ease",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                color: C.accent,
-                fontFamily: F,
-                fontWeight: 600,
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: ".06em",
-              }}
-            >
-              New Unit
-            </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div style={fieldLbl}>ID</div>
+          <div className={styles.cu}>
+            <div className={styles.cuTitle}>New Unit</div>
+            <div className={styles.cuGrid}>
+              <div>
+                <div className={styles.cuFieldLbl}>ID</div>
                 <input
                   value={cuId}
                   onChange={(e) => setCuId(e.target.value)}
                   placeholder="lbs"
-                  style={inpSm}
+                  className={styles.cuInput}
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={fieldLbl}>Label</div>
+              <div>
+                <div className={styles.cuFieldLbl}>Label</div>
                 <input
                   value={cuLbl}
                   onChange={(e) => setCuLbl(e.target.value)}
                   placeholder="Pounds"
-                  style={inpSm}
+                  className={styles.cuInput}
                 />
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={fieldLbl}>Quick-add</div>
+            <div className={`${styles.cuGrid} ${styles.cuGridLast}`}>
+              <div>
+                <div className={styles.cuFieldLbl}>Quick-add</div>
                 <input
                   value={cuQA}
                   onChange={(e) => setCuQA(e.target.value)}
-                  style={inpSm}
+                  className={styles.cuInput}
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={fieldLbl}>Thresholds</div>
+              <div>
+                <div className={styles.cuFieldLbl}>Thresholds</div>
                 <input
                   value={cuThr}
                   onChange={(e) => setCuThr(e.target.value)}
-                  style={inpSm}
+                  className={styles.cuInput}
                 />
               </div>
             </div>
-            <div
-              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-            >
+            <div className={styles.cuActions}>
               <button
                 onClick={() => setShowCU(false)}
-                style={{
-                  ...cuBtn,
-                  border: `1px solid ${C.border}`,
-                  background: "transparent",
-                  color: C.muted,
-                }}
+                className={styles.cuCancel}
               >
                 Cancel
               </button>
-              <button
-                onClick={addCU}
-                style={{
-                  ...cuBtn,
-                  border: "none",
-                  background: C.accent,
-                  color: "#fff",
-                  fontWeight: 600,
-                }}
-              >
+              <button onClick={addCU} className={styles.cuAdd}>
                 Add Unit
               </button>
             </div>
           </div>
         )}
         <div
-          style={{
-            fontSize: 10,
-            color: metrics.length === 0 ? C.accent : C.dim,
-            fontFamily: F,
-            marginTop: 6,
-          }}
+          className={`${styles.hint}${metrics.length === 0 ? ` ${styles.hintAccent}` : ""}`}
         >
           {metrics.length === 0
             ? "Leave empty for a daily check-off, or add a metric to track an amount."
@@ -507,9 +317,9 @@ export default function HabitFormFields({
       </div>
 
       {metrics.length > 1 && (
-        <div style={{ marginBottom: 20 }}>
-          <label style={lbl}>Intensity based on</label>
-          <div style={{ display: "flex", gap: 6 }}>
+        <div className={styles.fieldLg}>
+          <label className={styles.label}>Intensity based on</label>
+          <div className={styles.intensityGrid}>
             {(
               [
                 {
@@ -527,37 +337,10 @@ export default function HabitFormFields({
               <button
                 key={m.id}
                 onClick={() => setIntensityMode(m.id)}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: 6,
-                  border: `1.5px solid ${intensityMode === m.id ? C.accent : C.border}`,
-                  background: intensityMode === m.id ? C.accentDim : C.bg,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all .2s",
-                }}
+                className={`${styles.intBtn}${intensityMode === m.id ? ` ${styles.on}` : ""}`}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: intensityMode === m.id ? C.text : C.muted,
-                    fontFamily: F,
-                  }}
-                >
-                  {m.l}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: C.dim,
-                    fontFamily: F,
-                    marginTop: 2,
-                  }}
-                >
-                  {m.d}
-                </div>
+                <div className={styles.intTitle}>{m.l}</div>
+                <div className={styles.intDesc}>{m.d}</div>
               </button>
             ))}
           </div>

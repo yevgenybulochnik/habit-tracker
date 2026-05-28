@@ -1,0 +1,305 @@
+.field {
+  margin-bottom: 16px;
+}
+.fieldLg {
+  margin-bottom: 20px;
+}
+.label {
+  composes: lbl from "../styles/shared.module.css";
+}
+.input {
+  composes: inp from "../styles/shared.module.css";
+}
+
+/* Icon picker — even 8-column grid */
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.emojiBtn {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-bg);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.emojiBtn.sel {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+}
+
+/* Color swatches */
+.colorRow {
+  display: flex;
+  gap: 8px;
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--sw);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.swatch.sel {
+  border-color: #fff;
+  transform: scale(1.2);
+}
+
+/* Metric list */
+.empty {
+  padding: 16px 12px;
+  border-radius: 6px;
+  border: 1px dashed var(--c-border);
+  background: var(--c-bg);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.emptyText {
+  font-size: 11px;
+  color: var(--c-muted);
+}
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+}
+.metricName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.setsBadge {
+  font-size: 9px;
+  color: var(--c-accent);
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--c-accentDim);
+  font-weight: 600;
+}
+.unitBadge {
+  font-size: 10px;
+  color: var(--c-dim);
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--c-surface);
+}
+.rmBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--c-dim);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rmBtn:hover {
+  color: var(--c-danger);
+}
+
+/* Add-metric row */
+.addRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.addInput {
+  composes: inp from "../styles/shared.module.css";
+  font-size: 13px;
+  flex: 1;
+}
+.unitSelect {
+  composes: inp from "../styles/shared.module.css";
+  width: 100px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.addBtn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Sets-mode toggle + presets */
+.setsWrap {
+  margin-top: 8px;
+}
+.toggleBtn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  transition: all 0.2s;
+}
+.toggleBtn.on {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+}
+.presetWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.presetBtn {
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  transition: all 0.2s;
+}
+.presetBtn.on {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+}
+.wuSelect {
+  composes: inp from "../styles/shared.module.css";
+  width: 70px;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.presetHint {
+  font-size: 9px;
+  color: var(--c-dim);
+}
+
+/* Custom-unit subform — 2-column grids */
+.cu {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--c-accent);
+  background: var(--c-accentDim);
+  animation: fadeIn 0.3s ease;
+}
+.cuTitle {
+  font-size: 11px;
+  color: var(--c-accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cuGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cuGridLast {
+  margin-bottom: 10px;
+}
+.cuFieldLbl {
+  font-size: 10px;
+  color: var(--c-muted);
+  margin-bottom: 4px;
+}
+.cuInput {
+  composes: inp from "../styles/shared.module.css";
+  font-size: 12px;
+}
+.cuActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.cuBtn {
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.cuCancel {
+  composes: cuBtn;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+}
+.cuAdd {
+  composes: cuBtn;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Metrics hint */
+.hint {
+  font-size: 10px;
+  color: var(--c-dim);
+  margin-top: 6px;
+}
+.hintAccent {
+  color: var(--c-accent);
+}
+
+/* Intensity selector — 2-column grid */
+.intensityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.intBtn {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-bg);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+.intBtn.on {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+}
+.intTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-muted);
+}
+.intBtn.on .intTitle {
+  color: var(--c-text);
+}
+.intDesc {
+  font-size: 10px;
+  color: var(--c-dim);
+  margin-top: 2px;
+}
