@@ -21,7 +21,7 @@ const SCHEMES = {
   },
   lite: {
     bg: [255, 255, 255], // #ffffff light background
-    empty: [235, 237, 240], // #ebedf0 empty cell (light theme)
+    empty: [175, 184, 193], // #afb8c1 empty cell — darker grey for contrast on white
     green: [45, 164, 78], // #2da44e active cell (light theme)
   },
 };
