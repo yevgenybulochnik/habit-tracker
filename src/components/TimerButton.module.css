@@ -1,0 +1,59 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.btn {
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* idle hover + running state share the per-habit palette (passed as --tb-a*) */
+.btn:hover {
+  border-color: var(--tb-a3);
+  color: var(--tb-a4);
+}
+.btn.running {
+  border-color: var(--tb-a3);
+  background: var(--tb-a1);
+  color: var(--tb-a4);
+}
+.compact {
+  padding: 6px 12px;
+  font-size: 11px;
+  gap: 6px;
+}
+.compact .icon {
+  font-size: 13px;
+}
+.inline {
+  padding: 3px 7px;
+  font-size: 9px;
+  gap: 3px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.inline .icon {
+  font-size: 8px;
+}
+.icon {
+  line-height: 1;
+}
+.time {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--tb-a4);
+  animation: fadeIn 0.3s ease;
+}
+.approx {
+  font-size: 9px;
+  color: var(--c-dim);
+}

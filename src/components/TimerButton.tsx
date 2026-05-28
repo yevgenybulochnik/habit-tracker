@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { C, F } from "../constants";
+import type { CSSProperties } from "react";
 import type { Palette } from "../types";
+import styles from "./TimerButton.module.css";
 
 type Props = {
   startTime?: number;
@@ -44,62 +45,30 @@ export default function TimerButton({
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
 
+  // Per-habit palette → CSS vars used by :hover and the .running modifier.
+  const palVars = {
+    "--tb-a1": pal.shades[1],
+    "--tb-a3": pal.shades[3],
+    "--tb-a4": pal.shades[4],
+  } as CSSProperties;
+
   if (compact) {
     return (
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}
-      >
+      <div className={styles.wrap} style={palVars}>
         <button
           onClick={toggle}
-          style={{
-            padding: "6px 12px",
-            borderRadius: 6,
-            border: `1px solid ${running ? pal.shades[3] : C.border}`,
-            background: running ? pal.shades[1] : C.bg,
-            color: running ? pal.shades[4] : C.muted,
-            cursor: "pointer",
-            fontSize: 11,
-            fontFamily: F,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            transition: "all .2s cubic-bezier(.22,1,.36,1)",
-          }}
-          onMouseEnter={(e) => {
-            if (!running) {
-              e.currentTarget.style.borderColor = pal.shades[3];
-              e.currentTarget.style.color = pal.shades[4];
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!running) {
-              e.currentTarget.style.borderColor = C.border;
-              e.currentTarget.style.color = C.muted;
-            }
-          }}
+          className={`${styles.btn} ${styles.compact}${running ? ` ${styles.running}` : ""}`}
         >
-          <span style={{ fontSize: 13, lineHeight: 1 }}>
-            {running ? "■" : "▶"}
-          </span>
+          <span className={styles.icon}>{running ? "■" : "▶"}</span>
           {running ? "Stop" : "Timer"}
         </button>
         {running && (
-          <span
-            style={{
-              fontSize: 13,
-              fontFamily: F,
-              fontWeight: 700,
-              color: pal.shades[4],
-              letterSpacing: ".04em",
-              animation: "fadeIn .3s ease",
-            }}
-          >
+          <span className={styles.time}>
             {mm}:{ss}
           </span>
         )}
         {running && (
-          <span style={{ fontSize: 9, color: C.dim, fontFamily: F }}>
+          <span className={styles.approx}>
             ≈ {Math.max(1, Math.round(elapsed / 60))}m
           </span>
         )}
@@ -111,23 +80,10 @@ export default function TimerButton({
     <button
       onClick={toggle}
       title={running ? "Stop and log" : "Start timer"}
-      style={{
-        padding: "3px 7px",
-        borderRadius: 4,
-        border: `1px solid ${running ? pal.shades[3] : C.border}`,
-        background: running ? pal.shades[1] : C.bg,
-        color: running ? pal.shades[4] : C.muted,
-        cursor: "pointer",
-        fontSize: 9,
-        fontFamily: F,
-        fontWeight: 600,
-        transition: "all .2s",
-        display: "flex",
-        alignItems: "center",
-        gap: 3,
-      }}
+      style={palVars}
+      className={`${styles.btn} ${styles.inline}${running ? ` ${styles.running}` : ""}`}
     >
-      <span style={{ fontSize: 8, lineHeight: 1 }}>{running ? "■" : "▶"}</span>
+      <span className={styles.icon}>{running ? "■" : "▶"}</span>
       {running ? `${mm}:${ss}` : ""}
     </button>
   );
