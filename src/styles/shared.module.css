@@ -1,0 +1,23 @@
+/* Shared form styles, consumed via `composes` from component modules.
+   Colors reference the global theme variables (see constants.ts THEME_CSS);
+   font-family is inherited from the app root. */
+.inp {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.lbl {
+  display: block;
+  font-size: 11px;
+  color: var(--c-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

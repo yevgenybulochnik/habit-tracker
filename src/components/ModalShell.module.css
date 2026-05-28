@@ -1,0 +1,33 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.backdropClosing {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.content {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 28px;
+  width: var(--modal-w, 480px);
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.contentClosing {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0;
+  transition: all 0.35s ease;
+}
