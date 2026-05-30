@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type {
   CSSProperties,
   ReactNode,
@@ -38,8 +39,14 @@ const STAGGER_MS = 100;
  * reorders (it's the keyed child of the list) — keeping those the same node
  * avoids a drop-time flicker. The staggered entrance lives on an inner wrapper
  * so its `translateY` animation can't fight the drag transform on the outer node.
+ *
+ * The entrance is a one-shot: React reorders by detaching and re-inserting the
+ * moved node, which would otherwise restart the CSS `fadeUp` on the displaced
+ * card (looking like a remount). We drop the class once it has played, so a
+ * later DOM move can't replay it.
  */
 export default function SortableHabitCard({ id, index, children }: Props) {
+  const [entered, setEntered] = useState(false);
   const {
     attributes,
     listeners,
@@ -65,8 +72,15 @@ export default function SortableHabitCard({ id, index, children }: Props) {
   return (
     <div ref={setNodeRef} style={style}>
       <div
-        className="stagger-child"
-        style={{ animationDelay: `${index * STAGGER_MS}ms` }}
+        className={entered ? undefined : "stagger-child"}
+        style={
+          entered ? undefined : { animationDelay: `${index * STAGGER_MS}ms` }
+        }
+        onAnimationEnd={(e) => {
+          if (e.target === e.currentTarget && e.animationName === "fadeUp") {
+            setEntered(true);
+          }
+        }}
       >
         {children({
           setActivatorRef: setActivatorNodeRef,
