@@ -11,7 +11,6 @@ import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";
 import { setDayLog } from "./lib/logs";
 import { reorderById } from "./lib/reorder";
-import StaggeredList from "./components/StaggeredList";
 import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import D3Calendar from "./components/D3Calendar";
@@ -310,9 +309,9 @@ export default function App() {
   // card animates its height down to the header (grid-template-rows) instead of
   // remounting. The grip handle is only rendered while reordering.
   const habitList = (
-    <StaggeredList keyProp="dashboard">
-      {habits.map((h) => (
-        <SortableHabitCard key={h.id} id={h.id}>
+    <div>
+      {habits.map((h, i) => (
+        <SortableHabitCard key={h.id} id={h.id} index={i}>
           {(drag) => (
             <D3Calendar
               reorderMode={reorder}
@@ -338,7 +337,7 @@ export default function App() {
           )}
         </SortableHabitCard>
       ))}
-    </StaggeredList>
+    </div>
   );
 
   return (

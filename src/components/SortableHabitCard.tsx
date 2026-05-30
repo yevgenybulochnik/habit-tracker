@@ -20,17 +20,26 @@ export type DragActivator = {
 
 type Props = {
   id: string;
+  /** Position in the list — drives the staggered entrance delay. */
+  index: number;
   /** Receives the drag activator so the card can make its header draggable. */
   children: (drag: DragActivator) => ReactNode;
 };
+
+const STAGGER_MS = 100;
 
 /**
  * Wraps one habit card as a sortable item. Owns the @dnd-kit `useSortable` hook
  * and hands a {@link DragActivator} to `children`: the card puts `listeners` on
  * the whole grip+icon+name region (so it can be grabbed anywhere there) while
  * the grip stays the focusable keyboard activator.
+ *
+ * The `setNodeRef` div is the element dnd-kit transforms AND the element React
+ * reorders (it's the keyed child of the list) — keeping those the same node
+ * avoids a drop-time flicker. The staggered entrance lives on an inner wrapper
+ * so its `translateY` animation can't fight the drag transform on the outer node.
  */
-export default function SortableHabitCard({ id, children }: Props) {
+export default function SortableHabitCard({ id, index, children }: Props) {
   const {
     attributes,
     listeners,
@@ -55,12 +64,17 @@ export default function SortableHabitCard({ id, children }: Props) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      {children({
-        setActivatorRef: setActivatorNodeRef,
-        attributes: attributes as unknown as HTMLAttributes<HTMLElement>,
-        listeners: (listeners ?? {}) as DOMAttributes<HTMLElement>,
-        isDragging,
-      })}
+      <div
+        className="stagger-child"
+        style={{ animationDelay: `${index * STAGGER_MS}ms` }}
+      >
+        {children({
+          setActivatorRef: setActivatorNodeRef,
+          attributes: attributes as unknown as HTMLAttributes<HTMLElement>,
+          listeners: (listeners ?? {}) as DOMAttributes<HTMLElement>,
+          isDragging,
+        })}
+      </div>
     </div>
   );
 }
