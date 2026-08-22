@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // GitHub Pages serves this repo at /habit-tracker/, so CI builds with
+  // BASE_PATH set. Local dev/preview/E2E stay at "/" (e2e specs goto("/")).
+  base: process.env.BASE_PATH ?? "/",
   server: {
     host: true, // listen on 0.0.0.0 (all network interfaces)
     allowedHosts: ["devbox.lan"],
