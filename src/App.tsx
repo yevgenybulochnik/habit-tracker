@@ -46,6 +46,7 @@ export default function App() {
   // Saving is allowed only after a load has succeeded, so a failed (or
   // unfinished) load can never write empty state over the real data.
   const loadedRef = useRef(false);
+  const [saveFailed, setSaveFailed] = useState(false); // last save threw
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
   // every mutator having to thread it through (timers change only on start/stop).
@@ -106,8 +107,10 @@ export default function App() {
           config: c,
           timers: timersRef.current,
         });
+        setSaveFailed(false);
       } catch (e) {
-        console.error(e);
+        console.error("Couldn't save data", e);
+        setSaveFailed(true);
       }
     },
     [],
@@ -377,6 +380,13 @@ export default function App() {
     <div data-theme={theme} className={styles.root}>
       <style>{CSS + THEME_CSS}</style>
       <div className={styles.container}>
+        {/* Stays up until a later save succeeds */}
+        {saveFailed && (
+          <div role="alert" className={styles.saveError}>
+            Changes aren't being saved — export a backup from Settings ⚙
+          </div>
+        )}
+
         {/* Header */}
         <div className={`stagger-child ${styles.header}`}>
           <div>

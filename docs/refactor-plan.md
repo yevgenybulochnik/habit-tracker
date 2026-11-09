@@ -62,7 +62,7 @@ when a save fails.
   - New `App.test.tsx` mocks `lib/storage`: when `loadState` rejects, the error
     screen shows and `saveState` is never called.
   - With no habits rendered, jsdom needs no ResizeObserver stub.
-- [ ] **Save errors.** A failed save shows a persistent banner ("Changes aren't
+- [x] **Save errors.** A failed save shows a persistent banner ("Changes aren't
       being saved — export a backup"). The next successful save clears it.
       Tested by making `saveState` reject.
 

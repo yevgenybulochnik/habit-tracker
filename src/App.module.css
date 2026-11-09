@@ -186,6 +186,26 @@
   animation: fadeIn 0.5s ease;
 }
 
+/* Save-failure banner: sticks to the top so it stays visible while scrolling
+   (above dragged cards/tooltips at z 10, below modals at z 1000) */
+.saveError {
+  position: sticky;
+  top: calc(8px + env(safe-area-inset-top));
+  z-index: 20;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--c-danger);
+  background: var(--c-surface);
+  background: color-mix(in srgb, var(--c-danger) 12%, var(--c-bg));
+  color: var(--c-danger);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
 /* Load-error screen: replaces the dashboard when stored data can't be read */
 .loadError {
   box-sizing: border-box;
