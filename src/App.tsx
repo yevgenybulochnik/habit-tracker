@@ -41,6 +41,11 @@ export default function App() {
   const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0); // bumped by Retry
+  // Saving is allowed only after a load has succeeded, so a failed (or
+  // unfinished) load can never write empty state over the real data.
+  const loadedRef = useRef(false);
   const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
   // Mirror timers in a ref so save() always serializes the latest value without
   // every mutator having to thread it through (timers change only on start/stop).
@@ -75,15 +80,24 @@ export default function App() {
             timersRef.current = p.timers;
           }
         }
+        loadedRef.current = true;
       } catch (e) {
-        console.log("Fresh", e);
+        console.error("Couldn't load data", e);
+        setLoadError(e instanceof Error ? e.message : String(e));
       }
       setLoading(false);
     })();
-  }, []);
+  }, [loadAttempt]);
+
+  const retryLoad = () => {
+    setLoadError(null);
+    setLoading(true);
+    setLoadAttempt((n) => n + 1);
+  };
 
   const save = useCallback(
     async (h: Habit[], l: Logs, u: Unit[], c: AppConfig) => {
+      if (!loadedRef.current) return;
       try {
         await saveState({
           habits: h,
@@ -301,6 +315,25 @@ export default function App() {
     return (
       <div className={styles.loading}>
         <div className={styles.loadingText}>Loading...</div>
+      </div>
+    );
+
+  // Stored data couldn't be read. Show this instead of the (empty) dashboard,
+  // which would otherwise let the next change save over the real data.
+  if (loadError !== null)
+    return (
+      <div data-theme={theme} className={styles.root}>
+        <style>{CSS + THEME_CSS}</style>
+        <div role="alert" className={styles.loadError}>
+          <h1 className={styles.loadErrorTitle}>Couldn't open your data</h1>
+          <p className={styles.loadErrorText}>
+            Nothing was changed. Try again, or close and reopen the app.
+          </p>
+          {loadError && <p className={styles.loadErrorDetail}>{loadError}</p>}
+          <button onClick={retryLoad} className={styles.retryBtn}>
+            Retry
+          </button>
+        </div>
       </div>
     );
 

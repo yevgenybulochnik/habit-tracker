@@ -185,3 +185,57 @@
   font-size: 14px;
   animation: fadeIn 0.5s ease;
 }
+
+/* Load-error screen: replaces the dashboard when stored data can't be read */
+.loadError {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(24px + env(safe-area-inset-top))
+    calc(20px + env(safe-area-inset-right))
+    calc(24px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+}
+.loadErrorTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.loadErrorText {
+  margin: 0;
+  max-width: 340px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-muted);
+}
+.loadErrorDetail {
+  margin: 0;
+  max-width: 340px;
+  font-size: 11px;
+  color: var(--c-dim);
+  overflow-wrap: anywhere;
+}
+.retryBtn {
+  margin-top: 8px;
+  padding: 9px 22px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.retryBtn:hover,
+.retryBtn:focus-visible {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}

@@ -56,7 +56,7 @@ start.
 **Goal:** the app can never overwrite data it failed to read, and you find out
 when a save fails.
 
-- [ ] **Load errors.** `App` gets a `loadError` state. While it's set, the app
+- [x] **Load errors.** `App` gets a `loadError` state. While it's set, the app
       shows a "Couldn't open your data, nothing was changed" screen with a Retry
       button, and `save()` does nothing.
   - New `App.test.tsx` mocks `lib/storage`: when `loadState` rejects, the error
