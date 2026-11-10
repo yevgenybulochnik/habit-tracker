@@ -90,7 +90,7 @@ when a save fails.
       files) and fails on anything outside `lib/`, `types`, or an allowlist
       (just `idb-keyval`). It goes green once the split lands.
 - [x] **CI: format check.** Add `npm run format:check` to the deploy workflow.
-- [ ] **CI: E2E.** Add an E2E job
+- [x] **CI: E2E.** Add an E2E job
       (`npx playwright install --with-deps chromium && npm run e2e`) that must
       pass before deploy. Phases 6 and 7 rely on E2E as the safety net, so it
       should be in CI before then.

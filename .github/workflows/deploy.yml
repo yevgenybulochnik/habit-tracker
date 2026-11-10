@@ -39,8 +39,25 @@ jobs:
         with:
           path: dist
 
+  e2e:
+    # Pinned, not ubuntu-latest: the installed Playwright has no browser build
+    # for Ubuntu 26.04 (see playwright.config.ts), so `playwright install`
+    # would fail once ubuntu-latest moves on.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Builds and previews its own copy at base "/" (the specs goto("/")),
+      # separate from the BASE_PATH build that gets deployed.
+      - run: npm run e2e
+
   deploy:
-    needs: build
+    needs: [build, e2e]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
