@@ -3,8 +3,8 @@ import type { AppConfig, Palette, ThemeName, Unit } from "./types";
 
 export const STORAGE_KEY = "habit-tracker-v3";
 
-// Concrete hex per theme. `emptyCell`/`cellStroke`/`futureCell` are used by the
-// d3 SVG (where CSS vars can't reach) — the rest also back the CSS variables below.
+// Concrete hex per theme. `cellStroke`/`futureCell` are used by the d3 SVG
+// (where CSS vars can't reach) — the rest also back the CSS variables below.
 export const THEMES: Record<ThemeName, Record<string, string>> = {
   dark: {
     bg: "#0d1117",
@@ -21,7 +21,6 @@ export const THEMES: Record<ThemeName, Record<string, string>> = {
     success: "#39d353",
     successDim: "rgba(57,211,83,0.12)",
     green4: "#39d353",
-    emptyCell: "#161b22",
     cellStroke: "rgba(255,255,255,0.06)",
     futureCell: "#1c2128",
   },
@@ -40,7 +39,6 @@ export const THEMES: Record<ThemeName, Record<string, string>> = {
     success: "#1a7f37",
     successDim: "rgba(26,127,55,0.12)",
     green4: "#2da44e",
-    emptyCell: "#ebedf0",
     cellStroke: "rgba(27,31,36,0.10)",
     futureCell: "#f0f2f4",
   },
@@ -180,23 +178,13 @@ export const EMOJIS = [
 ];
 
 export const CSS = `
-@keyframes fadeSlideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes fadeSlideRight{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
 @keyframes backdropIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(4px)}}
-@keyframes dateShiftLeft{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-@keyframes dateShiftRight{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
-@keyframes pulseGlow{0%,100%{box-shadow:0 0 8px rgba(57,211,83,.3)}50%{box-shadow:0 0 20px rgba(57,211,83,.6)}}
 .stagger-child{animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both}
-.panel-slide-left{animation:fadeSlideLeft .65s cubic-bezier(.16,1,.3,1) both}
-.panel-slide-right{animation:fadeSlideRight .65s cubic-bezier(.16,1,.3,1) both}
 .modal-backdrop{animation:backdropIn .4s ease both}
 .modal-content{animation:scaleIn .5s cubic-bezier(.16,1,.3,1) both}
-.date-shift-left{animation:dateShiftLeft .45s cubic-bezier(.16,1,.3,1) both}
-.date-shift-right{animation:dateShiftRight .45s cubic-bezier(.16,1,.3,1) both}
-.save-pulse{animation:pulseGlow 1s ease}
 /* >=16px keeps iOS Safari from auto-zooming when an input is focused.
    !important overrides the smaller inline font sizes on individual fields. */
 input,select,textarea{font-size:16px !important}

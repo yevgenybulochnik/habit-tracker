@@ -155,21 +155,6 @@ export function setUnitLabel(m: Metric): string {
   return p.unit || p.label.toLowerCase();
 }
 
-export function setsVolume(sets: SetEntry[] | undefined): number {
-  if (!Array.isArray(sets) || !sets.length) return 0;
-  return sets.reduce((s, st) => s + (st.w || 0) * (st.r || 0), 0);
-}
-
-export function setsTotalReps(sets: SetEntry[] | undefined): number {
-  if (!Array.isArray(sets)) return 0;
-  return sets.reduce((s, st) => s + (st.r || 0), 0);
-}
-
-export function setsMaxWeight(sets: SetEntry[] | undefined): number {
-  if (!Array.isArray(sets) || !sets.length) return 0;
-  return Math.max(...sets.map((st) => st.w || 0));
-}
-
 /** Numeric value of a metric in a day's log (schema-driven for sets metrics). */
 export function metricVal(m: Metric, log: DayLog | undefined): number {
   if (!log) return 0;
@@ -199,13 +184,4 @@ export function findLastSet(
     if (Array.isArray(v) && v.length > 0) return v[v.length - 1];
   }
   return null;
-}
-
-/** Most recent set weight for a metric (legacy weighted helper). */
-export function findLastWeight(
-  logs: HabitLogs,
-  metricId: string,
-): number | null {
-  const last = findLastSet(logs, metricId);
-  return last ? (last.w ?? null) : null;
 }

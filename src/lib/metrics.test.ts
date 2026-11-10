@@ -3,12 +3,8 @@ import {
   getUnit,
   getQuickAdd,
   isSetMetric,
-  setsVolume,
-  setsTotalReps,
-  setsMaxWeight,
   metricVal,
   metricActive,
-  findLastWeight,
   setFieldsOf,
   aggregateSets,
   setVolume,
@@ -102,28 +98,6 @@ describe("isSetMetric", () => {
   it("is true only for mode 'sets'", () => {
     expect(isSetMetric(setM)).toBe(true);
     expect(isSetMetric(minM)).toBe(false);
-  });
-});
-
-describe("sets aggregation", () => {
-  const sets = [
-    { w: 100, r: 5 },
-    { w: 120, r: 3 },
-  ];
-  it("setsVolume sums weight × reps", () => {
-    expect(setsVolume(sets)).toBe(100 * 5 + 120 * 3);
-  });
-  it("setsTotalReps sums reps", () => {
-    expect(setsTotalReps(sets)).toBe(8);
-  });
-  it("setsMaxWeight returns the heaviest set", () => {
-    expect(setsMaxWeight(sets)).toBe(120);
-  });
-  it("handles empty / undefined safely", () => {
-    expect(setsVolume([])).toBe(0);
-    expect(setsVolume(undefined)).toBe(0);
-    expect(setsTotalReps(undefined)).toBe(0);
-    expect(setsMaxWeight([])).toBe(0);
   });
 });
 
@@ -276,24 +250,5 @@ describe("metricActive", () => {
   it("is true when a sets metric has at least one set", () => {
     expect(metricActive(setM, { m2: [{ w: 10, r: 1 }] })).toBe(true);
     expect(metricActive(setM, { m2: [] })).toBe(false);
-  });
-});
-
-describe("findLastWeight", () => {
-  it("returns the weight of the most recent logged set within 90 days", () => {
-    const today = new Date();
-    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const logs: HabitLogs = {
-      [key]: {
-        m2: [
-          { w: 95, r: 5 },
-          { w: 135, r: 3 },
-        ],
-      },
-    };
-    expect(findLastWeight(logs, "m2")).toBe(135);
-  });
-  it("returns null when nothing is found", () => {
-    expect(findLastWeight({}, "m2")).toBeNull();
   });
 });

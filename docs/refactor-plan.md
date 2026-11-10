@@ -70,7 +70,7 @@ when a save fails.
 
 **Goal:** shrink the code before refactoring, and enforce that lib stays pure.
 
-- [ ] **Delete dead code:**
+- [x] **Delete dead code:**
   - `LiveTimer.tsx`
   - `setsVolume`, `setsTotalReps`, `setsMaxWeight`, `findLastWeight` and their
     tests

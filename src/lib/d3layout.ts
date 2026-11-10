@@ -8,8 +8,6 @@ export type Cell = {
   y: number;
   w: number;
   h: number;
-  r: number;
-  vis: boolean;
   future: boolean;
 };
 export type MLabel = {
@@ -136,8 +134,6 @@ export function compactHeatLayout(
       y: tp + dow * (cs + cg),
       w: cs,
       h: cs,
-      r: 2,
-      vis: true,
       future,
     });
     const next = days[i + 1];
@@ -201,8 +197,6 @@ export function compactCalLayout(
         y: tp + wk * (cs + cg),
         w: cs,
         h: cs,
-        r: 2,
-        vis: true,
         future,
       });
     }
