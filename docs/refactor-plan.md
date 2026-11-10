@@ -94,7 +94,7 @@ when a save fails.
       (`npx playwright install --with-deps chromium && npm run e2e`) that must
       pass before deploy. Phases 6 and 7 rely on E2E as the safety net, so it
       should be in CI before then.
-- [ ] Update `CLAUDE.md` where it describes `constants`.
+- [x] Update `CLAUDE.md` where it describes `constants`.
 
 ## Phase 3: Versioned, normalized data
 

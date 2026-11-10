@@ -73,8 +73,15 @@ The codebase is layered so the core logic is framework-agnostic and unit-tested:
 **`src/lib/` — pure logic, no React/DOM.** This is where the real behavior lives and where
 most tests are. `dates` (date keys), `metrics` (unit resolution, sets aggregation, per-metric
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
-`d3layout` (calendar/heatmap cell+label coordinate math), and `storage` (IndexedDB via
-`idb-keyval`). Prefer adding logic here over inside components.
+`d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
+`idb-keyval`), and `defaults` (storage key, built-in units, default config, month/weekday
+labels). Prefer adding logic here over inside components. `boundary.test.ts` enforces the
+purity: a lib module may import only other lib modules, `../types`, and `idb-keyval`.
+
+**Shared non-lib constants** live in two root modules: `src/theme.ts` (`THEMES`, the `C`
+CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
+`src/globalCss.ts` (`CSS`). Anything used by a single component sits with it (`EMOJIS` in
+`components/emojis.ts`, the d3 easing `D3E` inside `D3Calendar`).
 
 **The data model is nested and worth internalizing** (`src/types.ts`):
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
@@ -113,12 +120,12 @@ classes (`inp`, `lbl`) live in `src/styles/shared.module.css` and are pulled in 
 
 There are two things CSS Modules **don't** own:
 
-- **Theme tokens + keyframes stay global**, still defined in `src/constants.ts` and injected once
-  via `<style>{CSS + THEME_CSS}</style>` in `App` (`THEME_CSS` sets the `--c-*` vars on
-  `:root`/`[data-theme="light"]`; `CSS` holds `@keyframes` + global resets + the
-  `.stagger-child`/`.reorder-drag` utility classes). Module classes consume `var(--c-*)` and
-  reference the global keyframe names. The app font is set once on `App`'s root class and
-  inherited.
+- **Theme tokens + keyframes stay global**, defined in `src/theme.ts` (`THEME_CSS`) and
+  `src/globalCss.ts` (`CSS`) and injected once via `<style>{CSS + THEME_CSS}</style>` in `App`
+  (`THEME_CSS` sets the `--c-*` vars on `:root`/`[data-theme="light"]`; `CSS` holds
+  `@keyframes` + global resets + the `.stagger-child`/`.reorder-drag` utility classes). Module
+  classes consume `var(--c-*)` and reference the global keyframe names. The app font is set
+  once on `App`'s root class and inherited.
 - **Runtime values** — per-habit palette colours (`pal.shades[i]`), dnd-kit transforms, and the
   d3 SVG — can't be static classes. Palette colours are passed as **inline CSS custom
   properties** consumed by a class (`style={{ "--p4": pal.shades[4] }}` → `.x { color: var(--p4) }`);
