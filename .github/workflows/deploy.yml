@@ -26,6 +26,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm test
       - name: Build
         # Project site lives at /<repo>/, so assets must be based there.
