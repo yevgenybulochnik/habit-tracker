@@ -86,7 +86,7 @@ when a save fails.
   - `src/globalCss.ts`: `CSS`
   - `EMOJIS` moves next to `HabitFormFields`, and `D3E` moves into
     `D3Calendar`.
-- [ ] **Boundary test.** A test scans the imports in `src/lib/*.ts` (not test
+- [x] **Boundary test.** A test scans the imports in `src/lib/*.ts` (not test
       files) and fails on anything outside `lib/`, `types`, or an allowlist
       (just `idb-keyval`). It goes green once the split lands.
 - [ ] **CI: format check.** Add `npm run format:check` to the deploy workflow.
