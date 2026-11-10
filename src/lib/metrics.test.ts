@@ -16,7 +16,7 @@ import {
   isDoneMetric,
   doneMetric,
 } from "./metrics";
-import { BUILTIN_UNITS } from "../constants";
+import { BUILTIN_UNITS } from "./defaults";
 import type { Metric, HabitLogs } from "../types";
 
 const minM: Metric = { id: "m1", name: "Run", unit: "min" };

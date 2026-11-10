@@ -1,5 +1,5 @@
 /* Shared form styles, consumed via `composes` from component modules.
-   Colors reference the global theme variables (see constants.ts THEME_CSS);
+   Colors reference the global theme variables (see theme.ts THEME_CSS);
    font-family is inherited from the app root. */
 .inp {
   width: 100%;

@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayEditor from "./DayEditor";
-import { BUILTIN_UNITS, PALETTES } from "../constants";
+import { BUILTIN_UNITS } from "../lib/defaults";
+import { PALETTES } from "../theme";
 import type { Habit, HabitLogs } from "../types";
 
 const habit: Habit = {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { EMOJIS, PALETTES } from "../constants";
+import { PALETTES } from "../theme";
+import { EMOJIS } from "./emojis";
 import { getUnit, setsPreset, setUnitLabel } from "../lib/metrics";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";

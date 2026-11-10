@@ -1,4 +1,4 @@
-import { MONTHS } from "../constants";
+import { MONTHS } from "./defaults";
 import { dk, todayK } from "./dates";
 
 export type Cell = {

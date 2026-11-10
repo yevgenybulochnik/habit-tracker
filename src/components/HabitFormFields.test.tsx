@@ -3,7 +3,7 @@ import { useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HabitFormFields from "./HabitFormFields";
-import { BUILTIN_UNITS } from "../constants";
+import { BUILTIN_UNITS } from "../lib/defaults";
 import type { IntensityMode, Metric } from "../types";
 
 function Harness() {

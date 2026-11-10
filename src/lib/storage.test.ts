@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { get, set, clear } from "idb-keyval";
 import { loadState, saveState, requestPersistence } from "./storage";
-import { STORAGE_KEY } from "../constants";
+import { STORAGE_KEY } from "./defaults";
 import type { PersistedState } from "../types";
 
 const sample: PersistedState = {

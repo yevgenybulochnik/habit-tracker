@@ -1,5 +1,5 @@
 import { get, set } from "idb-keyval";
-import { STORAGE_KEY } from "../constants";
+import { STORAGE_KEY } from "./defaults";
 import type { PersistedState } from "../types";
 
 const LEGACY_KEY = "habit-tracker-v2";

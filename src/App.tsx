@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  CSS,
-  THEME_CSS,
-  THEMES,
-  BUILTIN_UNITS,
-  DEFAULT_CONFIG,
-} from "./constants";
+import { CSS } from "./globalCss";
+import { THEME_CSS, THEMES } from "./theme";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
 import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import { loadState, saveState, requestPersistence } from "./lib/storage";

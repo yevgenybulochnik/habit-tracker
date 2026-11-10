@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import QuickLogSection from "./QuickLogSection";
-import { BUILTIN_UNITS, PALETTES } from "../constants";
+import { BUILTIN_UNITS } from "../lib/defaults";
+import { PALETTES } from "../theme";
 import { todayK } from "../lib/dates";
 import type { Habit, HabitLogs } from "../types";
 

@@ -1,4 +1,4 @@
-import { C } from "../constants";
+import { C } from "../theme";
 import { FRAMES, ICON_CELLS } from "../lib/brandMark";
 
 // Pure-CSS looping pattern cycle. The glyph cycles through FRAMES (the green cells

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
 import { todayK } from "../lib/dates";
 import ModalShell from "./ModalShell";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";

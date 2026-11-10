@@ -181,10 +181,11 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 
 ```
 src/
-  lib/          pure logic, no React/DOM (dates, format, metrics, stats, d3layout, storage, backup) — heavily unit-tested
+  lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, backup) — heavily unit-tested
   components/   React components (D3Calendar, DayEditor, modals, quick-log, timers, …)
   types.ts      domain types (the data model above)
-  constants.ts  colors/themes, palettes, units, CSS, design tokens
+  theme.ts      themes, palettes, design tokens (CSS variables)
+  globalCss.ts  global keyframes, utility classes and resets
   App.tsx       single stateful container; persistence + dashboard view toggle
 e2e/            Playwright specs + shared helpers
 scripts/        generate-icons.mjs (dependency-free PWA icon generator)

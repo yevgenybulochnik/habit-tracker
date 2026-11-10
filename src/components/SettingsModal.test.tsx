@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SettingsModal from "./SettingsModal";
-import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../constants";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
 import type { PersistedState } from "../types";
 
 const sample: PersistedState = {

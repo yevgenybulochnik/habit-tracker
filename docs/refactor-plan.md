@@ -78,7 +78,7 @@ when a save fails.
   - the `fadeSlide*`, `dateShift*` and `pulseGlow` keyframes (`fadeIn` is still
     used, so it stays)
   - `THEMES.*.emptyCell`, and `Cell.r` / `Cell.vis`
-- [ ] **Split `constants.ts`:**
+- [x] **Split `constants.ts`:**
   - `src/lib/defaults.ts`: `STORAGE_KEY`, `BUILTIN_UNITS`, `DEFAULT_CONFIG`,
     `MONTHS`, `WK_FULL`
   - `src/theme.ts`: `THEMES`, `C`, `THEME_CSS`, the palettes, `resolvePalette`,

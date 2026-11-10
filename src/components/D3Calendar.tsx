@@ -1,15 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
-import {
-  F,
-  MONTHS,
-  WK_FULL,
-  resolvePalette,
-  THEMES,
-  DEFAULT_CONFIG,
-  D3E,
-} from "../constants";
+import { F, resolvePalette, THEMES } from "../theme";
+import { MONTHS, WK_FULL, DEFAULT_CONFIG } from "../lib/defaults";
 import { getUnit } from "../lib/metrics";
 import { logLevel, logSummary, habitStats } from "../lib/stats";
 import { todayK } from "../lib/dates";
@@ -59,6 +52,9 @@ type Props = {
 };
 
 type Tip = { label: string; date: string };
+
+// Shared easing for every d3 transition in the card.
+const D3E = d3.easeCubicInOut;
 
 export default function D3Calendar({
   habit,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { logLevel, logActive, logSummary, habitStats } from "./stats";
-import { BUILTIN_UNITS } from "../constants";
+import { BUILTIN_UNITS } from "./defaults";
 import { dk } from "./dates";
 import type { Habit, HabitLogs } from "../types";
 
