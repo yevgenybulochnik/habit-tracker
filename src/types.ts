@@ -81,6 +81,8 @@ export type Timers = Record<string, number>;
 
 /** The full persisted blob. */
 export type PersistedState = {
+  /** Format version, written by `normalizeState`. Absent in older data. */
+  schemaVersion?: number;
   habits: Habit[];
   logs: Logs;
   units: Unit[];

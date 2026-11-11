@@ -101,7 +101,7 @@ when a save fails.
 **Goal:** one function turns any stored or imported data into a complete,
 current-format state.
 
-- [ ] **`src/lib/normalize.ts`.** `normalizeState(raw: unknown)` returns
+- [x] **`src/lib/normalize.ts`.** `normalizeState(raw: unknown)` returns
       `{ ok: true, state } | { ok: false, reason }`. It fills in all defaults
       once:
   - `metrics: []` and `intensityMode: "total"`
