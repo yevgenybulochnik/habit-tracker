@@ -4,6 +4,7 @@ import type {
   Metric,
   SetEntry,
   SetField,
+  SetsMetric,
   Unit,
 } from "../types";
 import { dk } from "./dates";
@@ -24,7 +25,7 @@ export function getQuickAdd(uid: string, units: Unit[]): number[] {
   return getUnit(uid, units).quickAdd;
 }
 
-export function isSetMetric(m: Metric): boolean {
+export function isSetMetric(m: Metric): m is SetsMetric {
   return m.mode === "sets";
 }
 
@@ -43,7 +44,8 @@ export function doneMetric(): Metric {
   };
 }
 
-/** The default schema for a sets metric that doesn't declare its own fields. */
+/** The weighted [weight, reps] schema: the weighted preset's fields, and what
+ *  `normalizeState` gives a sets metric stored before schemas existed. */
 export function weightedFields(weightUnit = "lbs"): SetField[] {
   return [
     { id: "w", label: "Weight", unit: weightUnit, agg: "max" },
@@ -51,16 +53,9 @@ export function weightedFields(weightUnit = "lbs"): SetField[] {
   ];
 }
 
-/** Resolve a sets metric's per-set fields (defaults to weighted [weight, reps]). */
-export function setFieldsOf(m: Metric): SetField[] {
-  return m.setFields && m.setFields.length
-    ? m.setFields
-    : weightedFields(m.weightUnit);
-}
-
 /** The field whose aggregate is the metric's headline value in "primary" mode. */
-export function primaryField(m: Metric): SetField {
-  const fields = setFieldsOf(m);
+export function primaryField(m: SetsMetric): SetField {
+  const fields = m.setFields;
   return fields.find((f) => f.primary) || fields[fields.length - 1];
 }
 
@@ -97,11 +92,12 @@ export function setVolume(
 }
 
 /** A sets metric's headline numeric value: volume, or the primary field's aggregate. */
-export function setsMetricVal(m: Metric, sets: SetEntry[] | undefined): number {
-  const fields = setFieldsOf(m);
-  if ((m.setValue ?? "volume") === "primary")
-    return aggregateSets(sets, primaryField(m));
-  return setVolume(sets, fields);
+export function setsMetricVal(
+  m: SetsMetric,
+  sets: SetEntry[] | undefined,
+): number {
+  if (m.setValue === "primary") return aggregateSets(sets, primaryField(m));
+  return setVolume(sets, m.setFields);
 }
 
 /** Built-in sets schemas chosen in the habit form. */
@@ -111,7 +107,7 @@ export type SetPreset = "weighted" | "reps" | "timed";
 export function setsPreset(
   kind: SetPreset,
   weightUnit = "lbs",
-): Pick<Metric, "setFields" | "setValue" | "weightUnit" | "unit"> {
+): Pick<SetsMetric, "setFields" | "setValue" | "weightUnit" | "unit"> {
   switch (kind) {
     case "reps":
       return {
@@ -139,18 +135,15 @@ export function setsPreset(
         setValue: "volume",
         unit: "reps",
         weightUnit,
-        setFields: [
-          { id: "w", label: "Weight", unit: weightUnit, agg: "max" },
-          { id: "r", label: "Reps", agg: "sum", primary: true },
-        ],
+        setFields: weightedFields(weightUnit),
       };
   }
 }
 
 /** Short unit label for a sets metric's badge, e.g. "lbs" | "reps" | "min". */
-export function setUnitLabel(m: Metric): string {
-  if ((m.setValue ?? "volume") === "volume")
-    return setFieldsOf(m).find((f) => f.unit)?.unit || "lbs";
+export function setUnitLabel(m: SetsMetric): string {
+  if (m.setValue === "volume")
+    return m.setFields.find((f) => f.unit)?.unit || "lbs";
   const p = primaryField(m);
   return p.unit || p.label.toLowerCase();
 }

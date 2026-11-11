@@ -1,5 +1,5 @@
-import type { Metric, SetEntry } from "../types";
-import { primaryField, setFieldsOf, setsMetricVal } from "./metrics";
+import type { SetEntry, SetsMetric } from "../types";
+import { primaryField, setsMetricVal } from "./metrics";
 
 /** Human-readable value, e.g. 90 min → "1h 30m", 5 reps → "5 reps". */
 export function fmtVal(v: number | undefined, unit: string): string {
@@ -15,13 +15,13 @@ export function fmtVal(v: number | undefined, unit: string): string {
 
 /** Summarize sets per the metric's schema, e.g. "3 sets · 1,500 lbs vol",
  *  "4 sets · 48 reps", "2 sets · 35 min". */
-export function fmtSets(sets: SetEntry[] | undefined, m: Metric): string {
+export function fmtSets(sets: SetEntry[] | undefined, m: SetsMetric): string {
   if (!Array.isArray(sets) || !sets.length) return "—";
   const n = sets.length;
   const val = setsMetricVal(m, sets).toLocaleString();
   let unit: string;
-  if ((m.setValue ?? "volume") === "volume") {
-    const weightField = setFieldsOf(m).find((f) => f.unit);
+  if (m.setValue === "volume") {
+    const weightField = m.setFields.find((f) => f.unit);
     unit = `${weightField?.unit || "lbs"} vol`;
   } else {
     const p = primaryField(m);

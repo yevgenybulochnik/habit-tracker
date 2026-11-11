@@ -44,7 +44,7 @@ export default function DayEditor({
   onClose,
   onChange,
 }: Props) {
-  const ms = habit.metrics || [];
+  const ms = habit.metrics;
   const dayLog = habitLogs[dateKey] || {};
   const [local, setLocal] = useState<Record<string, LocalVal>>(() => {
     const v: Record<string, LocalVal> = {};

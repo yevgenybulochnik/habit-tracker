@@ -1,15 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { fmtVal, fmtSets } from "./format";
-import type { Metric } from "../types";
+import { setsPreset } from "./metrics";
+import type { SetsMetric } from "../types";
 
-const weighted = (weightUnit: string): Metric => ({
+const weighted = (weightUnit: string): SetsMetric => ({
   id: "w",
   name: "Bench",
-  unit: "reps",
   mode: "sets",
-  weightUnit,
+  ...setsPreset("weighted", weightUnit),
 });
-const repsM: Metric = {
+const repsM: SetsMetric = {
   id: "r",
   name: "Pull-ups",
   unit: "reps",
@@ -17,7 +17,7 @@ const repsM: Metric = {
   setValue: "primary",
   setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
 };
-const timedM: Metric = {
+const timedM: SetsMetric = {
   id: "g",
   name: "Guitar",
   unit: "min",
@@ -65,10 +65,15 @@ describe("fmtSets", () => {
       ),
     ).toBe("2 sets · 1,000 kg vol");
   });
-  it("defaults the weight unit to lbs", () => {
-    expect(
-      fmtSets([{ w: 10, r: 1 }], weighted(undefined as unknown as string)),
-    ).toBe("1 set · 10 lbs vol");
+  it("labels the volume in lbs when no field has a unit", () => {
+    const unitless: SetsMetric = {
+      ...weighted("lbs"),
+      setFields: [
+        { id: "w", label: "Weight", agg: "max" },
+        { id: "r", label: "Reps", agg: "sum", primary: true },
+      ],
+    };
+    expect(fmtSets([{ w: 10, r: 1 }], unitless)).toBe("1 set · 10 lbs vol");
   });
   it("summarizes reps-only sets as total reps", () => {
     expect(fmtSets([{ r: 12 }, { r: 8 }], repsM)).toBe("2 sets · 20 reps");

@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import type { CSSProperties } from "react";
-import { setFieldsOf } from "../lib/metrics";
 import { fmtSets } from "../lib/format";
-import type { Metric, Palette, SetEntry } from "../types";
+import type { Palette, SetEntry, SetsMetric } from "../types";
 import styles from "./SetInput.module.css";
 
 type Props = {
-  metric: Metric;
+  metric: SetsMetric;
   sets: SetEntry[] | undefined;
   pal: Palette;
   onAddSet: (metricId: string, set: SetEntry) => void;
@@ -23,8 +22,8 @@ export default function SetInput({
   onRemoveSet,
   lastSet,
 }: Props) {
-  const fields = setFieldsOf(metric);
-  const useVol = (metric.setValue ?? "volume") === "volume";
+  const fields = metric.setFields;
+  const useVol = metric.setValue === "volume";
   // "sum" fields reset each set (reps, minutes); others carry over (weight, BPM, …).
   const carries = (agg: string) => agg !== "sum";
   const unitOf = (f: { unit?: string; label: string }) =>

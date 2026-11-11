@@ -63,7 +63,7 @@ export default function App() {
 
   // Keep the page background and iOS status-bar color in sync with the theme
   // (body and the <meta> tag live outside the themed root element).
-  const theme = appConfig.theme === "light" ? "light" : "dark";
+  const theme = appConfig.theme;
   useEffect(() => {
     const bg = THEMES[theme].bg;
     document.body.style.background = bg;
@@ -313,7 +313,7 @@ export default function App() {
     [save],
   );
 
-  const dashView = appConfig.dashView ?? "quick"; // persisted Quick/Calendar choice
+  const dashView = appConfig.dashView; // persisted Quick/Calendar choice
   const setDashView = (v: DashView) =>
     updateConfig({ ...appConfig, dashView: v });
   const tKey = todayK();

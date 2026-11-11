@@ -117,7 +117,7 @@ current-format state.
       raw data" button.
 - [x] **On import and export.** Import uses `normalizeState` instead of the
       hand-written check in `SettingsModal`, and export writes `schemaVersion`.
-- [ ] **Tighten the types.** Make those fields required in `types.ts` and
+- [x] **Tighten the types.** Make those fields required in `types.ts` and
       delete the defaults applied at read time: `setValue ?? "volume"` (4
       places), `habit.metrics || []`, `appConfig || DEFAULT_CONFIG`, and the
       fallback in `setFieldsOf`. This touches many files, but TypeScript points

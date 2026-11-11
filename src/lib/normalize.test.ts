@@ -234,17 +234,15 @@ describe("normalizeState — habits and metrics", () => {
   });
 
   it("gives a sets metric with no schema the weighted one, in lbs", () => {
-    const m = withMetric({
-      id: "m",
-      name: "Bench",
-      unit: "reps",
-      mode: "sets",
+    const bare = { id: "m", name: "Bench", unit: "reps", mode: "sets" };
+    expect(withMetric(bare)).toEqual({
+      ...bare,
+      setValue: "volume",
+      setFields: [
+        { id: "w", label: "Weight", unit: "lbs", agg: "max" },
+        { id: "r", label: "Reps", agg: "sum", primary: true },
+      ],
     });
-    expect(m.setValue).toBe("volume");
-    expect(m.setFields).toEqual([
-      { id: "w", label: "Weight", unit: "lbs", agg: "max" },
-      { id: "r", label: "Reps", agg: "sum", primary: true },
-    ]);
   });
 
   it("treats an empty list of set fields as no schema", () => {
@@ -256,7 +254,7 @@ describe("normalizeState — habits and metrics", () => {
       weightUnit: "kg",
       setFields: [],
     });
-    expect(m.setFields?.map((f) => f.unit)).toEqual(["kg", undefined]);
+    expect(m).toMatchObject({ setFields: [{ unit: "kg" }, { id: "r" }] });
   });
 
   it("keeps a sets metric's own schema and value mode", () => {
@@ -282,7 +280,7 @@ describe("normalizeState — habits and metrics", () => {
       mode: "sets",
       setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
     });
-    expect(m.setValue).toBe("volume");
+    expect(m).toMatchObject({ setValue: "volume" });
   });
 
   it("adds no sets fields to numeric or check-off metrics", () => {

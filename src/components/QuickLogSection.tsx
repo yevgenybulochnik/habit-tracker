@@ -56,14 +56,15 @@ export default function QuickLogSection({
   dense,
 }: Props) {
   const [justTapped, setJustTapped] = useState<string | null>(null);
-  const ms = habit.metrics || [];
+  const ms = habit.metrics;
   const compact = ms.length === 1;
   const tKey = todayK();
   const todayLog = logs[tKey] || {};
   const hasAny = ms.some((m) => metricActive(m, todayLog));
   const level = logLevel(habit, todayLog, units);
   const priIsMin = ms[0]?.unit === "min";
-  const priIsSets = ms[0]?.mode === "sets";
+  // The only metric, when it is a sets metric
+  const priSets = compact && isSetMetric(ms[0]) ? ms[0] : null;
   const priIsDone = compact && isDoneMetric(ms[0]);
   const timerKey = (mId: string) => `${habitId}:${mId}`;
 
@@ -77,7 +78,7 @@ export default function QuickLogSection({
     if (!hasAny) return null;
     if (priIsDone) return null; // the toggle button shows its own state
     if (compact) {
-      if (priIsSets) return fmtSets(todayLog[ms[0].id] as SetEntry[], ms[0]);
+      if (priSets) return fmtSets(todayLog[priSets.id] as SetEntry[], priSets);
       return fmtVal(
         ms.reduce((s, m) => s + ((todayLog[m.id] as number) || 0), 0),
         ms[0].unit,
@@ -122,21 +123,21 @@ export default function QuickLogSection({
           <span className={styles.doneIcon}>{hasAny ? "✓" : "○"}</span>
           {hasAny ? "Done today" : "Mark today"}
         </button>
-      ) : compact && priIsSets ? (
+      ) : priSets ? (
         <>
           <div className={styles.setsRow}>
-            <span className={styles.setsName}>{ms[0].name}</span>
+            <span className={styles.setsName}>{priSets.name}</span>
             <span className={styles.setsBadge}>
-              SETS · {setUnitLabel(ms[0])}
+              SETS · {setUnitLabel(priSets)}
             </span>
           </div>
           <SetInput
-            metric={ms[0]}
-            sets={todayLog[ms[0].id] as SetEntry[]}
+            metric={priSets}
+            sets={todayLog[priSets.id] as SetEntry[]}
             pal={pal}
             onAddSet={onAddSet!}
             onRemoveSet={onRemoveSet}
-            lastSet={findLastSet(logs, ms[0].id)}
+            lastSet={findLastSet(logs, priSets.id)}
           />
           <div className={styles.bars}>
             {[1, 2, 3, 4].map((i) => (

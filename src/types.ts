@@ -18,21 +18,29 @@ export type SetEntry = Record<string, number>;
 /** Intensity colouring strategy when a habit has multiple metrics. */
 export type IntensityMode = "total" | "coverage";
 
-/** A single thing measured within a habit. */
-export type Metric = {
+type MetricBase = {
   id: string;
   name: string;
   unit: string;
-  /** Metric kind. "sets" = a list of sets per day; "done" = a binary daily
-   *  check-off (stored as 0/1). Absent ⇒ a plain numeric metric. */
-  mode?: "sets" | "done";
-  /** Weight unit for the default weighted schema, e.g. "lbs" | "kg". */
-  weightUnit?: string;
-  /** Per-set fields. Absent ⇒ the default weighted [weight, reps] schema. */
-  setFields?: SetField[];
-  /** Headline value: "volume" (Σ of per-set field products) or the "primary" field's agg. */
-  setValue?: "volume" | "primary";
 };
+
+/** A metric stored as one number per day: a plain amount, or with mode
+ *  "done" a binary daily check-off (stored as 0/1). */
+export type ValueMetric = MetricBase & { mode?: "done" };
+
+/** A metric stored as a list of sets per day. */
+export type SetsMetric = MetricBase & {
+  mode: "sets";
+  /** Weight unit the weighted schema was created with, e.g. "lbs" | "kg". */
+  weightUnit?: string;
+  /** Per-set fields, e.g. [weight, reps]. */
+  setFields: SetField[];
+  /** Headline value: "volume" (Σ of per-set field products) or the "primary" field's agg. */
+  setValue: "volume" | "primary";
+};
+
+/** A single thing measured within a habit. */
+export type Metric = ValueMetric | SetsMetric;
 
 export type Habit = {
   id: string;
@@ -41,7 +49,7 @@ export type Habit = {
   description?: string;
   color: string;
   metrics: Metric[];
-  intensityMode?: IntensityMode;
+  intensityMode: IntensityMode;
   thresholds?: number[];
 };
 
@@ -72,17 +80,18 @@ export type DashView = "quick" | "calendar";
 export type AppConfig = {
   numMonths: number;
   monthGap: number;
-  theme?: ThemeName;
-  dashView?: DashView;
+  theme: ThemeName;
+  dashView: DashView;
 };
 
 /** Running timers keyed by "habitId:metricId" → start timestamp (ms). */
 export type Timers = Record<string, number>;
 
-/** The full persisted blob. */
+/** The full persisted blob, complete and in the current format. Stored or
+ *  imported data becomes one by passing through `normalizeState`. */
 export type PersistedState = {
-  /** Format version, written by `normalizeState`. Absent in older data. */
-  schemaVersion?: number;
+  /** Format version, written by `normalizeState`. */
+  schemaVersion: number;
   habits: Habit[];
   logs: Logs;
   units: Unit[];

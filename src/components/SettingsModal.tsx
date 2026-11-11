@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
+import { BUILTIN_UNITS } from "../lib/defaults";
 import { todayK } from "../lib/dates";
 import { normalizeState, SCHEMA_VERSION } from "../lib/normalize";
 import { downloadJson } from "../download";
@@ -28,12 +28,11 @@ export default function SettingsModal({
   onUpdateUnit,
   onDeleteUnit,
   onAddUnit,
-  appConfig,
+  appConfig: cfg,
   onUpdateConfig,
   onImportState,
   onClose,
 }: Props) {
-  const cfg = appConfig || DEFAULT_CONFIG;
   const [closing, setClosing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [eLabel, setELabel] = useState("");
@@ -58,7 +57,7 @@ export default function SettingsModal({
 
   const usedUnits = useMemo(() => {
     const s = new Set<string>();
-    habits.forEach((h) => (h.metrics || []).forEach((m) => s.add(m.unit)));
+    habits.forEach((h) => h.metrics.forEach((m) => s.add(m.unit)));
     return s;
   }, [habits]);
   const builtinIds = new Set(BUILTIN_UNITS.map((u) => u.id));
@@ -149,7 +148,7 @@ export default function SettingsModal({
           </div>
           <div className={styles.seg}>
             {(["dark", "light"] as const).map((t) => {
-              const active = (cfg.theme || "dark") === t;
+              const active = cfg.theme === t;
               return (
                 <button
                   key={t}

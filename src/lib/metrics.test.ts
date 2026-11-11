@@ -5,7 +5,7 @@ import {
   isSetMetric,
   metricVal,
   metricActive,
-  setFieldsOf,
+  weightedFields,
   aggregateSets,
   setVolume,
   setsMetricVal,
@@ -17,17 +17,22 @@ import {
   doneMetric,
 } from "./metrics";
 import { BUILTIN_UNITS } from "./defaults";
-import type { Metric, HabitLogs } from "../types";
+import type { Metric, HabitLogs, SetsMetric } from "../types";
 
 const minM: Metric = { id: "m1", name: "Run", unit: "min" };
-const setM: Metric = {
+const setM: SetsMetric = {
   id: "m2",
   name: "Bench",
   unit: "reps",
   mode: "sets",
   weightUnit: "lbs",
+  setFields: [
+    { id: "w", label: "Weight", unit: "lbs", agg: "max" },
+    { id: "r", label: "Reps", agg: "sum", primary: true },
+  ],
+  setValue: "volume",
 };
-const repsM: Metric = {
+const repsM: SetsMetric = {
   id: "m3",
   name: "Pull-ups",
   unit: "reps",
@@ -35,7 +40,7 @@ const repsM: Metric = {
   setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
   setValue: "primary",
 };
-const timedM: Metric = {
+const timedM: SetsMetric = {
   id: "m4",
   name: "Guitar",
   unit: "min",
@@ -45,7 +50,7 @@ const timedM: Metric = {
   ],
   setValue: "primary",
 };
-const tempoM: Metric = {
+const tempoM: SetsMetric = {
   id: "m5",
   name: "Scales",
   unit: "min",
@@ -101,15 +106,15 @@ describe("isSetMetric", () => {
   });
 });
 
-describe("setFieldsOf", () => {
-  it("defaults to the weighted [weight, reps] schema, honoring weightUnit", () => {
-    const f = setFieldsOf(setM);
-    expect(f.map((x) => x.id)).toEqual(["w", "r"]);
-    expect(f[0].unit).toBe("lbs");
-    expect(f[1].primary).toBe(true);
+describe("weightedFields", () => {
+  it("is weight (max) × reps (summed, primary) in the given weight unit", () => {
+    expect(weightedFields("kg")).toEqual([
+      { id: "w", label: "Weight", unit: "kg", agg: "max" },
+      { id: "r", label: "Reps", agg: "sum", primary: true },
+    ]);
   });
-  it("returns the metric's declared fields when present", () => {
-    expect(setFieldsOf(tempoM).map((x) => x.id)).toEqual(["bpm", "min"]);
+  it("defaults the weight unit to lbs", () => {
+    expect(weightedFields()[0].unit).toBe("lbs");
   });
 });
 
@@ -146,7 +151,7 @@ describe("setVolume", () => {
           { w: 100, r: 5 },
           { w: 120, r: 3 },
         ],
-        setFieldsOf(setM),
+        setM.setFields,
       ),
     ).toBe(860);
   });
@@ -156,13 +161,20 @@ describe("primaryField", () => {
   it("uses the field flagged primary", () => {
     expect(primaryField(tempoM).id).toBe("min");
   });
-  it("falls back to the last field of the weighted default (reps)", () => {
-    expect(primaryField(setM).id).toBe("r");
+  it("falls back to the last field when none is flagged", () => {
+    const unflagged: SetsMetric = {
+      ...tempoM,
+      setFields: [
+        { id: "bpm", label: "BPM", agg: "max" },
+        { id: "min", label: "Minutes", agg: "sum" },
+      ],
+    };
+    expect(primaryField(unflagged).id).toBe("min");
   });
 });
 
 describe("setsMetricVal", () => {
-  it("weighted (default) → total volume", () => {
+  it("weighted → total volume", () => {
     expect(
       setsMetricVal(setM, [
         { w: 100, r: 5 },
@@ -190,19 +202,18 @@ describe("setsPreset", () => {
   it("weighted → volume, weight+reps fields, honoring the weight unit", () => {
     const p = setsPreset("weighted", "kg");
     expect(p.setValue).toBe("volume");
-    expect(p.setFields!.map((f) => f.id)).toEqual(["w", "r"]);
-    expect(p.setFields![0].unit).toBe("kg");
+    expect(p.setFields).toEqual(weightedFields("kg"));
     expect(p.weightUnit).toBe("kg");
   });
   it("reps → primary, single reps field", () => {
     const p = setsPreset("reps");
     expect(p.setValue).toBe("primary");
-    expect(p.setFields!.map((f) => f.id)).toEqual(["r"]);
+    expect(p.setFields.map((f) => f.id)).toEqual(["r"]);
     expect(p.unit).toBe("reps");
   });
   it("timed → primary, single minutes field", () => {
     const p = setsPreset("timed");
-    expect(p.setFields!.map((f) => f.id)).toEqual(["min"]);
+    expect(p.setFields.map((f) => f.id)).toEqual(["min"]);
     expect(p.unit).toBe("min");
   });
 });
@@ -219,7 +230,7 @@ describe("metricVal", () => {
   it("returns the numeric value for a normal metric", () => {
     expect(metricVal(minM, { m1: 30 })).toBe(30);
   });
-  it("returns total volume for a (default weighted) sets metric", () => {
+  it("returns total volume for a weighted sets metric", () => {
     expect(metricVal(setM, { m2: [{ w: 50, r: 10 }] })).toBe(500);
   });
   it("returns total reps for a reps-only sets metric", () => {

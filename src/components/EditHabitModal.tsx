@@ -26,10 +26,8 @@ export default function EditHabitModal({
   const [emoji, setEmoji] = useState(habit.emoji);
   const [desc, setDesc] = useState(habit.description || "");
   const [color, setColor] = useState(habit.color);
-  const [metrics, setMetrics] = useState<Metric[]>([...(habit.metrics || [])]);
-  const [intMode, setIntMode] = useState<IntensityMode>(
-    habit.intensityMode || "total",
-  );
+  const [metrics, setMetrics] = useState<Metric[]>([...habit.metrics]);
+  const [intMode, setIntMode] = useState<IntensityMode>(habit.intensityMode);
   const [closing, setClosing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const hClose = () => {

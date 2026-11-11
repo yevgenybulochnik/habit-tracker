@@ -16,7 +16,7 @@ export function logLevel(
   units: Unit[],
 ): number {
   if (!log) return 0;
-  const ms = habit.metrics || [];
+  const ms = habit.metrics;
   if (!ms.length) return 0;
   if (habit.intensityMode === "coverage") {
     const done = ms.filter((m) => metricActive(m, log)).length;
@@ -47,7 +47,7 @@ export function logActive(
 
 export function logSummary(h: Habit, log: DayLog | undefined): string {
   if (!log) return "No entry";
-  const ms = h.metrics || [];
+  const ms = h.metrics;
   const parts = ms
     .filter((m) => metricActive(m, log))
     .map((m) => {
@@ -70,7 +70,7 @@ export function habitStats(h: Habit, logs: HabitLogs, u: Unit[]): HabitStats {
   const es = Object.entries(logs || {});
   let td = 0,
     tv = 0;
-  const ms = h.metrics || [];
+  const ms = h.metrics;
   es.forEach(([, l]) => {
     if (logActive(h, l, u)) td++;
     tv += ms.reduce((s, m) => s + metricVal(m, l), 0);

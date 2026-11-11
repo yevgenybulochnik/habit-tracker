@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import QuickLogSection from "./QuickLogSection";
 import { BUILTIN_UNITS } from "../lib/defaults";
+import { setsPreset } from "../lib/metrics";
 import { PALETTES } from "../theme";
 import { todayK } from "../lib/dates";
 import type { Habit, HabitLogs } from "../types";
@@ -13,6 +14,7 @@ const minHabit: Habit = {
   emoji: "🏃",
   color: "Green",
   metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+  intensityMode: "total",
 };
 const setHabit: Habit = {
   id: "h2",
@@ -20,8 +22,9 @@ const setHabit: Habit = {
   emoji: "🏋️",
   color: "Blue",
   metrics: [
-    { id: "m2", name: "Bench", unit: "reps", mode: "sets", weightUnit: "lbs" },
+    { id: "m2", name: "Bench", mode: "sets", ...setsPreset("weighted", "lbs") },
   ],
+  intensityMode: "total",
 };
 const doneHabit: Habit = {
   id: "h3",

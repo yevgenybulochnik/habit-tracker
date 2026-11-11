@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayEditor from "./DayEditor";
 import { BUILTIN_UNITS } from "../lib/defaults";
+import { setsPreset } from "../lib/metrics";
 import { PALETTES } from "../theme";
 import type { Habit, HabitLogs } from "../types";
 
@@ -12,6 +13,7 @@ const habit: Habit = {
   emoji: "📚",
   color: "Green",
   metrics: [{ id: "m1", name: "Pages", unit: "count" }],
+  intensityMode: "total",
 };
 const setHabit: Habit = {
   id: "h2",
@@ -19,8 +21,9 @@ const setHabit: Habit = {
   emoji: "🏋️",
   color: "Blue",
   metrics: [
-    { id: "m2", name: "Reps", unit: "reps", mode: "sets", weightUnit: "lbs" },
+    { id: "m2", name: "Reps", mode: "sets", ...setsPreset("weighted", "lbs") },
   ],
+  intensityMode: "total",
 };
 const pal = PALETTES[0];
 

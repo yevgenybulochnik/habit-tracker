@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import { F, resolvePalette, THEMES } from "../theme";
-import { MONTHS, WK_FULL, DEFAULT_CONFIG } from "../lib/defaults";
+import { MONTHS, WK_FULL } from "../lib/defaults";
 import { getUnit } from "../lib/metrics";
 import { logLevel, logSummary, habitStats } from "../lib/stats";
 import { todayK } from "../lib/dates";
@@ -41,7 +41,7 @@ type Props = {
   onStartTimer: (metricId: string) => void;
   onStopTimer: (metricId: string) => void;
   habitId: string;
-  appConfig?: AppConfig;
+  appConfig: AppConfig;
   /** When false the calendar body (controls/svg/legend) collapses; only header + quick-log show. */
   expanded?: boolean;
   /** Reorder mode: condense to header only (collapse body + quick-log) and make
@@ -70,16 +70,15 @@ export default function D3Calendar({
   onStartTimer,
   onStopTimer,
   habitId,
-  appConfig,
+  appConfig: cfg,
   expanded = true,
   reorderMode = false,
   dragActivator,
 }: Props) {
-  const cfg = appConfig || DEFAULT_CONFIG;
   // In reorder mode the card shows its header only — collapse the heatmap body
   // and quick-log, and reuse the existing expand/collapse animation.
   const effExpanded = expanded && !reorderMode;
-  const NUM_MONTHS = cfg.numMonths || 4;
+  const NUM_MONTHS = cfg.numMonths;
   const svgRef = useRef<SVGSVGElement>(null),
     cRef = useRef<HTMLDivElement>(null);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -158,7 +157,7 @@ export default function D3Calendar({
   const numM = zoomed ? 1 : NUM_MONTHS;
   const days = useMemo(() => getRecentDays(numM, offset), [numM, offset]);
   const tKey = todayK();
-  const theme = cfg.theme === "light" ? "light" : "dark";
+  const theme = cfg.theme;
   // Memoized: the light ramp builds a fresh object, which would otherwise churn
   // the d3 effect (pal is in its deps) on every render.
   const pal = useMemo(
@@ -169,7 +168,7 @@ export default function D3Calendar({
     () => habitStats(habit, logs, units),
     [habit, logs, units],
   );
-  const pu = (habit.metrics || [])[0]?.unit || "count";
+  const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
   const sVal =
     pu === "min"
@@ -240,13 +239,13 @@ export default function D3Calendar({
     const cg = zoomed ? 4 : 2,
       lp = zoomed ? 8 : 6,
       tp = zoomed ? 28 : 24,
-      mg = zoomed ? 0 : cfg.monthGap != null ? cfg.monthGap : 5;
+      mg = zoomed ? 0 : cfg.monthGap;
     const cs = zoomed
       ? Math.min((svgAvail - 2 * lp - 6 * cg) / 7, 36)
       : fitCellSize(days, svgAvail, view, cg, lp, mg);
     // d3 sets SVG presentation attributes, where CSS vars don't resolve — use
     // concrete theme hex here. The empty (level-0) cell is theme-specific.
-    const Tc = THEMES[cfg.theme === "light" ? "light" : "dark"];
+    const Tc = THEMES[cfg.theme];
     const sh = pal.shades,
       DUR = 700; // pal.shades[0] is the theme's empty cell
     svg.selectAll("*").interrupt();
