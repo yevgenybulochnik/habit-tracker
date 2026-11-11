@@ -167,6 +167,33 @@ describe("App saves", () => {
   });
 });
 
+describe("App backup import", () => {
+  it("replaces the state with the backup, in the current format", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    await userEvent.click(await screen.findByTitle("Settings"));
+
+    // A backup from an older version: no schema version, units or config
+    const backup = { habits: [], logs: { gone: { "2026-05-24": { m1: 30 } } } };
+    await userEvent.upload(
+      screen.getByLabelText(/Import backup file/i),
+      new File([JSON.stringify(backup)], "backup.json", {
+        type: "application/json",
+      }),
+    );
+
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    expect(mockSave.mock.lastCall![0]).toEqual({
+      schemaVersion: 1,
+      habits: [],
+      logs: backup.logs,
+      units: BUILTIN_UNITS,
+      config: DEFAULT_CONFIG,
+      timers: {},
+    });
+  });
+});
+
 describe("App save errors", () => {
   // Changing the theme in Settings is a save that needs no habit cards (and so
   // no ResizeObserver stub in jsdom).

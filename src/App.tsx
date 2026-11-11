@@ -298,20 +298,17 @@ export default function App() {
     [quickLog],
   );
 
+  // Replace everything with an imported backup, which SettingsModal has
+  // already normalized into complete, current-format state.
   const replaceAll = useCallback(
     (state: PersistedState) => {
-      const nh = state.habits || [];
-      const nl = state.logs || {};
-      const nu =
-        state.units && state.units.length ? state.units : BUILTIN_UNITS;
-      const nc = { ...DEFAULT_CONFIG, ...(state.config || {}) };
       timersRef.current = {};
       setTimers({}); // don't resurrect stale timers from a backup
-      setHabits(nh);
-      setLogs(nl);
-      setUnits(nu);
-      setAppConfig(nc);
-      save(nh, nl, nu, nc);
+      setHabits(state.habits);
+      setLogs(state.logs);
+      setUnits(state.units);
+      setAppConfig(state.config);
+      save(state.habits, state.logs, state.units, state.config);
     },
     [save],
   );

@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from "react";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
 import { todayK } from "../lib/dates";
+import { normalizeState, SCHEMA_VERSION } from "../lib/normalize";
+import { downloadJson } from "../download";
 import ModalShell from "./ModalShell";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
 import modal from "./modalForm.module.css";
@@ -100,43 +102,34 @@ export default function SettingsModal({
   };
 
   const doExport = () => {
-    const state: PersistedState = { habits, logs, units, config: cfg };
-    const blob = new Blob([JSON.stringify(state, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `habit-tracker-backup-${todayK()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const state: PersistedState = {
+      schemaVersion: SCHEMA_VERSION,
+      habits,
+      logs,
+      units,
+      config: cfg,
+    };
+    downloadJson(`habit-tracker-backup-${todayK()}.json`, state);
   };
   const doImport = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
+      let parsed: unknown;
       try {
-        const parsed = JSON.parse(String(reader.result));
-        if (
-          !parsed ||
-          !Array.isArray(parsed.habits) ||
-          typeof parsed.logs !== "object" ||
-          parsed.logs === null ||
-          !Array.isArray(parsed.units) ||
-          typeof parsed.config !== "object" ||
-          parsed.config === null
-        ) {
-          throw new Error("invalid shape");
-        }
-        setImportErr("");
-        onImportState(parsed as PersistedState);
-        hClose();
+        parsed = JSON.parse(String(reader.result));
       } catch {
+        parsed = undefined; // not JSON: rejected below like any other non-backup
+      }
+      const result = normalizeState(parsed);
+      if (!result.ok) {
         setImportErr(
           "Could not import — that doesn't look like a valid backup file.",
         );
+        return;
       }
+      setImportErr("");
+      onImportState(result.state);
+      hClose();
     };
     reader.onerror = () => setImportErr("Could not read that file.");
     reader.readAsText(file);

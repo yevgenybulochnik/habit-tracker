@@ -115,7 +115,7 @@ current-format state.
 - [x] **On load.** `loadState` runs it. If normalization fails, the raw data is
       copied to a recovery key, and the Phase 1 error screen gains a "Download
       raw data" button.
-- [ ] **On import and export.** Import uses `normalizeState` instead of the
+- [x] **On import and export.** Import uses `normalizeState` instead of the
       hand-written check in `SettingsModal`, and export writes `schemaVersion`.
 - [ ] **Tighten the types.** Make those fields required in `types.ts` and
       delete the defaults applied at read time: `setValue ?? "volume"` (4
