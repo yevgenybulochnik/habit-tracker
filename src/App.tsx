@@ -10,6 +10,7 @@ import {
   saveState,
   requestPersistence,
 } from "./lib/storage";
+import { SCHEMA_VERSION } from "./lib/normalize";
 import { downloadJson } from "./download";
 import { setDayLog } from "./lib/logs";
 import { reorderById } from "./lib/reorder";
@@ -77,10 +78,11 @@ export default function App() {
         await requestPersistence();
         const p = await loadState();
         if (p) {
-          setHabits(p.habits || []);
-          setLogs(p.logs || {});
-          if (p.units) setUnits(p.units);
-          if (p.config) setAppConfig((c) => ({ ...c, ...p.config }));
+          // loadState returns complete, current-format state
+          setHabits(p.habits);
+          setLogs(p.logs);
+          setUnits(p.units);
+          setAppConfig(p.config);
           if (p.timers) {
             setTimers(p.timers);
             timersRef.current = p.timers;
@@ -108,6 +110,7 @@ export default function App() {
       if (!loadedRef.current) return;
       try {
         await saveState({
+          schemaVersion: SCHEMA_VERSION,
           habits: h,
           logs: l,
           units: u,

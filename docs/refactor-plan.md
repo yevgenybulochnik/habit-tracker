@@ -112,7 +112,7 @@ current-format state.
   - a new `schemaVersion: 1`
   - **Tests:** an old v2-shaped fixture, a partial config, running it twice
     gives the same result, and non-objects are rejected.
-- [ ] **On load.** `loadState` runs it. If normalization fails, the raw data is
+- [x] **On load.** `loadState` runs it. If normalization fails, the raw data is
       copied to a recovery key, and the Phase 1 error screen gains a "Download
       raw data" button.
 - [ ] **On import and export.** Import uses `normalizeState` instead of the

@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { InvalidDataError, loadState, saveState } from "./lib/storage";
 import { captureDownloads } from "./test/downloads";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
+import type { PersistedState } from "./types";
 
 vi.mock("./lib/storage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./lib/storage")>()),
@@ -121,6 +123,47 @@ describe("App with stored data it can't normalize", () => {
     expect(
       screen.queryByRole("button", { name: /Download raw data/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("App saves", () => {
+  const km = {
+    id: "km",
+    label: "Km",
+    quickAdd: [1, 5],
+    thresholds: [2, 5, 10],
+  };
+  const loaded: PersistedState = {
+    schemaVersion: 1,
+    habits: [],
+    logs: { gone: { "2026-05-24": { m1: 30 } } },
+    units: [...BUILTIN_UNITS, km],
+    config: { ...DEFAULT_CONFIG, numMonths: 6, theme: "light" },
+  };
+
+  async function switchToTheme(theme: "Light" | "Dark") {
+    await userEvent.click(await screen.findByTitle("Settings"));
+    await userEvent.click(screen.getByRole("button", { name: theme }));
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    return mockSave.mock.lastCall![0];
+  }
+
+  it("writes the schema version with every save", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+
+    expect((await switchToTheme("Light")).schemaVersion).toBe(1);
+  });
+
+  it("saves a change on top of what was loaded", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    expect(await switchToTheme("Dark")).toEqual({
+      ...loaded,
+      config: { ...loaded.config, theme: "dark" },
+      timers: {},
+    });
   });
 });
 
