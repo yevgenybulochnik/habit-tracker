@@ -241,8 +241,14 @@
   color: var(--c-dim);
   overflow-wrap: anywhere;
 }
-.retryBtn {
+.loadErrorActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin-top: 8px;
+}
+.loadErrorBtn {
   padding: 9px 22px;
   border-radius: 6px;
   border: 1px solid var(--c-border);
@@ -254,8 +260,8 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.retryBtn:hover,
-.retryBtn:focus-visible {
+.loadErrorBtn:hover,
+.loadErrorBtn:focus-visible {
   border-color: var(--c-accent);
   color: var(--c-accent);
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 import {
   createHabit,
@@ -5,6 +6,8 @@ import {
   setTheme,
   deleteHabit,
   setDashView,
+  writeStored,
+  readStored,
 } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
@@ -479,4 +482,30 @@ test("stopping a timer logs the elapsed minutes (≥ 1) and they persist", async
     page.getByRole("heading", { name: "Meditate", level: 3 }),
   ).toBeVisible();
   await expect(page.getByText("1m").first()).toBeVisible();
+});
+
+test("unreadable stored data: the error screen offers it as a download and a recovery copy is kept", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByText(/No habits yet/i)).toBeVisible();
+
+  // Stored data the app can't make sense of: the habits aren't a list
+  const raw = { habits: "none", logs: { h1: { "2026-05-24": { m1: 30 } } } };
+  await writeStored(page, "habit-tracker-v3", raw);
+  await page.reload();
+
+  // The error screen replaces the dashboard, so nothing can save over the data
+  await expect(page.getByText(/Couldn't open your data/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /New Habit/i })).toHaveCount(0);
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download raw data" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^habit-tracker-raw-data-/);
+  expect(JSON.parse(readFileSync(await download.path(), "utf8"))).toEqual(raw);
+
+  // The data is still where it was, with an untouched copy beside it
+  expect(await readStored(page, "habit-tracker-v3")).toEqual(raw);
+  expect(await readStored(page, "habit-tracker-recovery")).toEqual(raw);
 });

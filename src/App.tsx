@@ -4,7 +4,13 @@ import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
 import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
-import { loadState, saveState, requestPersistence } from "./lib/storage";
+import {
+  InvalidDataError,
+  loadState,
+  saveState,
+  requestPersistence,
+} from "./lib/storage";
+import { downloadJson } from "./download";
 import { setDayLog } from "./lib/logs";
 import { reorderById } from "./lib/reorder";
 import SortableHabits from "./components/SortableHabits";
@@ -38,6 +44,9 @@ export default function App() {
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // The stored data, when it was read but isn't in a usable format: offered
+  // as a download on the error screen.
+  const [rawData, setRawData] = useState<unknown>(undefined);
   const [loadAttempt, setLoadAttempt] = useState(0); // bumped by Retry
   // Saving is allowed only after a load has succeeded, so a failed (or
   // unfinished) load can never write empty state over the real data.
@@ -80,6 +89,7 @@ export default function App() {
         loadedRef.current = true;
       } catch (e) {
         console.error("Couldn't load data", e);
+        if (e instanceof InvalidDataError) setRawData(e.raw);
         setLoadError(e instanceof Error ? e.message : String(e));
       }
       setLoading(false);
@@ -88,6 +98,7 @@ export default function App() {
 
   const retryLoad = () => {
     setLoadError(null);
+    setRawData(undefined);
     setLoading(true);
     setLoadAttempt((n) => n + 1);
   };
@@ -329,9 +340,24 @@ export default function App() {
             Nothing was changed. Try again, or close and reopen the app.
           </p>
           {loadError && <p className={styles.loadErrorDetail}>{loadError}</p>}
-          <button onClick={retryLoad} className={styles.retryBtn}>
-            Retry
-          </button>
+          <div className={styles.loadErrorActions}>
+            <button onClick={retryLoad} className={styles.loadErrorBtn}>
+              Retry
+            </button>
+            {rawData !== undefined && (
+              <button
+                onClick={() =>
+                  downloadJson(
+                    `habit-tracker-raw-data-${todayK()}.json`,
+                    rawData,
+                  )
+                }
+                className={styles.loadErrorBtn}
+              >
+                Download raw data
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

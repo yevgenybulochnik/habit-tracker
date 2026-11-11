@@ -1,10 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-import { loadState, saveState } from "./lib/storage";
+import { InvalidDataError, loadState, saveState } from "./lib/storage";
+import { captureDownloads } from "./test/downloads";
 
-vi.mock("./lib/storage", () => ({
+vi.mock("./lib/storage", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./lib/storage")>()),
   requestPersistence: vi.fn(async () => {}),
   loadState: vi.fn(),
   saveState: vi.fn(async () => {}),
@@ -18,6 +20,10 @@ beforeEach(() => {
   mockSave.mockReset();
   mockSave.mockResolvedValue(undefined);
   vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("App load errors", () => {
@@ -53,6 +59,68 @@ describe("App load errors", () => {
     ).not.toBeInTheDocument();
     expect(mockLoad).toHaveBeenCalledTimes(2);
     expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("offers no raw-data download when the data couldn't be read at all", async () => {
+    mockLoad.mockRejectedValue(new Error("IDB is broken"));
+    render(<App />);
+
+    await screen.findByText(/Couldn't open your data/i);
+    expect(
+      screen.queryByRole("button", { name: /Download raw data/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("App with stored data it can't normalize", () => {
+  const raw = { habits: "none", logs: { h1: { "2026-05-24": { m1: 30 } } } };
+
+  it("shows the error screen with the reason and never saves", async () => {
+    mockLoad.mockRejectedValue(
+      new InvalidDataError("habits is not a list", raw),
+    );
+    render(<App />);
+
+    expect(
+      await screen.findByText(/Couldn't open your data/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/habits is not a list/i)).toBeInTheDocument();
+    expect(screen.queryByText(/No habits yet/i)).not.toBeInTheDocument();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("downloads the raw data from the error screen", async () => {
+    const downloads = captureDownloads();
+    mockLoad.mockRejectedValue(
+      new InvalidDataError("habits is not a list", raw),
+    );
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Download raw data/i }),
+    );
+
+    const files = await downloads.files();
+    expect(files).toHaveLength(1);
+    expect(files[0].name).toMatch(/^habit-tracker-raw-data-.*\.json$/);
+    expect(JSON.parse(files[0].text)).toEqual(raw);
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("drops the download once a retry succeeds", async () => {
+    mockLoad.mockRejectedValueOnce(
+      new InvalidDataError("habits is not a list", raw),
+    );
+    mockLoad.mockRejectedValueOnce(new Error("IDB is broken"));
+    render(<App />);
+
+    await screen.findByRole("button", { name: /Download raw data/i });
+    await userEvent.click(screen.getByRole("button", { name: /Retry/i }));
+
+    expect(await screen.findByText(/IDB is broken/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Download raw data/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

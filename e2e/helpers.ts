@@ -50,3 +50,52 @@ export async function deleteHabit(page: Page, name: string) {
   await page.getByRole("button", { name: /Delete habit/i }).click();
   await page.getByRole("button", { name: /Delete Habit/i }).click();
 }
+
+// idb-keyval's default database and object store, where the app keeps its data.
+const IDB_NAME = "keyval-store";
+const IDB_STORE = "keyval";
+
+/** Write a value straight into the app's IndexedDB store (to seed stored data). */
+export async function writeStored(page: Page, key: string, value: unknown) {
+  await page.evaluate(
+    ({ name, store, key, value }) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open(name);
+        open.onupgradeneeded = () => open.result.createObjectStore(store);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const tx = open.result.transaction(store, "readwrite");
+          tx.objectStore(store).put(value, key);
+          tx.onerror = () => reject(tx.error);
+          tx.oncomplete = () => {
+            open.result.close();
+            resolve();
+          };
+        };
+      }),
+    { name: IDB_NAME, store: IDB_STORE, key, value },
+  );
+}
+
+/** Read a value straight from the app's IndexedDB store. */
+export async function readStored(page: Page, key: string): Promise<unknown> {
+  return page.evaluate(
+    ({ name, store, key }) =>
+      new Promise<unknown>((resolve, reject) => {
+        const open = indexedDB.open(name);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const req = open.result
+            .transaction(store, "readonly")
+            .objectStore(store)
+            .get(key);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => {
+            open.result.close();
+            resolve(req.result);
+          };
+        };
+      }),
+    { name: IDB_NAME, store: IDB_STORE, key },
+  );
+}
