@@ -74,29 +74,45 @@ The codebase is layered so the core logic is framework-agnostic and unit-tested:
 most tests are. `dates` (date keys), `metrics` (unit resolution, sets aggregation, per-metric
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
-`idb-keyval`), and `defaults` (storage key, built-in units, default config, month/weekday
-labels). Prefer adding logic here over inside components. `boundary.test.ts` enforces the
-purity: a lib module may import only other lib modules, `../types`, and `idb-keyval`.
+`idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
+current-format state), and `defaults` (storage key, built-in units, default config,
+month/weekday labels). Prefer adding logic here over inside components. `boundary.test.ts`
+enforces the purity: a lib module may import only other lib modules, `../types`, and
+`idb-keyval`.
 
 **Shared non-lib constants** live in two root modules: `src/theme.ts` (`THEMES`, the `C`
 CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
-`src/globalCss.ts` (`CSS`). Anything used by a single component sits with it (`EMOJIS` in
-`components/emojis.ts`, the d3 easing `D3E` inside `D3Calendar`).
+`src/globalCss.ts` (`CSS`). `src/download.ts` (`downloadJson`) is the shared file-download
+helper; it needs the DOM, so it isn't in lib. Anything used by a single component sits with
+it (`EMOJIS` in `components/emojis.ts`, the d3 easing `D3E` inside `D3Calendar`).
 
 **The data model is nested and worth internalizing** (`src/types.ts`):
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
-A metric is either **normal** (numeric, e.g. minutes/reps) or **sets mode** (`mode: "sets"`,
-storing `{w, r}[]` weight×reps). Most helpers (`logLevel`, `metricVal`, `metricActive`,
-`logSummary`) operate on a **single `DayLog`**, while `D3Calendar` and `habitStats` take one
-habit's `HabitLogs` (`dateKey → DayLog`). Intensity colouring has two modes per habit
-(`intensityMode`): `total` (sum vs `thresholds`) or `coverage` (fraction of metrics done),
-both producing a level 0–4 that maps to a palette shade.
+A metric is either **normal** (numeric, e.g. minutes/reps) or **sets mode** (`SetsMetric`,
+`mode: "sets"`, storing `{w, r}[]` weight×reps, with its own `setFields` schema and
+`setValue`; `isSetMetric` narrows to it). Most helpers (`logLevel`, `metricVal`,
+`metricActive`, `logSummary`) operate on a **single `DayLog`**, while `D3Calendar` and
+`habitStats` take one habit's `HabitLogs` (`dateKey → DayLog`). Intensity colouring has two
+modes per habit (`intensityMode`): `total` (sum vs `thresholds`) or `coverage` (fraction of
+metrics done), both producing a level 0–4 that maps to a palette shade.
+
+**Data is normalized once, at the boundary (`src/lib/normalize.ts`).** Everything read from
+IndexedDB or a backup file passes through `normalizeState`, which fills in what older data
+lacks (a habit's `metrics`/`intensityMode`, a sets metric's `setFields`/`setValue`, config
+settings, built-in units) and stamps `schemaVersion`. The types therefore mark those fields
+required, and code that reads state must **not** add its own fallbacks for old data (no
+`habit.metrics || []`): a new default or a format migration goes in `normalizeState`, with
+a `SCHEMA_VERSION` bump for a migration. It rejects data it can't read, including a
+`schemaVersion` newer than its own.
 
 **State & persistence (`src/App.tsx`).** `App` is the single stateful container: it holds
 `habits`, `logs`, `units`, `appConfig`, and `timers`, and every mutation funnels through one
 `save()` callback → `storage.saveState()`. On mount it calls `requestPersistence()` (asks iOS
 to keep storage durable) then `loadState()`, which migrates a legacy `habit-tracker-v2` key
-forward to `habit-tracker-v3`. There is no external state library and no backend. The dashboard
+forward to `habit-tracker-v3` and returns normalized state. If the stored data can't be
+normalized, `loadState` copies it to the `habit-tracker-recovery` key and rejects with an
+`InvalidDataError`; `App` then shows its load-error screen (where saving is blocked) with a
+"Download raw data" button. There is no external state library and no backend. The dashboard
 is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`quick` |
 `calendar`) toggle.
 

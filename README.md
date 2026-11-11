@@ -120,6 +120,7 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 
 ```jsonc
 {
+  "schemaVersion": 1,
   "habits": [
     {
       "id": "h_1",
@@ -141,6 +142,11 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
           "unit": "reps",
           "mode": "sets",
           "weightUnit": "lbs",
+          "setValue": "volume",
+          "setFields": [
+            { "id": "w", "label": "Weight", "unit": "lbs", "agg": "max" },
+            { "id": "r", "label": "Reps", "agg": "sum", "primary": true },
+          ],
         },
       ],
       "intensityMode": "total",
@@ -165,27 +171,35 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
       "thresholds": [15, 30, 60],
     },
   ],
-  "config": { "numMonths": 4, "monthGap": 5, "theme": "dark" },
+  "config": {
+    "numMonths": 4,
+    "monthGap": 5,
+    "theme": "dark",
+    "dashView": "quick",
+  },
 }
 ```
 
 ### Persistence
 
 - The whole `PersistedState` blob is stored in **IndexedDB** via `idb-keyval` under the key **`habit-tracker-v3`** (`src/lib/storage.ts`).
-- Every state mutation funnels through one `save()` in `src/App.tsx`, which rewrites the blob — IndexedDB always mirrors the in-memory state. There is no normalization or external state library.
+- Every state mutation funnels through one `save()` in `src/App.tsx`, which rewrites the blob — IndexedDB always mirrors the in-memory state. There is no external state library.
 - On startup the app calls `navigator.storage.persist()` (best-effort, to resist iOS eviction) and migrates a legacy `habit-tracker-v2` key forward.
+- Everything read from IndexedDB or a backup file passes through `normalizeState` (`src/lib/normalize.ts`), which fills in whatever older data lacks and stamps `schemaVersion`, so the rest of the app only ever sees the complete shape above.
+- If the stored data can't be normalized, it is left in place, copied to the **`habit-tracker-recovery`** key, and the app shows an error screen with a **Download raw data** button instead of the dashboard.
 - **Timers** are stored as absolute start timestamps, so a running timer resumes at the correct elapsed time after a reload.
-- **Export/Import** (Settings → Data) serializes/parses this same blob as a downloadable `.json` file.
+- **Export/Import** (Settings → Data) serializes/parses this same blob as a downloadable `.json` file. Import accepts backups from older versions and refuses files it can't read, including backups from a newer `schemaVersion`.
 
 ## Project structure
 
 ```
 src/
-  lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, backup) — heavily unit-tested
+  lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, normalize) — heavily unit-tested
   components/   React components (D3Calendar, DayEditor, modals, quick-log, timers, …)
   types.ts      domain types (the data model above)
   theme.ts      themes, palettes, design tokens (CSS variables)
   globalCss.ts  global keyframes, utility classes and resets
+  download.ts   JSON file-download helper (backup export, raw-data download)
   App.tsx       single stateful container; persistence + dashboard view toggle
 e2e/            Playwright specs + shared helpers
 scripts/        generate-icons.mjs (dependency-free PWA icon generator)
