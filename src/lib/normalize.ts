@@ -152,8 +152,9 @@ function normalize(raw: unknown): PersistedState {
  * Absent pieces get their defaults: a habit's `metrics` and `intensityMode`, a
  * sets metric's `setFields` and `setValue`, the config's settings, and the
  * built-in units. Data whose structure can't be read is rejected with a reason:
- * a container of the wrong type, or a habit, metric, set field or unit without
- * an id. Other values (names, colours, logged amounts) are kept as stored.
+ * a container of the wrong type, a habit, metric, set field or unit without an
+ * id, a unit without its number lists, or a `schemaVersion` newer than this
+ * code. Other values (names, colours, logged amounts) are kept as stored.
  *
  * Running it on its own output changes nothing.
  */
