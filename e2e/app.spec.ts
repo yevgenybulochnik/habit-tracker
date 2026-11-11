@@ -509,3 +509,77 @@ test("unreadable stored data: the error screen offers it as a download and a rec
   expect(await readStored(page, "habit-tracker-v3")).toEqual(raw);
   expect(await readStored(page, "habit-tracker-recovery")).toEqual(raw);
 });
+
+test("data stored by an older version loads, works, and is saved in the current format", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByText(/No habits yet/i)).toBeVisible();
+
+  // What the v2 app stored, under its own key: no units, config or schema
+  // version; a sets metric with only a weight unit; a habit with no metrics.
+  const today = await page.evaluate(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  });
+  await writeStored(page, "habit-tracker-v2", {
+    habits: [
+      {
+        id: "h1",
+        name: "Lift",
+        emoji: "🏋️",
+        color: "Red",
+        metrics: [
+          {
+            id: "m1",
+            name: "Bench",
+            unit: "reps",
+            mode: "sets",
+            weightUnit: "kg",
+          },
+        ],
+      },
+      { id: "h2", name: "Read", emoji: "📚", color: "Blue" },
+    ],
+    logs: { h1: { [today]: { m1: [{ w: 60, r: 8 }] } } },
+  });
+  await page.reload();
+
+  // Both habits render, and the old sets metric shows as weight × reps in kg
+  await expect(
+    page.getByRole("heading", { name: "Lift", level: 3 }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Read", level: 3 }),
+  ).toBeVisible();
+  await expect(page.getByText("SETS · kg")).toBeVisible();
+  await expect(page.getByText("1 set · 480 kg vol").first()).toBeVisible();
+
+  // Logging another set works on the migrated metric
+  await page.getByPlaceholder("Reps").fill("5");
+  await page.getByRole("button", { name: /\+ Set/ }).click();
+  await expect(page.getByText("2 sets · 780 kg vol").first()).toBeVisible();
+  await page.waitForTimeout(300); // let the IndexedDB write flush
+
+  // The v3 key now holds complete, current-format state
+  const stored = (await readStored(page, "habit-tracker-v3")) as {
+    schemaVersion: number;
+    habits: {
+      intensityMode: string;
+      metrics: { setValue: string; setFields: { id: string }[] }[];
+    }[];
+    units: { id: string }[];
+    config: { theme: string; dashView: string };
+  };
+  expect(stored.schemaVersion).toBe(1);
+  expect(stored.habits.map((h) => h.intensityMode)).toEqual(["total", "total"]);
+  expect(stored.habits[0].metrics[0].setValue).toBe("volume");
+  expect(stored.habits[0].metrics[0].setFields.map((f) => f.id)).toEqual([
+    "w",
+    "r",
+  ]);
+  expect(stored.habits[1].metrics).toEqual([]);
+  expect(stored.units.map((u) => u.id)).toEqual(["min", "reps", "count"]);
+  expect(stored.config).toMatchObject({ theme: "dark", dashView: "quick" });
+});
