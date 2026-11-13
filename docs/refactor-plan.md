@@ -130,7 +130,7 @@ midnight.
 
 - [x] **Date helpers.** Add `addDays(key, n)` and `parseKey(key)` to
       `dates.ts`.
-- [ ] **Pass `today` in.** `habitStats`, `findLastSet`, `getRecentDays`,
+- [x] **Pass `today` in.** `habitStats`, `findLastSet`, `getRecentDays`,
       `compactHeatLayout` and `compactCalLayout` take a `today` parameter. Their
       tests switch to fixed dates instead of keys built from `new Date()`.
 - [ ] **`useToday()` hook.** Returns today's key and sets a timeout for the next

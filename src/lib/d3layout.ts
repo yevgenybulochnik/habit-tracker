@@ -1,5 +1,5 @@
 import { MONTHS } from "./defaults";
-import { dk, parseKey, todayK } from "./dates";
+import { dk, parseKey } from "./dates";
 
 export type Cell = {
   key: string;
@@ -110,10 +110,10 @@ export function compactHeatLayout(
   lp: number,
   tp: number,
   monthGap: number,
+  today: string,
 ): Layout {
   const cells: Cell[] = [],
-    mLabels: MLabel[] = [],
-    tk = todayK();
+    mLabels: MLabel[] = [];
   const continuous = monthGap === 0;
   let curX = lp,
     curM = -1;
@@ -134,7 +134,7 @@ export function compactHeatLayout(
       });
       curM = m;
     }
-    const future = key > tk;
+    const future = key > today;
     cells.push({
       key,
       date: day,
@@ -162,10 +162,10 @@ export function compactCalLayout(
   lp: number,
   tp: number,
   monthGap: number,
+  today: string,
 ): Layout {
   const cells: Cell[] = [],
-    mLabels: MLabel[] = [],
-    tk = todayK();
+    mLabels: MLabel[] = [];
   const months: { month: number; year: number; days: Date[] }[] = [];
   let curM2 = -1,
     curG: { month: number; year: number; days: Date[] } | null = null;
@@ -197,7 +197,7 @@ export function compactCalLayout(
       dow = dow === 0 ? 6 : dow - 1;
       const dom = day.getDate(),
         wk = Math.floor((sd + dom - 1) / 7);
-      const future = key > tk;
+      const future = key > today;
       cells.push({
         key,
         date: day,

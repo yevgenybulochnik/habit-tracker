@@ -255,8 +255,8 @@ export default function D3Calendar({
 
     const { cells: layout, mLabels } =
       view === "heatmap"
-        ? compactHeatLayout(days, cs, cg, lp, tp, mg)
-        : compactCalLayout(days, cs, cg, lp, tp, mg);
+        ? compactHeatLayout(days, cs, cg, lp, tp, mg, tKey)
+        : compactCalLayout(days, cs, cg, lp, tp, mg, tKey);
 
     const maxX = d3.max(layout, (d) => d.x + d.w) || 300;
     const shiftX = Math.max(0, (svgAvail - maxX) / 2);
