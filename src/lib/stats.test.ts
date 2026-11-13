@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { logLevel, logActive, logSummary, habitStats } from "./stats";
 import { BUILTIN_UNITS } from "./defaults";
-import { dk } from "./dates";
 import type { Habit, HabitLogs } from "../types";
 
 // "min" unit thresholds are [15, 30, 60].
@@ -87,25 +86,53 @@ describe("logSummary", () => {
 });
 
 describe("habitStats", () => {
-  // Build: today + yesterday active, gap, then a 3-day run further back.
-  const key = (offset: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - offset);
-    return dk(d);
-  };
+  const today = "2026-05-24";
+  // Today + yesterday active, a gap, then a 3-day run further back.
   const logs: HabitLogs = {
-    [key(0)]: { m1: 30 },
-    [key(1)]: { m1: 30 },
-    [key(2)]: { m1: 0 }, // inactive — breaks the streak
-    [key(3)]: { m1: 30 },
-    [key(4)]: { m1: 30 },
-    [key(5)]: { m1: 30 },
+    "2026-05-24": { m1: 30 },
+    "2026-05-23": { m1: 30 },
+    "2026-05-22": { m1: 0 }, // inactive — breaks the streak
+    "2026-05-21": { m1: 30 },
+    "2026-05-20": { m1: 30 },
+    "2026-05-19": { m1: 30 },
   };
-  const stats = habitStats(minHabit, logs, BUILTIN_UNITS);
+  const stats = habitStats(minHabit, logs, BUILTIN_UNITS, today);
 
   it("counts total active days", () => expect(stats.totalDays).toBe(5));
   it("sums total value", () => expect(stats.totalVal).toBe(150));
   it("computes the current streak ending today", () =>
     expect(stats.curStreak).toBe(2));
   it("computes the longest streak", () => expect(stats.lonStreak).toBe(3));
+
+  it("measures streaks from the given today, not the clock", () => {
+    // Two days later nothing has been logged since the 24th
+    const later = habitStats(minHabit, logs, BUILTIN_UNITS, "2026-05-26");
+    expect(later.curStreak).toBe(0);
+    expect(later.lonStreak).toBe(3);
+    // On the 21st the 3-day run is the current streak
+    const earlier = habitStats(minHabit, logs, BUILTIN_UNITS, "2026-05-21");
+    expect(earlier.curStreak).toBe(3);
+  });
+
+  it("follows a streak across a month boundary", () => {
+    const span: HabitLogs = {
+      "2026-03-02": { m1: 30 },
+      "2026-03-01": { m1: 30 },
+      "2026-02-28": { m1: 30 },
+      "2026-02-27": { m1: 30 },
+    };
+    const s = habitStats(minHabit, span, BUILTIN_UNITS, "2026-03-02");
+    expect(s.curStreak).toBe(4);
+    expect(s.lonStreak).toBe(4);
+  });
+
+  it("only looks for the longest streak in the year up to today", () => {
+    const old: HabitLogs = {
+      "2025-05-24": { m1: 30 }, // 365 days before today: outside the window
+      "2025-05-25": { m1: 30 }, // 364 days before: the oldest day counted
+    };
+    const s = habitStats(minHabit, old, BUILTIN_UNITS, today);
+    expect(s.totalDays).toBe(2);
+    expect(s.lonStreak).toBe(1);
+  });
 });

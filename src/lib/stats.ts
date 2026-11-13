@@ -1,5 +1,5 @@
 import type { DayLog, Habit, HabitLogs, SetEntry, Unit } from "../types";
-import { dk } from "./dates";
+import { addDays } from "./dates";
 import {
   getUnit,
   isSetMetric,
@@ -66,7 +66,16 @@ export type HabitStats = {
   lonStreak: number;
 };
 
-export function habitStats(h: Habit, logs: HabitLogs, u: Unit[]): HabitStats {
+/**
+ * Totals over every logged day, plus the streaks: the current one counts back
+ * from `today` (a date key), the longest is the best run in the year up to it.
+ */
+export function habitStats(
+  h: Habit,
+  logs: HabitLogs,
+  u: Unit[],
+  today: string,
+): HabitStats {
   const es = Object.entries(logs || {});
   let td = 0,
     tv = 0;
@@ -76,19 +85,14 @@ export function habitStats(h: Habit, logs: HabitLogs, u: Unit[]): HabitStats {
     tv += ms.reduce((s, m) => s + metricVal(m, l), 0);
   });
   let cs2 = 0;
-  const t = new Date();
   for (let i = 0; i <= 365; i++) {
-    const d = new Date(t);
-    d.setDate(d.getDate() - i);
-    if (logActive(h, logs[dk(d)], u)) cs2++;
+    if (logActive(h, logs[addDays(today, -i)], u)) cs2++;
     else break;
   }
   let ls = 0,
     cc = 0;
   for (let i = 364; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    if (logActive(h, logs[dk(d)], u)) {
+    if (logActive(h, logs[addDays(today, -i)], u)) {
       cc++;
       ls = Math.max(ls, cc);
     } else cc = 0;

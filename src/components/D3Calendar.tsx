@@ -165,8 +165,8 @@ export default function D3Calendar({
     [habit.color, theme],
   );
   const stats = useMemo(
-    () => habitStats(habit, logs, units),
-    [habit, logs, units],
+    () => habitStats(habit, logs, units, tKey),
+    [habit, logs, units, tKey],
   );
   const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
