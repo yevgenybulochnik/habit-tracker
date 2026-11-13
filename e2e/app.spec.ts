@@ -652,3 +652,25 @@ test("coming back to the app on a later day shows that day without a reload", as
     .poll(() => dayCell(page, "2026-06-02"))
     .toMatchObject({ strokeWidth: "1", opacity: "0.35" });
 });
+
+test("a day being edited keeps its outline when the day changes", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date(2026, 4, 24, 23, 59) });
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await setDashView(page, "calendar");
+  const cell = page.locator("svg rect.dc").nth(20); // a past day
+  await cell.click();
+  await page.mouse.move(5, 5); // clear hover so only the selection stroke remains
+  await expect(cell).toHaveAttribute("stroke-width", "2.5");
+
+  await page.clock.fastForward("02:00"); // to 00:01 on the 25th
+  await expect
+    .poll(() => dayCell(page, "2026-05-25"))
+    .toMatchObject({ strokeWidth: "1.5" }); // the calendar has moved on
+  await page.waitForTimeout(1200); // let the rebuild's transitions finish
+
+  await expect(page.getByText(/^Edit ·/)).toBeVisible();
+  await expect(cell).toHaveAttribute("stroke-width", "2.5");
+});

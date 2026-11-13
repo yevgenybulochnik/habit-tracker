@@ -366,6 +366,8 @@ export default function D3Calendar({
           .attr("stroke-width", isSel ? 2.5 : cellStrokeW(d));
       });
     merged.each(function (this: any, d: any) {
+      // The day being edited keeps its outline through a rebuild
+      const isSel = selectedDateRef.current === d.key;
       d3.select(this)
         .transition("up")
         .delay(stag(d))
@@ -378,8 +380,8 @@ export default function D3Calendar({
         .attr("rx", cellR)
         .attr("ry", cellR)
         .attr("fill", cellFill(d))
-        .attr("stroke", cellStroke(d))
-        .attr("stroke-width", cellStrokeW(d))
+        .attr("stroke", isSel ? sh[4] : cellStroke(d))
+        .attr("stroke-width", isSel ? 2.5 : cellStrokeW(d))
         .style("opacity", cellOp(d));
     });
 
@@ -565,9 +567,9 @@ export default function D3Calendar({
       .style("opacity", 1);
     /* eslint-enable @typescript-eslint/no-explicit-any */
     // NOTE: `logs` is intentionally NOT a dependency — a live edit must not
-    // re-run this heavy build (layout + ripple), which would also wipe the
-    // selection outline. Cell/day-number fills are recolored by the cheap
-    // effect below; the hover tooltip reads logs via logsRef.
+    // re-run this heavy build (layout + ripple). Cell/day-number fills are
+    // recolored by the cheap effect below; the hover tooltip reads logs via
+    // logsRef.
   }, [
     effExpanded,
     view,
