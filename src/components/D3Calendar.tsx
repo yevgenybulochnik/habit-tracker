@@ -155,8 +155,11 @@ export default function D3Calendar({
   );
 
   const numM = zoomed ? 1 : NUM_MONTHS;
-  const days = useMemo(() => getRecentDays(numM, offset), [numM, offset]);
   const tKey = todayK();
+  const days = useMemo(
+    () => getRecentDays(numM, offset, tKey),
+    [numM, offset, tKey],
+  );
   const theme = cfg.theme;
   // Memoized: the light ramp builds a fresh object, which would otherwise churn
   // the d3 effect (pal is in its deps) on every render.

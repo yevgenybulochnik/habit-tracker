@@ -1,5 +1,5 @@
 import { MONTHS } from "./defaults";
-import { dk, todayK } from "./dates";
+import { dk, parseKey, todayK } from "./dates";
 
 export type Cell = {
   key: string;
@@ -19,8 +19,16 @@ export type MLabel = {
 };
 export type Layout = { cells: Cell[]; mLabels: MLabel[] };
 
-export function getRecentDays(numMonths: number, monthOffset: number): Date[] {
-  const now = new Date(),
+/**
+ * Every day of the `numMonths` whole months ending with the month of `today`
+ * (a date key), shifted by `monthOffset` months (negative = further back).
+ */
+export function getRecentDays(
+  numMonths: number,
+  monthOffset: number,
+  today: string,
+): Date[] {
+  const now = parseKey(today),
     off = monthOffset || 0;
   const endMonth = new Date(now.getFullYear(), now.getMonth() + off + 1, 0);
   const startMonth = new Date(
