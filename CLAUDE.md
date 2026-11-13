@@ -71,7 +71,7 @@ Because the core logic is isolated, the natural rhythm is to push new behavior i
 The codebase is layered so the core logic is framework-agnostic and unit-tested:
 
 **`src/lib/` — pure logic, no React/DOM.** This is where the real behavior lives and where
-most tests are. `dates` (date keys), `metrics` (unit resolution, sets aggregation, per-metric
+most tests are. `dates` (date keys and date arithmetic), `metrics` (unit resolution, sets aggregation, per-metric
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
@@ -105,6 +105,16 @@ required, and code that reads state must **not** add its own fallbacks for old d
 a `SCHEMA_VERSION` bump for a migration. It rejects data it can't read, including a
 `schemaVersion` newer than its own.
 
+**"Today" is passed in, never looked up (`src/hooks/useToday.ts`).** `App` calls
+`useToday()` once and passes `today` (a date key) down as a prop; lib functions that depend
+on the date (`habitStats`, `findLastSet`, `getRecentDays`, the two layouts) take it as a
+parameter. Don't call `todayK()` or `new Date()` to find the date in lib or in a component:
+`todayK()` is for the hook, plus one-off stamps such as the backup filename. The hook keeps
+the key current while the app stays open, with a timeout for the next midnight and a re-check
+on `visibilitychange` (an iOS home-screen app resumes instead of reloading). It applies the
+new day on the next animation frame, so d3's animation clock catches up first after the page
+was asleep. Tests pass a fixed `today`; they never build keys from the real clock.
+
 **State & persistence (`src/App.tsx`).** `App` is the single stateful container: it holds
 `habits`, `logs`, `units`, `appConfig`, and `timers`, and every mutation funnels through one
 `save()` callback → `storage.saveState()`. On mount it calls `requestPersistence()` (asks iOS
@@ -124,7 +134,9 @@ checks, not unit tests. Each card collapses (Quick) or expands to its heatmap (C
 `expanded` prop, animated with `grid-template-rows`; the d3 build is gated off while collapsed.
 Tapping a calendar day opens an inline `DayEditor` for that date (exact-value entry +
 back-dating). Selection highlight and `pal` are kept out of the main build (separate effect /
-`useMemo`) so a tap doesn't re-ripple the heatmap.
+`useMemo`) so a tap doesn't re-ripple the heatmap. A cell outlives a change of `today`, so
+anything in the build that depends on `today` or on the selection must be set on the merged
+(enter + update) selection, not only on enter.
 
 **Styling — CSS Modules.** Each component has a colocated `Component.module.css`; the
 component imports `styles` and sets `className={styles.x}` (Vite types `*.module.css` via
@@ -161,4 +173,5 @@ Three layers. Unit/component tests are colocated as `*.test.ts(x)` next to their
 (Vitest + Testing Library, jsdom via `src/test/setup.ts`). Tests touching `storage` import
 `fake-indexeddb/auto`. E2E specs live in `e2e/` and run against the **built + previewed** app
 so the real service worker is active (see the red–green workflow above for how tests drive
-development).
+development). Date-dependent E2E specs set the time with Playwright's `page.clock`, and read
+how a day is drawn with the `dayCell` helper (cells are found through their d3 datum).

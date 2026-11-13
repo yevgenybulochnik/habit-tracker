@@ -11,6 +11,7 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 - **d3 calendar + heatmap** — per-habit contribution-style heatmap and month calendar, with intensity colouring, month navigation, and zoom.
 - **Single dashboard** with a persisted **Quick ⟷ Calendar** toggle — Quick is a condensed log list; Calendar expands each card to its heatmap. **Tap any calendar day** to edit that date inline (exact value + quick-adds + sets), which covers back-dating. Plus **live timers** for minute-based metrics (persisted across reloads).
 - **Streaks & stats** — current/longest streak, total days, totals.
+- **Rolls over at midnight** — an app left open, or resumed from the background on a later day, moves to the new day without a reload.
 - **Light / dark theme**, iOS safe-area aware.
 - **JSON export / import** backup (Settings → Data).
 - **Installable PWA** with offline support via a service worker.
@@ -196,6 +197,7 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 src/
   lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, normalize) — heavily unit-tested
   components/   React components (D3Calendar, DayEditor, modals, quick-log, timers, …)
+  hooks/        useToday: today's date key, kept current past midnight
   types.ts      domain types (the data model above)
   theme.ts      themes, palettes, design tokens (CSS variables)
   globalCss.ts  global keyframes, utility classes and resets
