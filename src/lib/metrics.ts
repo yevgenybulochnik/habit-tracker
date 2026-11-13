@@ -7,7 +7,7 @@ import type {
   SetsMetric,
   Unit,
 } from "../types";
-import { dk } from "./dates";
+import { addDays } from "./dates";
 
 /** Resolve a unit by id, falling back to a generic count-like unit. */
 export function getUnit(id: string, units: Unit[]): Unit {
@@ -164,16 +164,14 @@ export function metricActive(m: Metric, log: DayLog | undefined): boolean {
   return ((v as number) || 0) > 0;
 }
 
-/** Most recent logged set for a metric, searching back up to 90 days. */
+/** Most recent logged set for a metric, searching back up to 90 days from `today`. */
 export function findLastSet(
   logs: HabitLogs,
   metricId: string,
+  today: string,
 ): SetEntry | null {
-  const today = new Date();
   for (let i = 0; i <= 90; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const v = logs[dk(d)]?.[metricId];
+    const v = logs[addDays(today, -i)]?.[metricId];
     if (Array.isArray(v) && v.length > 0) return v[v.length - 1];
   }
   return null;

@@ -137,7 +137,7 @@ export default function QuickLogSection({
             pal={pal}
             onAddSet={onAddSet!}
             onRemoveSet={onRemoveSet}
-            lastSet={findLastSet(logs, priSets.id)}
+            lastSet={findLastSet(logs, priSets.id, tKey)}
           />
           <div className={styles.bars}>
             {[1, 2, 3, 4].map((i) => (
@@ -232,7 +232,7 @@ export default function QuickLogSection({
                       pal={pal}
                       onAddSet={onAddSet!}
                       onRemoveSet={onRemoveSet}
-                      lastSet={findLastSet(logs, m.id)}
+                      lastSet={findLastSet(logs, m.id, tKey)}
                     />
                   </div>
                 );

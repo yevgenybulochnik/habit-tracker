@@ -242,14 +242,40 @@ describe("metricVal", () => {
 });
 
 describe("findLastSet", () => {
-  it("returns the most recent logged set within 90 days", () => {
-    const today = new Date();
-    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const logs: HabitLogs = { [key]: { m4: [{ min: 20 }, { min: 30 }] } };
-    expect(findLastSet(logs, "m4")).toEqual({ min: 30 });
+  const today = "2026-05-24";
+
+  it("returns the last set logged today", () => {
+    const logs: HabitLogs = {
+      "2026-05-24": { m4: [{ min: 20 }, { min: 30 }] },
+    };
+    expect(findLastSet(logs, "m4", today)).toEqual({ min: 30 });
+  });
+  it("returns the most recent set from an earlier day", () => {
+    const logs: HabitLogs = {
+      "2026-05-10": { m4: [{ min: 10 }] },
+      "2026-05-20": { m4: [{ min: 20 }, { min: 25 }] },
+      "2026-05-24": { m4: [] }, // an emptied day is skipped
+    };
+    expect(findLastSet(logs, "m4", today)).toEqual({ min: 25 });
+  });
+  it("ignores days after today", () => {
+    const logs: HabitLogs = {
+      "2026-05-23": { m4: [{ min: 20 }] },
+      "2026-05-25": { m4: [{ min: 99 }] },
+    };
+    expect(findLastSet(logs, "m4", today)).toEqual({ min: 20 });
+  });
+  it("searches back 90 days and no further", () => {
+    // 90 and 91 days before 2026-05-24
+    expect(
+      findLastSet({ "2026-02-23": { m4: [{ min: 5 }] } }, "m4", today),
+    ).toEqual({ min: 5 });
+    expect(
+      findLastSet({ "2026-02-22": { m4: [{ min: 5 }] } }, "m4", today),
+    ).toBeNull();
   });
   it("returns null when nothing is found", () => {
-    expect(findLastSet({}, "m4")).toBeNull();
+    expect(findLastSet({}, "m4", today)).toBeNull();
   });
 });
 

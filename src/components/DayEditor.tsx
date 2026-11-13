@@ -100,7 +100,8 @@ export default function DayEditor({
     onChange?.(dateKey, buildEntry());
   }, [local]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isToday = dateKey === todayK();
+  const tKey = todayK();
+  const isToday = dateKey === tKey;
   const disp = new Date(dateKey + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -142,7 +143,7 @@ export default function DayEditor({
                   pal={pal}
                   onAddSet={(_, set) => addSet(m.id, set)}
                   onRemoveSet={(_, idx) => rmSet(m.id, idx)}
-                  lastSet={findLastSet(habitLogs, m.id)}
+                  lastSet={findLastSet(habitLogs, m.id, tKey)}
                 />
               </div>
             );
