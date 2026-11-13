@@ -139,7 +139,7 @@ midnight.
       with fake timers.
 - [x] **Wiring.** `App` calls `useToday()` once and passes `today` down.
       `QuickLogSection`, `DayEditor` and `D3Calendar` stop calling `todayK()`.
-- [ ] **E2E.** Use Playwright's `page.clock` to cross midnight and check that
+- [x] **E2E.** Use Playwright's `page.clock` to cross midnight and check that
       the today outline moves.
 
 ## Phase 5: Domain fixes

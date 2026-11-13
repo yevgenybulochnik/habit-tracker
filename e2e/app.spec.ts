@@ -8,6 +8,7 @@ import {
   setDashView,
   writeStored,
   readStored,
+  dayCell,
 } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
@@ -582,4 +583,72 @@ test("data stored by an older version loads, works, and is saved in the current 
   expect(stored.habits[1].metrics).toEqual([]);
   expect(stored.units.map((u) => u.id)).toEqual(["min", "reps", "count"]);
   expect(stored.config).toMatchObject({ theme: "dark", dashView: "quick" });
+});
+
+test("an app left open past midnight moves on to the new day", async ({
+  page,
+}) => {
+  // One minute to midnight, mid-month: both days stay in the same calendar,
+  // so the cells are updated in place rather than drawn fresh.
+  await page.clock.install({ time: new Date(2026, 4, 24, 23, 59) });
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await page.getByRole("button", { name: "+10" }).first().click();
+  await expect(page.getByText("1/1 completed today")).toBeVisible();
+  await setDashView(page, "calendar");
+  await page.getByRole("button", { name: "Cal", exact: true }).click(); // day numbers
+
+  const today = {
+    strokeWidth: "1.5",
+    opacity: "1",
+    cursor: "pointer",
+    numberWeight: "700",
+  };
+  const past = { ...today, strokeWidth: "1", numberWeight: "400" };
+  const future = { ...past, opacity: "0.35", cursor: "default" };
+  await expect.poll(() => dayCell(page, "2026-05-24")).toEqual(today);
+  await expect.poll(() => dayCell(page, "2026-05-25")).toEqual(future);
+
+  await page.clock.fastForward("02:00"); // to 00:01 on the 25th
+
+  await expect(page.getByText("0/1 completed today")).toBeVisible();
+  await expect.poll(() => dayCell(page, "2026-05-25")).toEqual(today);
+  await expect.poll(() => dayCell(page, "2026-05-24")).toEqual(past);
+  await expect.poll(() => dayCell(page, "2026-05-26")).toEqual(future);
+});
+
+test("coming back to the app on a later day shows that day without a reload", async ({
+  page,
+}) => {
+  // A backgrounded iOS home-screen app is frozen: no timers run, and coming
+  // back to it fires visibilitychange instead of reloading the page.
+  // setSystemTime moves the clock the same way, without firing any timer.
+  await page.clock.install({ time: new Date(2026, 4, 30, 21, 0) });
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await page.getByRole("button", { name: "+10" }).first().click();
+  await expect(page.getByText("1/1 completed today")).toBeVisible();
+  await setDashView(page, "calendar");
+  await expect(page.getByText("Feb – May 2026")).toBeVisible();
+  await expect
+    .poll(() => dayCell(page, "2026-05-30"))
+    .toMatchObject({ strokeWidth: "1.5" });
+
+  // Two days later, in the next month
+  await page.clock.setSystemTime(new Date(2026, 5, 1, 8, 0));
+  await page.evaluate(() =>
+    document.dispatchEvent(new Event("visibilitychange")),
+  );
+
+  await expect(page.getByText("0/1 completed today")).toBeVisible();
+  await expect(page.getByText("Mar – Jun 2026")).toBeVisible();
+  await expect
+    .poll(() => dayCell(page, "2026-06-01"))
+    .toMatchObject({ strokeWidth: "1.5", opacity: "1" });
+  await expect
+    .poll(() => dayCell(page, "2026-05-30"))
+    .toMatchObject({ strokeWidth: "1", opacity: "1" });
+  await expect
+    .poll(() => dayCell(page, "2026-06-02"))
+    .toMatchObject({ strokeWidth: "1", opacity: "0.35" });
 });

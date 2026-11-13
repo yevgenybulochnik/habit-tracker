@@ -99,3 +99,29 @@ export async function readStored(page: Page, key: string): Promise<unknown> {
     { name: IDB_NAME, store: IDB_STORE, key },
   );
 }
+
+/**
+ * How one day is drawn in the calendar: its cell's outline, opacity and
+ * cursor, and the weight of its day number (calendar view only). The cells
+ * carry no date attribute, so the day is found through the datum d3 bound to
+ * each element. Resolves to `null` while that day isn't drawn. Assumes a
+ * single habit card.
+ */
+export function dayCell(page: Page, dateKey: string) {
+  return page.locator("svg").evaluateAll((svgs, key) => {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const find = (selector: string, k: string) =>
+      svgs
+        .flatMap((svg) => [...svg.querySelectorAll<SVGElement>(selector)])
+        .find((el) => (el as any).__data__?.key === k);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+    const rect = find("rect.dc", key);
+    if (!rect) return null;
+    return {
+      strokeWidth: rect.getAttribute("stroke-width"),
+      opacity: rect.style.opacity,
+      cursor: rect.style.cursor,
+      numberWeight: find("text.dn", `dn-${key}`)?.getAttribute("font-weight"),
+    };
+  }, dateKey);
+}

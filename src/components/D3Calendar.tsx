@@ -321,7 +321,6 @@ export default function D3Calendar({
       .attr("fill", cellFill)
       .attr("stroke", cellStroke)
       .attr("stroke-width", cellStrokeW)
-      .style("cursor", (d: any) => (d.future ? "default" : "pointer"))
       .style("opacity", 0);
     enter.each(function (this: any, d: any) {
       d3.select(this)
@@ -333,6 +332,9 @@ export default function D3Calendar({
     });
     const merged = cells.merge(enter);
     merged
+      // On every cell, not just new ones: a future day becomes tappable when
+      // today moves on to it.
+      .style("cursor", (d: any) => (d.future ? "default" : "pointer"))
       .on("click", (_: any, d: any) => {
         if (!d.future) tapRef.current(d.key);
       })
@@ -457,7 +459,6 @@ export default function D3Calendar({
       )
       .attr("font-size", dnFontSz)
       .attr("font-family", F)
-      .attr("font-weight", (d: any) => (d.key === `dn-${today}` ? 700 : 400))
       .attr("text-anchor", "middle")
       .style("pointer-events", "none")
       .style("opacity", 0)
@@ -470,7 +471,12 @@ export default function D3Calendar({
         .ease(D3E)
         .style("opacity", 1);
     });
-    dns.merge(dnEn).each(function (this: any, d: any) {
+    const dnAll = dns.merge(dnEn);
+    // Today's number is bold. Set on every number so it follows today.
+    dnAll.attr("font-weight", (d: any) =>
+      d.key === `dn-${today}` ? 700 : 400,
+    );
+    dnAll.each(function (this: any, d: any) {
       d3.select(this)
         .transition("dnup")
         .delay(DUR * 0.3 + stag({ x: d._x, y: d._y }))
