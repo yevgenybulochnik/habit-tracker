@@ -128,7 +128,7 @@ current-format state.
 **Goal:** lib functions no longer read the clock, and the UI rolls over at
 midnight.
 
-- [ ] **Date helpers.** Add `addDays(key, n)` and `parseKey(key)` to
+- [x] **Date helpers.** Add `addDays(key, n)` and `parseKey(key)` to
       `dates.ts`.
 - [ ] **Pass `today` in.** `habitStats`, `findLastSet`, `getRecentDays`,
       `compactHeatLayout` and `compactCalLayout` take a `today` parameter. Their
