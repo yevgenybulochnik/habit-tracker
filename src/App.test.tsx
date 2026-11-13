@@ -220,6 +220,14 @@ describe("App at midnight", () => {
   // Shown by the quick-log section only when today has a value
   const resetButton = () => screen.queryByRole("button", { name: "↺" });
 
+  /** Advance the clock past midnight; the app follows on its next frame. */
+  async function passMidnight() {
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(await screen.findByText("0/1 completed today")).toBeInTheDocument();
+  }
+
   it("moves on to the new day while the app stays open", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
@@ -227,11 +235,8 @@ describe("App at midnight", () => {
     expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
     expect(resetButton()).toBeInTheDocument();
 
-    act(() => {
-      vi.advanceTimersByTime(60_000);
-    });
+    await passMidnight();
 
-    expect(screen.getByText("0/1 completed today")).toBeInTheDocument();
     expect(resetButton()).not.toBeInTheDocument();
   });
 
@@ -240,9 +245,7 @@ describe("App at midnight", () => {
     render(<App />);
     await screen.findByText("1/1 completed today");
 
-    act(() => {
-      vi.advanceTimersByTime(60_000);
-    });
+    await passMidnight();
     fireEvent.click(screen.getByRole("button", { name: "+15" }));
 
     await waitFor(() => expect(mockSave).toHaveBeenCalled());

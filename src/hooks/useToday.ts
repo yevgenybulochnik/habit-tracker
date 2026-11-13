@@ -11,10 +11,25 @@ export function useToday(): string {
   const [today, setToday] = useState(todayK);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let frame = 0;
+
     // Always read the clock, never assume one day went by: a timer can fire
     // late, and a resumed app may have skipped several days.
-    const check = () => setToday(todayK());
-    let timer: ReturnType<typeof setTimeout>;
+    //
+    // The day changes on the next animation frame, not right away. When a
+    // page wakes up (from the background, or a closed laptop lid), timers and
+    // frames that came due meanwhile all run at once, in no fixed order.
+    // d3 re-syncs its animation clock on a frame it already asked for; a
+    // re-render before that would start the calendar's animations against a
+    // stale clock, and they would then wait as long as the page was away.
+    const check = () => {
+      if (frame) return; // one is already on its way
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setToday(todayK());
+      });
+    };
     const arm = () => {
       timer = setTimeout(() => {
         check();
@@ -25,6 +40,7 @@ export function useToday(): string {
     document.addEventListener("visibilitychange", check);
     return () => {
       clearTimeout(timer);
+      cancelAnimationFrame(frame);
       document.removeEventListener("visibilitychange", check);
     };
   }, []);
