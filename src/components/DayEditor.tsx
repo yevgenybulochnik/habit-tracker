@@ -7,7 +7,6 @@ import {
   findLastSet,
   setUnitLabel,
 } from "../lib/metrics";
-import { todayK } from "../lib/dates";
 import SetInput from "./SetInput";
 import type {
   DayLog,
@@ -27,6 +26,8 @@ type Props = {
   habitLogs: HabitLogs; // this habit's logs (dateKey → DayLog)
   units: Unit[];
   pal: Palette;
+  /** Today's date key. */
+  today: string;
   onClose: () => void;
   /** Live-persist each edit (typing / quick-add / set add) so the heatmap cell
    *  recolors immediately; there is no explicit Save — the × just closes. */
@@ -41,6 +42,7 @@ export default function DayEditor({
   habitLogs,
   units,
   pal,
+  today,
   onClose,
   onChange,
 }: Props) {
@@ -100,8 +102,7 @@ export default function DayEditor({
     onChange?.(dateKey, buildEntry());
   }, [local]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const tKey = todayK();
-  const isToday = dateKey === tKey;
+  const isToday = dateKey === today;
   const disp = new Date(dateKey + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -143,7 +144,7 @@ export default function DayEditor({
                   pal={pal}
                   onAddSet={(_, set) => addSet(m.id, set)}
                   onRemoveSet={(_, idx) => rmSet(m.id, idx)}
-                  lastSet={findLastSet(habitLogs, m.id, tKey)}
+                  lastSet={findLastSet(habitLogs, m.id, today)}
                 />
               </div>
             );

@@ -32,6 +32,7 @@ function renderEditor(
   logs: HabitLogs,
   onChange = vi.fn(),
   onClose = vi.fn(),
+  today = "2026-05-24",
 ) {
   render(
     <DayEditor
@@ -40,6 +41,7 @@ function renderEditor(
       habitLogs={logs}
       units={BUILTIN_UNITS}
       pal={pal}
+      today={today}
       onChange={onChange}
       onClose={onClose}
     />,
@@ -99,5 +101,22 @@ describe("DayEditor", () => {
     const { onClose } = renderEditor(habit, {});
     await user.click(screen.getByRole("button", { name: "×" }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("DayEditor and today", () => {
+  it("is titled with the date when editing another day", () => {
+    renderEditor(habit, {});
+    expect(screen.getByText("Edit · Wed, May 20, 2026")).toBeInTheDocument();
+  });
+
+  it("is titled 'Edit today' when the date is the given today", () => {
+    renderEditor(habit, {}, vi.fn(), vi.fn(), "2026-05-20");
+    expect(screen.getByText("Edit today")).toBeInTheDocument();
+  });
+
+  it("carries the weight over from the last set before today", () => {
+    renderEditor(setHabit, { "2026-05-22": { m2: [{ w: 135, r: 5 }] } });
+    expect(screen.getByPlaceholderText("Weight")).toHaveValue("135");
   });
 });

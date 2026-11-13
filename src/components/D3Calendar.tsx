@@ -799,6 +799,7 @@ export default function D3Calendar({
               habitLogs={logs}
               units={units}
               pal={pal}
+              today={tKey}
               onChange={(d, entry) => onSaveDay(d, entry)}
               onClose={closeEditor}
             />
