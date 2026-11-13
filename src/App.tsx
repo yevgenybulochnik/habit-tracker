@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { CSS } from "./globalCss";
 import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
-import { todayK } from "./lib/dates";
 import { logActive } from "./lib/stats";
 import {
   InvalidDataError,
@@ -14,6 +13,7 @@ import { SCHEMA_VERSION } from "./lib/normalize";
 import { downloadJson } from "./download";
 import { setDayLog } from "./lib/logs";
 import { reorderById } from "./lib/reorder";
+import { useToday } from "./hooks/useToday";
 import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import D3Calendar from "./components/D3Calendar";
@@ -35,6 +35,9 @@ import type { NewHabit } from "./components/AddHabitModal";
 import styles from "./App.module.css";
 
 export default function App() {
+  // The one place the app learns what day it is. Everything below gets it
+  // from here, so the whole UI moves to the new day together at midnight.
+  const today = useToday();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<Logs>({});
   const [units, setUnits] = useState<Unit[]>(BUILTIN_UNITS);
@@ -210,69 +213,65 @@ export default function App() {
   );
   const quickLog = useCallback(
     (hId: string, mId: string, amt: number) => {
-      const tk = todayK();
       const prev = logs[hId] || {};
-      const prevDay = prev[tk] || {};
+      const prevDay = prev[today] || {};
       const nl = {
         ...logs,
         [hId]: {
           ...prev,
-          [tk]: { ...prevDay, [mId]: ((prevDay[mId] as number) || 0) + amt },
+          [today]: { ...prevDay, [mId]: ((prevDay[mId] as number) || 0) + amt },
         },
       };
       setLogs(nl);
       save(habits, nl, units, appConfig);
     },
-    [logs, habits, units, appConfig, save],
+    [logs, habits, units, appConfig, save, today],
   );
   const quickReset = useCallback(
     (hId: string, mId: string) => {
-      const tk = todayK();
       const prev = logs[hId] || {};
-      const prevDay = prev[tk] || {};
+      const prevDay = prev[today] || {};
       const nl = {
         ...logs,
-        [hId]: { ...prev, [tk]: { ...prevDay, [mId]: 0 } },
+        [hId]: { ...prev, [today]: { ...prevDay, [mId]: 0 } },
       };
       setLogs(nl);
       save(habits, nl, units, appConfig);
     },
-    [logs, habits, units, appConfig, save],
+    [logs, habits, units, appConfig, save, today],
   );
   const quickAddSet = useCallback(
     (hId: string, mId: string, set: SetEntry) => {
-      const tk = todayK();
       const prev = logs[hId] || {};
-      const prevDay = prev[tk] || {};
+      const prevDay = prev[today] || {};
       const curSets = Array.isArray(prevDay[mId])
         ? (prevDay[mId] as SetEntry[])
         : [];
       const nl = {
         ...logs,
-        [hId]: { ...prev, [tk]: { ...prevDay, [mId]: [...curSets, set] } },
+        [hId]: { ...prev, [today]: { ...prevDay, [mId]: [...curSets, set] } },
       };
       setLogs(nl);
       save(habits, nl, units, appConfig);
     },
-    [logs, habits, units, appConfig, save],
+    [logs, habits, units, appConfig, save, today],
   );
   const quickRemoveSet = useCallback(
     (hId: string, mId: string, idx: number) => {
-      const tk = todayK();
       const prev = logs[hId] || {};
-      const prevDay = prev[tk] || {};
+      const prevDay = prev[today] || {};
       const curSets = Array.isArray(prevDay[mId])
         ? [...(prevDay[mId] as SetEntry[])]
         : [];
       curSets.splice(idx, 1);
       const nl = {
         ...logs,
-        [hId]: { ...prev, [tk]: { ...prevDay, [mId]: curSets } },
+        [hId]: { ...prev, [today]: { ...prevDay, [mId]: curSets } },
       };
       setLogs(nl);
       save(habits, nl, units, appConfig);
     },
-    [logs, habits, units, appConfig, save],
+    [logs, habits, units, appConfig, save, today],
   );
   const startTimer = useCallback(
     (hId: string, mId: string) => {
@@ -316,9 +315,8 @@ export default function App() {
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
   const setDashView = (v: DashView) =>
     updateConfig({ ...appConfig, dashView: v });
-  const tKey = todayK();
   const completed = habits.filter((h) =>
-    logActive(h, logs[h.id]?.[tKey], units),
+    logActive(h, logs[h.id]?.[today], units),
   ).length;
 
   if (loading)
@@ -347,10 +345,7 @@ export default function App() {
             {rawData !== undefined && (
               <button
                 onClick={() =>
-                  downloadJson(
-                    `habit-tracker-raw-data-${todayK()}.json`,
-                    rawData,
-                  )
+                  downloadJson(`habit-tracker-raw-data-${today}.json`, rawData)
                 }
                 className={styles.loadErrorBtn}
               >
@@ -391,6 +386,7 @@ export default function App() {
               onStopTimer={(mId) => stopTimer(h.id, mId)}
               habitId={h.id}
               appConfig={appConfig}
+              today={today}
             />
           )}
         </SortableHabitCard>

@@ -137,7 +137,7 @@ midnight.
       midnight. It also re-checks on `visibilitychange`, because an iOS
       home-screen app resumes from the background rather than reloading. Tested
       with fake timers.
-- [ ] **Wiring.** `App` calls `useToday()` once and passes `today` down.
+- [x] **Wiring.** `App` calls `useToday()` once and passes `today` down.
       `QuickLogSection`, `DayEditor` and `D3Calendar` stop calling `todayK()`.
 - [ ] **E2E.** Use Playwright's `page.clock` to cross midnight and check that
       the today outline moves.

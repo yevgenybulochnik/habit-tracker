@@ -5,7 +5,6 @@ import { F, resolvePalette, THEMES } from "../theme";
 import { MONTHS, WK_FULL } from "../lib/defaults";
 import { getUnit } from "../lib/metrics";
 import { logLevel, logSummary, habitStats } from "../lib/stats";
-import { todayK } from "../lib/dates";
 import {
   getRecentDays,
   fitCellSize,
@@ -42,6 +41,8 @@ type Props = {
   onStopTimer: (metricId: string) => void;
   habitId: string;
   appConfig: AppConfig;
+  /** Today's date key: outlined in the calendar, and the day quick-log writes to. */
+  today: string;
   /** When false the calendar body (controls/svg/legend) collapses; only header + quick-log show. */
   expanded?: boolean;
   /** Reorder mode: condense to header only (collapse body + quick-log) and make
@@ -71,6 +72,7 @@ export default function D3Calendar({
   onStopTimer,
   habitId,
   appConfig: cfg,
+  today,
   expanded = true,
   reorderMode = false,
   dragActivator,
@@ -155,10 +157,9 @@ export default function D3Calendar({
   );
 
   const numM = zoomed ? 1 : NUM_MONTHS;
-  const tKey = todayK();
   const days = useMemo(
-    () => getRecentDays(numM, offset, tKey),
-    [numM, offset, tKey],
+    () => getRecentDays(numM, offset, today),
+    [numM, offset, today],
   );
   const theme = cfg.theme;
   // Memoized: the light ramp builds a fresh object, which would otherwise churn
@@ -168,8 +169,8 @@ export default function D3Calendar({
     [habit.color, theme],
   );
   const stats = useMemo(
-    () => habitStats(habit, logs, units, tKey),
-    [habit, logs, units, tKey],
+    () => habitStats(habit, logs, units, today),
+    [habit, logs, units, today],
   );
   const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
@@ -255,8 +256,8 @@ export default function D3Calendar({
 
     const { cells: layout, mLabels } =
       view === "heatmap"
-        ? compactHeatLayout(days, cs, cg, lp, tp, mg, tKey)
-        : compactCalLayout(days, cs, cg, lp, tp, mg, tKey);
+        ? compactHeatLayout(days, cs, cg, lp, tp, mg, today)
+        : compactCalLayout(days, cs, cg, lp, tp, mg, today);
 
     const maxX = d3.max(layout, (d) => d.x + d.w) || 300;
     const shiftX = Math.max(0, (svgAvail - maxX) / 2);
@@ -273,7 +274,7 @@ export default function D3Calendar({
     const svgH = maxY + 8;
     setSvgHeight(svgH);
 
-    const todayCell = layout.find((c) => c.key === tKey);
+    const todayCell = layout.find((c) => c.key === today);
     const tX = todayCell ? todayCell.x : maxX / 2,
       tY = todayCell ? todayCell.y : maxY / 2;
     const maxDist = Math.sqrt(maxX ** 2 + maxY ** 2) || 1;
@@ -291,8 +292,9 @@ export default function D3Calendar({
     const cellFill = (d: any) =>
       d.future ? greyFill : sh[logLevel(habit, logs[d.key], units)];
     const cellOp = (d: any) => (d.future ? 0.35 : 1);
-    const cellStroke = (d: any) => (d.key === tKey ? Tc.accent : Tc.cellStroke);
-    const cellStrokeW = (d: any) => (d.key === tKey ? 1.5 : 1);
+    const cellStroke = (d: any) =>
+      d.key === today ? Tc.accent : Tc.cellStroke;
+    const cellStrokeW = (d: any) => (d.key === today ? 1.5 : 1);
 
     const cells = svg.selectAll(".dc").data(layout, (d: any) => d.key);
     cells.exit().each(function (this: any, d: any) {
@@ -455,7 +457,7 @@ export default function D3Calendar({
       )
       .attr("font-size", dnFontSz)
       .attr("font-family", F)
-      .attr("font-weight", (d: any) => (d.key === `dn-${tKey}` ? 700 : 400))
+      .attr("font-weight", (d: any) => (d.key === `dn-${today}` ? 700 : 400))
       .attr("text-anchor", "middle")
       .style("pointer-events", "none")
       .style("opacity", 0)
@@ -570,7 +572,7 @@ export default function D3Calendar({
     habit,
     pal,
     units,
-    tKey,
+    today,
     cfg,
   ]);
 
@@ -611,7 +613,7 @@ export default function D3Calendar({
         // eslint-disable-line @typescript-eslint/no-explicit-any
         if (d.future) return;
         const isSel = selectedDate === d.key;
-        const isToday = d.key === tKey;
+        const isToday = d.key === today;
         d3.select(this)
           .attr(
             "stroke",
@@ -619,7 +621,7 @@ export default function D3Calendar({
           )
           .attr("stroke-width", isSel ? 2.5 : isToday ? 1.5 : 1);
       });
-  }, [selectedDate, tKey, pal, theme]);
+  }, [selectedDate, today, pal, theme]);
 
   // Emoji + name + hint, shared between the normal (hold-to-edit) header and the
   // reorder-mode draggable region. The `pressing` state is applied as a class on
@@ -799,7 +801,7 @@ export default function D3Calendar({
               habitLogs={logs}
               units={units}
               pal={pal}
-              today={tKey}
+              today={today}
               onChange={(d, entry) => onSaveDay(d, entry)}
               onClose={closeEditor}
             />
@@ -845,7 +847,7 @@ export default function D3Calendar({
               onStartTimer={onStartTimer}
               onStopTimer={onStopTimer}
               habitId={habitId}
-              today={tKey}
+              today={today}
             />
           </div>
         </div>

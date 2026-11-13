@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { InvalidDataError, loadState, saveState } from "./lib/storage";
@@ -164,6 +171,86 @@ describe("App saves", () => {
       config: { ...loaded.config, theme: "dark" },
       timers: {},
     });
+  });
+});
+
+describe("App at midnight", () => {
+  const loaded: PersistedState = {
+    schemaVersion: 1,
+    habits: [
+      {
+        id: "h1",
+        name: "Run",
+        emoji: "🏃",
+        color: "Green",
+        metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+        intensityMode: "total",
+      },
+    ],
+    logs: { h1: { "2026-05-24": { m1: 30 } } },
+    units: BUILTIN_UNITS,
+    config: DEFAULT_CONFIG,
+  };
+
+  beforeEach(() => {
+    // The fake clock keeps ticking in real time, because findBy and waitFor
+    // wait on timeouts of their own. Midnight is a minute away, so it only
+    // arrives when a test advances the clock.
+    vi.useFakeTimers({
+      toFake: ["Date", "setTimeout", "clearTimeout"],
+      shouldAdvanceTime: true,
+    });
+    vi.setSystemTime(new Date(2026, 4, 24, 23, 59));
+    // A habit card measures its width, which jsdom can't do
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    cleanup(); // unmount while the ResizeObserver stub is still there
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // Shown by the quick-log section only when today has a value
+  const resetButton = () => screen.queryByRole("button", { name: "↺" });
+
+  it("moves on to the new day while the app stays open", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
+    expect(resetButton()).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByText("0/1 completed today")).toBeInTheDocument();
+    expect(resetButton()).not.toBeInTheDocument();
+  });
+
+  it("logs to the new day after midnight", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+    await screen.findByText("1/1 completed today");
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+15" }));
+
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    expect(mockSave.mock.lastCall![0].logs).toEqual({
+      h1: { "2026-05-24": { m1: 30 }, "2026-05-25": { m1: 15 } },
+    });
+    expect(screen.getByText("1/1 completed today")).toBeInTheDocument();
+    expect(resetButton()).toBeInTheDocument();
   });
 });
 
