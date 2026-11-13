@@ -133,7 +133,7 @@ midnight.
 - [x] **Pass `today` in.** `habitStats`, `findLastSet`, `getRecentDays`,
       `compactHeatLayout` and `compactCalLayout` take a `today` parameter. Their
       tests switch to fixed dates instead of keys built from `new Date()`.
-- [ ] **`useToday()` hook.** Returns today's key and sets a timeout for the next
+- [x] **`useToday()` hook.** Returns today's key and sets a timeout for the next
       midnight. It also re-checks on `visibilitychange`, because an iOS
       home-screen app resumes from the background rather than reloading. Tested
       with fake timers.

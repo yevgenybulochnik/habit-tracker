@@ -16,7 +16,17 @@ export function addDays(key: string, n: number): string {
   return dk(d);
 }
 
-/** Today's date key. */
+/** Milliseconds from `now` until the next local midnight (never 0). */
+export function msUntilMidnight(now: Date): number {
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return next.getTime() - now.getTime();
+}
+
+/**
+ * Today's date key. This is the only place lib reads the clock to find the
+ * date: every other function takes `today` as a parameter. The UI gets it
+ * from the `useToday` hook, which keeps it current past midnight.
+ */
 export function todayK(): string {
   return dk(new Date());
 }

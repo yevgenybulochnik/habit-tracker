@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { addDays, dk, parseKey, todayK } from "./dates";
+import { addDays, dk, msUntilMidnight, parseKey, todayK } from "./dates";
 
 describe("dk", () => {
   it("formats a date as YYYY-MM-DD", () => {
@@ -57,6 +57,23 @@ describe("addDays", () => {
     expect(addDays("2026-03-08", 1)).toBe("2026-03-09");
     expect(addDays("2026-11-01", 1)).toBe("2026-11-02");
     expect(addDays("2026-11-02", -1)).toBe("2026-11-01");
+  });
+});
+
+describe("msUntilMidnight", () => {
+  it("is the time left until the next local midnight", () => {
+    expect(msUntilMidnight(new Date(2026, 4, 24, 23, 59))).toBe(60_000);
+    expect(msUntilMidnight(new Date(2026, 4, 24, 12))).toBe(12 * 3_600_000);
+    expect(msUntilMidnight(new Date(2026, 4, 24, 23, 59, 59, 999))).toBe(1);
+  });
+
+  it("is a whole day at midnight itself, never 0", () => {
+    expect(msUntilMidnight(new Date(2026, 4, 24))).toBe(24 * 3_600_000);
+  });
+
+  it("works on the last day of a month and of a year", () => {
+    expect(msUntilMidnight(new Date(2026, 4, 31, 23))).toBe(3_600_000);
+    expect(msUntilMidnight(new Date(2026, 11, 31, 23))).toBe(3_600_000);
   });
 });
 
