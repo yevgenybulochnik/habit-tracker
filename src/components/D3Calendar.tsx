@@ -844,6 +844,7 @@ export default function D3Calendar({
               onStartTimer={onStartTimer}
               onStopTimer={onStopTimer}
               habitId={habitId}
+              today={tKey}
             />
           </div>
         </div>

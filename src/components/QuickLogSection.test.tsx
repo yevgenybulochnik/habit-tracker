@@ -5,7 +5,6 @@ import QuickLogSection from "./QuickLogSection";
 import { BUILTIN_UNITS } from "../lib/defaults";
 import { setsPreset } from "../lib/metrics";
 import { PALETTES } from "../theme";
-import { todayK } from "../lib/dates";
 import type { Habit, HabitLogs } from "../types";
 
 const minHabit: Habit = {
@@ -35,6 +34,7 @@ const doneHabit: Habit = {
   metrics: [{ id: "m3", name: "Completed", unit: "count", mode: "done" }],
 };
 const pal = PALETTES[0];
+const today = "2026-05-24";
 
 function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
   const handlers = {
@@ -54,6 +54,7 @@ function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
       pal={pal}
       timers={{}}
       habitId={habit.id}
+      today={today}
       {...handlers}
     />,
   );
@@ -81,7 +82,7 @@ describe("QuickLogSection", () => {
 
   it("fires onQuickReset when the reset button is tapped", async () => {
     const user = userEvent.setup();
-    const { onQuickReset } = renderQL(minHabit, { [todayK()]: { m1: 30 } });
+    const { onQuickReset } = renderQL(minHabit, { [today]: { m1: 30 } });
     await user.click(screen.getByRole("button", { name: "↺" }));
     expect(onQuickReset).toHaveBeenCalledWith("m1");
   });
@@ -104,8 +105,33 @@ describe("QuickLogSection", () => {
 
   it("clears a marked done metric via the toggle (marked → reset)", async () => {
     const user = userEvent.setup();
-    const { onQuickReset } = renderQL(doneHabit, { [todayK()]: { m3: 1 } });
+    const { onQuickReset } = renderQL(doneHabit, { [today]: { m3: 1 } });
     await user.click(screen.getByRole("button", { name: /Done today/i }));
     expect(onQuickReset).toHaveBeenCalledWith("m3");
+  });
+});
+
+describe("QuickLogSection and today", () => {
+  it("shows what was logged on the given today", () => {
+    renderQL(minHabit, { [today]: { m1: 30 } });
+    expect(screen.getByText("30m")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "↺" })).toBeInTheDocument();
+  });
+
+  it("shows nothing for another day's entry", () => {
+    renderQL(minHabit, { "2026-05-23": { m1: 30 } });
+    expect(screen.queryByText("30m")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "↺" })).not.toBeInTheDocument();
+  });
+
+  it("uses a different day once today changes", () => {
+    renderQL(minHabit, { "2026-05-25": { m1: 45 } }, { today: "2026-05-25" });
+    expect(screen.getByText("45m")).toBeInTheDocument();
+  });
+
+  it("carries the weight over from the last set before today", () => {
+    renderQL(setHabit, { "2026-05-22": { m2: [{ w: 135, r: 5 }] } });
+    expect(screen.getByPlaceholderText("Weight")).toHaveValue("135");
+    expect(screen.getByPlaceholderText("Reps")).toHaveValue("");
   });
 });

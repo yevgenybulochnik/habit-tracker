@@ -10,7 +10,6 @@ import {
 } from "../lib/metrics";
 import { fmtVal, fmtSets } from "../lib/format";
 import { logLevel } from "../lib/stats";
-import { todayK } from "../lib/dates";
 import SetInput from "./SetInput";
 import TimerButton from "./TimerButton";
 import type {
@@ -36,6 +35,8 @@ type Props = {
   onStartTimer: (metricId: string) => void;
   onStopTimer: (metricId: string) => void;
   habitId: string;
+  /** Today's date key: the day this section shows and logs to. */
+  today: string;
   /** Dense layout (Quick view / collapsed card): drop the "Quick log today" label, trim spacing. */
   dense?: boolean;
 };
@@ -53,13 +54,13 @@ export default function QuickLogSection({
   onStartTimer,
   onStopTimer,
   habitId,
+  today,
   dense,
 }: Props) {
   const [justTapped, setJustTapped] = useState<string | null>(null);
   const ms = habit.metrics;
   const compact = ms.length === 1;
-  const tKey = todayK();
-  const todayLog = logs[tKey] || {};
+  const todayLog = logs[today] || {};
   const hasAny = ms.some((m) => metricActive(m, todayLog));
   const level = logLevel(habit, todayLog, units);
   const priIsMin = ms[0]?.unit === "min";
@@ -137,7 +138,7 @@ export default function QuickLogSection({
             pal={pal}
             onAddSet={onAddSet!}
             onRemoveSet={onRemoveSet}
-            lastSet={findLastSet(logs, priSets.id, tKey)}
+            lastSet={findLastSet(logs, priSets.id, today)}
           />
           <div className={styles.bars}>
             {[1, 2, 3, 4].map((i) => (
@@ -232,7 +233,7 @@ export default function QuickLogSection({
                       pal={pal}
                       onAddSet={onAddSet!}
                       onRemoveSet={onRemoveSet}
-                      lastSet={findLastSet(logs, m.id, tKey)}
+                      lastSet={findLastSet(logs, m.id, today)}
                     />
                   </div>
                 );
