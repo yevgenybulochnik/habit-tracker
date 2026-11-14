@@ -356,6 +356,46 @@ describe("normalizeState — weighted sets from before the volume unit", () => {
     expect(unitsOf([weighted], 2)).toEqual(["reps"]);
   });
 
+  // The habit form only allows "sum total" colouring when every metric has
+  // the same unit, and switches to coverage otherwise.
+  describe("intensity mode", () => {
+    const modeOf = (
+      metrics: object[],
+      intensityMode = "total",
+      schemaVersion = 1,
+    ) =>
+      accept({
+        schemaVersion,
+        habits: [{ id: "h1", name: "Lift", metrics, intensityMode }],
+      }).habits[0].intensityMode;
+    const squat = { ...weighted, id: "s", name: "Squat" };
+
+    it("becomes coverage when the move leaves a habit with mixed units", () => {
+      expect(modeOf([weighted, repsOnly])).toBe("coverage");
+      expect(modeOf([pushUps, weighted])).toBe("coverage");
+    });
+
+    it("stays total when the metrics still share a unit", () => {
+      expect(modeOf([weighted])).toBe("total");
+      expect(modeOf([weighted, squat])).toBe("total"); // both volume now
+    });
+
+    it("stays coverage where it already was", () => {
+      expect(modeOf([weighted, squat], "coverage")).toBe("coverage");
+      expect(modeOf([weighted, repsOnly], "coverage")).toBe("coverage");
+    });
+
+    it("is left alone on a habit the move didn't touch", () => {
+      const run = { id: "run", name: "Run", unit: "min" };
+      expect(modeOf([run, pushUps])).toBe("total");
+    });
+
+    it("is left alone on data already at version 2", () => {
+      const moved = { ...weighted, unit: "volume" };
+      expect(modeOf([moved, repsOnly], "total", 2)).toBe("total");
+    });
+  });
+
   it("stamps the migrated data as version 2", () => {
     const state = accept({
       schemaVersion: 1,

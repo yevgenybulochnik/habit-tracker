@@ -44,6 +44,14 @@ export function doneMetric(): Metric {
   };
 }
 
+/**
+ * Whether the metrics are measured in more than one unit. Their values then
+ * can't be added into one total, so such a habit is coloured by coverage.
+ */
+export function hasMixedUnits(metrics: Metric[]): boolean {
+  return new Set(metrics.map((m) => m.unit)).size > 1;
+}
+
 /** The weighted [weight, reps] schema: the weighted preset's fields, and what
  *  `normalizeState` gives a sets metric stored before schemas existed. */
 export function weightedFields(weightUnit = "lbs"): SetField[] {

@@ -6,6 +6,7 @@ import {
   metricVal,
   metricActive,
   weightedFields,
+  hasMixedUnits,
   aggregateSets,
   setVolume,
   setsMetricVal,
@@ -219,6 +220,19 @@ describe("setsPreset", () => {
     const p = setsPreset("timed");
     expect(p.setFields.map((f) => f.id)).toEqual(["min"]);
     expect(p.unit).toBe("min");
+  });
+});
+
+describe("hasMixedUnits", () => {
+  it("is false when the metrics share a unit", () => {
+    expect(hasMixedUnits([])).toBe(false);
+    expect(hasMixedUnits([minM])).toBe(false);
+    expect(hasMixedUnits([minM, timedM])).toBe(false); // both minutes
+  });
+
+  it("is true when they don't, so their values can't be added up", () => {
+    expect(hasMixedUnits([minM, repsM])).toBe(true);
+    expect(hasMixedUnits([setM, repsM])).toBe(true); // volume and reps
   });
 });
 

@@ -1,5 +1,5 @@
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
-import { isSetMetric, weightedFields } from "./metrics";
+import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
 import type {
   AppConfig,
   Habit,
@@ -77,6 +77,9 @@ function normalizeMetric(raw: unknown, path: string): Metric {
  * reps), but it used to carry the `reps` unit, so the heatmap graded volume on
  * the reps thresholds. Reps that are reps (a single-field schema, a plain
  * metric) and weighted metrics given some other unit stay as they are.
+ *
+ * A habit that summed such a metric with one in real reps now has two units,
+ * so `normalizeHabit` moves it to coverage mode.
  */
 function weightedToVolume(m: Metric): Metric {
   const isWeighted =
@@ -86,13 +89,20 @@ function weightedToVolume(m: Metric): Metric {
 
 function normalizeHabit(raw: unknown, path: string, version: number): Habit {
   const h = withId(raw, path);
-  const metrics = list(h.metrics, `${path}.metrics`).map((m, i) =>
+  const stored = list(h.metrics, `${path}.metrics`).map((m, i) =>
     normalizeMetric(m, `${path}.metrics[${i}]`),
   );
+  const metrics = version < 2 ? stored.map(weightedToVolume) : stored;
+  const moved = metrics.some((m, i) => m !== stored[i]);
   return {
     ...h,
-    metrics: version < 2 ? metrics.map(weightedToVolume) : metrics,
-    intensityMode: h.intensityMode === "coverage" ? "coverage" : "total",
+    metrics,
+    // A habit the migration left with mixed units gets the mode the habit
+    // form would give it: the form only allows "total" within one unit.
+    intensityMode:
+      h.intensityMode === "coverage" || (moved && hasMixedUnits(metrics))
+        ? "coverage"
+        : "total",
   } as Habit;
 }
 

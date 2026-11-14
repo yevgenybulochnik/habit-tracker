@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { PALETTES } from "../theme";
 import { EMOJIS } from "./emojis";
-import { getUnit, setsPreset, setUnitLabel } from "../lib/metrics";
+import {
+  getUnit,
+  hasMixedUnits,
+  setsPreset,
+  setUnitLabel,
+} from "../lib/metrics";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
 import styles from "./HabitFormFields.module.css";
@@ -97,10 +102,8 @@ export default function HabitFormFields({
   };
 
   useEffect(() => {
-    if (metrics.length > 1 && intensityMode === "total") {
-      const u = new Set(metrics.map((m) => m.unit));
-      if (u.size > 1) setIntensityMode("coverage");
-    }
+    if (intensityMode === "total" && hasMixedUnits(metrics))
+      setIntensityMode("coverage");
   }, [metrics, intensityMode, setIntensityMode]);
 
   return (

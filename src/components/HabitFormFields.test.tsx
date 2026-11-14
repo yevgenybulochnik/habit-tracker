@@ -13,7 +13,7 @@ function Harness() {
   const [color, setColor] = useState("Green");
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [intensityMode, setIntensityMode] = useState<IntensityMode>("total");
-  return (
+  const form = (
     <HabitFormFields
       name={name}
       setName={setName}
@@ -31,9 +31,28 @@ function Harness() {
       onAddUnit={() => {}}
     />
   );
+  return (
+    <>
+      <output data-testid="intensity-mode">{intensityMode}</output>
+      {form}
+    </>
+  );
 }
 
 describe("HabitFormFields", () => {
+  /** Add a sets metric with the given preset through the form. */
+  async function addSetsMetric(
+    user: ReturnType<typeof userEvent.setup>,
+    name: string,
+    preset: "Weighted" | "Reps only",
+  ) {
+    await user.type(screen.getByPlaceholderText(/Metric name/i), name);
+    await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
+    await user.click(screen.getByRole("button", { name: preset }));
+    await user.click(screen.getByRole("button", { name: /\+ Add/i }));
+  }
+  const mode = () => screen.getByTestId("intensity-mode").textContent;
+
   it("adds a metric to the list", async () => {
     const user = userEvent.setup();
     render(<Harness />);
@@ -60,6 +79,24 @@ describe("HabitFormFields", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
     expect(screen.getByText(/Log weight × reps per set/i)).toBeInTheDocument();
+  });
+
+  // Volume (weight × reps) and plain reps can't be added into one total.
+  it("colours by coverage once a weighted and a reps-only metric are combined", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await addSetsMetric(user, "Bench", "Weighted");
+    expect(mode()).toBe("total");
+    await addSetsMetric(user, "Pull-ups", "Reps only");
+    expect(mode()).toBe("coverage");
+  });
+
+  it("keeps summing a habit whose metrics are all weighted", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await addSetsMetric(user, "Bench", "Weighted");
+    await addSetsMetric(user, "Squat", "Weighted");
+    expect(mode()).toBe("total");
   });
 
   it("adds a reps-only (bodyweight) sets metric via the preset", async () => {
