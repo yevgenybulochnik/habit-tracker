@@ -167,6 +167,44 @@ describe("habitStats", () => {
     expect(earlier.curStreak).toBe(3);
   });
 
+  describe("current streak while today is still open", () => {
+    const active = (...days: string[]): HabitLogs =>
+      Object.fromEntries(days.map((d) => [d, { m1: 30 }]));
+    const streak = (l: HabitLogs, on = today) =>
+      habitStats(minHabit, l, BUILTIN_UNITS, on).curStreak;
+
+    it("runs through yesterday until today is logged", () => {
+      // Three days in a row, nothing yet on the 24th: not "0d" at 8am
+      expect(streak(active("2026-05-21", "2026-05-22", "2026-05-23"))).toBe(3);
+    });
+
+    it("grows by one when today is logged", () => {
+      const l = active("2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24");
+      expect(streak(l)).toBe(4);
+    });
+
+    it("is over once a whole day has been missed", () => {
+      // Nothing on the 23rd, and it is now the 24th
+      expect(streak(active("2026-05-21", "2026-05-22"))).toBe(0);
+      // ...and logging today starts a new streak rather than joining the old
+      expect(streak(active("2026-05-21", "2026-05-22", "2026-05-24"))).toBe(1);
+    });
+
+    it("treats a today that was logged and reset like an open one", () => {
+      const l = { ...active("2026-05-22", "2026-05-23"), [today]: { m1: 0 } };
+      expect(streak(l)).toBe(2);
+    });
+
+    it("is 0 with nothing logged at all", () => {
+      expect(streak({})).toBe(0);
+    });
+
+    it("leaves the longest streak as it was", () => {
+      const l = active("2026-05-21", "2026-05-22", "2026-05-23");
+      expect(habitStats(minHabit, l, BUILTIN_UNITS, today).lonStreak).toBe(3);
+    });
+  });
+
   it("follows a streak across a month boundary", () => {
     const span: HabitLogs = {
       "2026-03-02": { m1: 30 },

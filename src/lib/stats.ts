@@ -67,8 +67,10 @@ export type HabitStats = {
 };
 
 /**
- * Totals over every logged day, plus the streaks: the current one counts back
- * from `today` (a date key), the longest is the best run in the year up to it.
+ * Totals over every logged day, plus the streaks. The current streak counts
+ * back from `today` (a date key), or from the day before while today has
+ * nothing logged: a day that isn't over yet doesn't break a streak. The
+ * longest is the best run in the year up to `today`.
  */
 export function habitStats(
   h: Habit,
@@ -85,7 +87,8 @@ export function habitStats(
     tv += ms.reduce((s, m) => s + metricVal(m, l), 0);
   });
   let cs2 = 0;
-  for (let i = 0; i <= 365; i++) {
+  const from = logActive(h, logs[today], u) ? 0 : 1;
+  for (let i = from; i <= 365; i++) {
     if (logActive(h, logs[addDays(today, -i)], u)) cs2++;
     else break;
   }

@@ -10,6 +10,7 @@ import {
   readStored,
   dayCell,
   dayFill,
+  cardStat,
 } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
@@ -680,6 +681,34 @@ test("an app left open past midnight moves on to the new day", async ({
   await expect.poll(() => dayCell(page, "2026-05-25")).toEqual(today);
   await expect.poll(() => dayCell(page, "2026-05-24")).toEqual(past);
   await expect.poll(() => dayCell(page, "2026-05-26")).toEqual(future);
+});
+
+test("a streak lasts through the next day and ends once that day is missed", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date(2026, 4, 24, 23, 59) });
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  const streak = cardStat(page, "Streak");
+  await expect(streak).toHaveText("0d");
+  await page.getByRole("button", { name: "+10" }).first().click();
+  await expect(streak).toHaveText("1d");
+
+  // Just past midnight nothing is logged yet, but the day has only begun
+  await page.clock.fastForward("02:00"); // to 00:01 on the 25th
+  await expect(page.getByText("0/1 completed today")).toBeVisible();
+  await expect(streak).toHaveText("1d");
+
+  // Logging on the new day extends it
+  await page.getByRole("button", { name: "+10" }).first().click();
+  await expect(streak).toHaveText("2d");
+
+  // The 26th starts with the streak intact, and passes with nothing logged
+  await page.clock.fastForward("24:00:00");
+  await expect(page.getByText("0/1 completed today")).toBeVisible();
+  await expect(streak).toHaveText("2d");
+  await page.clock.fastForward("24:00:00"); // to 00:01 on the 27th
+  await expect(streak).toHaveText("0d");
 });
 
 test("coming back to the app on a later day shows that day without a reload", async ({

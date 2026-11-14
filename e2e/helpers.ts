@@ -51,6 +51,16 @@ export async function deleteHabit(page: Page, name: string) {
   await page.getByRole("button", { name: /Delete Habit/i }).click();
 }
 
+/**
+ * The value shown above a label in a habit card's stats row, e.g.
+ * `cardStat(page, "Streak")` for "3d". Assumes a single habit card.
+ */
+export function cardStat(page: Page, label: string) {
+  return page
+    .getByText(label, { exact: true })
+    .locator("xpath=preceding-sibling::div[1]");
+}
+
 // idb-keyval's default database and object store, where the app keeps its data.
 const IDB_NAME = "keyval-store";
 const IDB_STORE = "keyval";
