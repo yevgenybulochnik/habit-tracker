@@ -581,7 +581,12 @@ test("data stored by an older version loads, works, and is saved in the current 
     "r",
   ]);
   expect(stored.habits[1].metrics).toEqual([]);
-  expect(stored.units.map((u) => u.id)).toEqual(["min", "reps", "count"]);
+  expect(stored.units.map((u) => u.id)).toEqual([
+    "min",
+    "reps",
+    "count",
+    "volume",
+  ]);
   expect(stored.config).toMatchObject({ theme: "dark", dashView: "quick" });
 });
 

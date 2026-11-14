@@ -347,7 +347,14 @@ describe("normalizeState — units", () => {
       "reps",
       "min",
       "count",
+      "volume",
     ]);
+  });
+
+  it("adds a built-in unit that is newer than the stored data", () => {
+    // What was stored before the volume unit existed
+    const older = BUILTIN_UNITS.filter((u) => u.id !== "volume");
+    expect(units(older)).toEqual(BUILTIN_UNITS);
   });
 
   it("keeps an edited built-in unit instead of restoring it", () => {
