@@ -7,10 +7,10 @@ It was converted from a single-file Claude-artifacts prototype (kept at the repo
 ## Features
 
 - **Multi-metric habits** — each habit tracks one or more metrics. A metric is either **numeric** (e.g. minutes, reps, count) or **sets mode** (weight × reps, like a workout log).
-- **Configurable units** — built-in `min` / `reps` / `count`, plus custom units with their own quick-add buttons and intensity thresholds.
+- **Configurable units** — built-in `min` / `reps` / `count` / `volume`, plus custom units with their own quick-add buttons and intensity thresholds. Weighted sets are measured in `volume` (weight × reps, summed over the day).
 - **d3 calendar + heatmap** — per-habit contribution-style heatmap and month calendar, with intensity colouring, month navigation, and zoom.
 - **Single dashboard** with a persisted **Quick ⟷ Calendar** toggle — Quick is a condensed log list; Calendar expands each card to its heatmap. **Tap any calendar day** to edit that date inline (exact value + quick-adds + sets), which covers back-dating. Plus **live timers** for minute-based metrics (persisted across reloads).
-- **Streaks & stats** — current/longest streak, total days, totals.
+- **Streaks & stats** — current/longest streak, total days, totals. The current streak lasts until a whole day is missed: today doesn't break it while it is still unlogged.
 - **Rolls over at midnight** — an app left open, or resumed from the background on a later day, moves to the new day without a reload.
 - **Light / dark theme**, iOS safe-area aware.
 - **JSON export / import** backup (Settings → Data).
@@ -114,14 +114,14 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 
 **Intensity** (`logLevel`, `src/lib/stats.ts`) maps a day to a level **0–4** that picks a palette shade:
 
-- `intensityMode: "total"` — sum the day's metric values and compare against `thresholds`.
+- `intensityMode: "total"` — sum the day's metric values and compare against `thresholds` (the habit's own, else those of its metrics' unit). Only for habits whose metrics share one unit: the habit form switches a habit with mixed units to coverage.
 - `intensityMode: "coverage"` — the fraction of the habit's metrics that have any activity.
 
 ### Example
 
 ```jsonc
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "habits": [
     {
       "id": "h_1",
@@ -140,7 +140,7 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
         {
           "id": "h_2_m0",
           "name": "Reps",
-          "unit": "reps",
+          "unit": "volume",
           "mode": "sets",
           "weightUnit": "lbs",
           "setValue": "volume",
@@ -186,7 +186,7 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 - The whole `PersistedState` blob is stored in **IndexedDB** via `idb-keyval` under the key **`habit-tracker-v3`** (`src/lib/storage.ts`).
 - Every state mutation funnels through one `save()` in `src/App.tsx`, which rewrites the blob — IndexedDB always mirrors the in-memory state. There is no external state library.
 - On startup the app calls `navigator.storage.persist()` (best-effort, to resist iOS eviction) and migrates a legacy `habit-tracker-v2` key forward.
-- Everything read from IndexedDB or a backup file passes through `normalizeState` (`src/lib/normalize.ts`), which fills in whatever older data lacks and stamps `schemaVersion`, so the rest of the app only ever sees the complete shape above.
+- Everything read from IndexedDB or a backup file passes through `normalizeState` (`src/lib/normalize.ts`), which fills in whatever older data lacks, migrates older formats (version 2 moved weighted sets from the `reps` unit to `volume`) and stamps `schemaVersion`, so the rest of the app only ever sees the complete shape above.
 - If the stored data can't be normalized, it is left in place, copied to the **`habit-tracker-recovery`** key, and the app shows an error screen with a **Download raw data** button instead of the dashboard.
 - **Timers** are stored as absolute start timestamps, so a running timer resumes at the correct elapsed time after a reload.
 - **Export/Import** (Settings → Data) serializes/parses this same blob as a downloadable `.json` file. Import accepts backups from older versions and refuses files it can't read, including backups from a newer `schemaVersion`.

@@ -144,13 +144,12 @@ midnight.
 
 ## Phase 5: Domain fixes
 
-Both items need a decision; the recommendation is given for each.
+Both items needed a decision; both went with the recommendation.
 
 ### Weighted-set heatmap colour
 
-**Recommendation:** add a built-in `volume` unit and have the weighted preset
-use it instead of `reps`. Its thresholds would be something like
-`[1000, 2500, 5000]`, editable in Settings.
+**Decided:** a built-in `volume` unit, which the weighted preset uses instead of
+`reps`. Its thresholds are `[1000, 2500, 5000]`, editable in Settings.
 
 - It fits the existing model: `logLevel`'s threshold lookup just works.
 - It also fixes a second bug. Today a habit with both a weighted and a
@@ -163,17 +162,20 @@ use it instead of `reps`. Its thresholds would be something like
 
 Steps:
 
-- [ ] Weighted preset uses the `volume` unit; `logLevel` tests cover the new
+- [x] Weighted preset uses the `volume` unit; `logLevel` tests cover the new
       levels. Check whether the sets E2E spec needs updating for the new label.
-- [ ] Migration in `normalizeState`: existing weighted metrics with
+- [x] Migration in `normalizeState`: existing weighted metrics with
       `unit: "reps"` become `volume`.
+  - Schema version 2.
+  - A stored habit in "total" mode that the migration leaves with mixed units
+    (a weighted and a reps metric) is switched to coverage, as the form would.
 
 ### Streak
 
-**Recommendation:** the current streak counts through yesterday until today is
-over, so a 30-day streak doesn't show "0d" at 8am.
+**Decided:** the current streak counts through yesterday until today is over,
+so a 30-day streak doesn't show "0d" at 8am.
 
-- [ ] Test-first fix in `habitStats`.
+- [x] Test-first fix in `habitStats`.
 
 ## Phase 6: State reducer
 
@@ -251,5 +253,3 @@ scale.
 ## Open decisions
 
 - **Phase 1:** wording of the load-error screen and save-failure banner.
-- **Phase 5:** the `volume` unit approach and its default thresholds.
-- **Phase 5:** streak counting through yesterday until today is over.

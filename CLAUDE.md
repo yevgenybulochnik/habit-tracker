@@ -92,11 +92,15 @@ it (`EMOJIS` in `components/emojis.ts`, the d3 easing `D3E` inside `D3Calendar`)
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
 A metric is either **normal** (numeric, e.g. minutes/reps) or **sets mode** (`SetsMetric`,
 `mode: "sets"`, storing `{w, r}[]` weight×reps, with its own `setFields` schema and
-`setValue`; `isSetMetric` narrows to it). Most helpers (`logLevel`, `metricVal`,
+`setValue`; `isSetMetric` narrows to it). A weighted sets metric's value is its volume (weight ×
+reps), so the weighted preset gives it the built-in `volume` unit, not `reps`. Most helpers (`logLevel`, `metricVal`,
 `metricActive`, `logSummary`) operate on a **single `DayLog`**, while `D3Calendar` and
 `habitStats` take one habit's `HabitLogs` (`dateKey → DayLog`). Intensity colouring has two
 modes per habit (`intensityMode`): `total` (sum vs `thresholds`) or `coverage` (fraction of
-metrics done), both producing a level 0–4 that maps to a palette shade.
+metrics done), both producing a level 0–4 that maps to a palette shade. `total` only makes
+sense within one unit: the habit form switches a habit to `coverage` when `hasMixedUnits` says
+its metrics differ. The current streak in `habitStats` counts back from today, or from
+yesterday while today has nothing logged, so an unfinished day doesn't break it.
 
 **Data is normalized once, at the boundary (`src/lib/normalize.ts`).** Everything read from
 IndexedDB or a backup file passes through `normalizeState`, which fills in what older data
@@ -104,8 +108,10 @@ lacks (a habit's `metrics`/`intensityMode`, a sets metric's `setFields`/`setValu
 settings, built-in units) and stamps `schemaVersion`. The types therefore mark those fields
 required, and code that reads state must **not** add its own fallbacks for old data (no
 `habit.metrics || []`): a new default or a format migration goes in `normalizeState`, with
-a `SCHEMA_VERSION` bump for a migration. It rejects data it can't read, including a
-`schemaVersion` newer than its own.
+a `SCHEMA_VERSION` bump for a migration (the versions are listed beside that constant; a
+migration runs only on data older than its version). It rejects data it can't read, including
+a `schemaVersion` newer than its own. Tests take the current version from `SCHEMA_VERSION`
+instead of repeating the number.
 
 **"Today" is passed in, never looked up (`src/hooks/useToday.ts`).** `App` calls
 `useToday()` once and passes `today` (a date key) down as a prop; lib functions that depend
@@ -176,4 +182,5 @@ Three layers. Unit/component tests are colocated as `*.test.ts(x)` next to their
 `fake-indexeddb/auto`. E2E specs live in `e2e/` and run against the **built + previewed** app
 so the real service worker is active (see the red–green workflow above for how tests drive
 development). Date-dependent E2E specs set the time with Playwright's `page.clock`, and read
-how a day is drawn with the `dayCell` helper (cells are found through their d3 datum).
+how a day is drawn with the `dayCell` and `dayFill` helpers (cells are found through their d3
+datum).
