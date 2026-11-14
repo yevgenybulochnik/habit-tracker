@@ -60,8 +60,10 @@ Because the core logic is isolated, the natural rhythm is to push new behavior i
   commit this?". This standing instruction overrides the default of committing only when asked.
   (Still do **not** `git push` without being asked.)
 - **Conventional Commits**: `feat:`, `fix:`, `test:`, `chore:`, `refactor:`, `revert:`.
-- End every commit message with the trailer:
-  `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`.
+- End every commit message with the trailer
+  `Co-Authored-By: <model> <noreply@anthropic.com>`, where `<model>` is the name of the model
+  running the current session (for example `Claude Fable 5.2`). Use the model you actually
+  are, not a name copied from this file or from earlier commits.
 - To back out a shipped change while keeping its history, prefer `git revert` over deleting or
   rewriting commits (e.g. the auto-backup feature was added then reverted — both commits remain
   in the log).
