@@ -125,3 +125,18 @@ export function dayCell(page: Page, dateKey: string) {
     };
   }, dateKey);
 }
+
+/**
+ * The colour a day's cell is filled with, as the browser computes it
+ * (`rgb(r, g, b)`), or `null` while that day isn't drawn. Read it once the
+ * calendar has stopped animating. Assumes a single habit card.
+ */
+export function dayFill(page: Page, dateKey: string) {
+  return page.locator("svg").evaluateAll((svgs, key) => {
+    const rect = svgs
+      .flatMap((svg) => [...svg.querySelectorAll<SVGElement>("rect.dc")])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .find((el) => (el as any).__data__?.key === key);
+    return rect ? getComputedStyle(rect).fill : null;
+  }, dateKey);
+}

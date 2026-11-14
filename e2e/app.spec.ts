@@ -9,6 +9,7 @@ import {
   writeStored,
   readStored,
   dayCell,
+  dayFill,
 } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
@@ -386,6 +387,57 @@ test("sets-mode habit: create, log a set, persists across reload", async ({
     page.getByRole("heading", { name: "Bench", level: 3 }),
   ).toBeVisible();
   await expect(page.getByText("135 lbs").first()).toBeVisible();
+});
+
+test("a weighted-sets day is shaded by its volume, from light to heavy", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date(2026, 4, 24, 12, 0) });
+  await page.goto("/");
+  await page.getByRole("button", { name: /New Habit/i }).click();
+  await page.getByPlaceholder(/Morning Workout/i).fill("Bench");
+  await page.getByPlaceholder(/Metric name/i).fill("Press");
+  await page.getByRole("button", { name: /Enable sets mode/i }).click();
+  await page.getByRole("button", { name: /^\+ Add$/ }).click();
+  await page.getByRole("button", { name: /^Create$/ }).click();
+  await setDashView(page, "calendar");
+
+  const addSet = async (weight: string, reps: string) => {
+    await page.getByPlaceholder("Weight").fill(weight);
+    await page.getByPlaceholder("Reps").fill(reps);
+    await page.getByRole("button", { name: /\+ Set/ }).click();
+  };
+  /** Today's and yesterday's cell colours once the calendar has settled. */
+  const shades = async () => {
+    await page.waitForTimeout(1200);
+    return {
+      today: await dayFill(page, "2026-05-24"),
+      empty: await dayFill(page, "2026-05-23"),
+    };
+  };
+
+  // One light set, well under the first volume threshold of 1,000
+  await addSet("135", "5");
+  await expect(page.getByText("1 set · 675 lbs vol").first()).toBeVisible();
+  const light = await shades();
+  expect(light.today).not.toBe(light.empty);
+
+  // A second set takes the day past 2,500
+  await addSet("225", "10");
+  await expect(page.getByText("2 sets · 2,925 lbs vol").first()).toBeVisible();
+  const medium = await shades();
+  expect(medium.today).not.toBe(light.today);
+
+  // And a third past 5,000, the top shade
+  await addSet("225", "10");
+  await expect(page.getByText("3 sets · 5,175 lbs vol").first()).toBeVisible();
+  const heavy = await shades();
+  expect(heavy.today).not.toBe(medium.today);
+  expect(heavy.today).not.toBe(light.today);
+
+  // The card totals it as volume, not as reps
+  await expect(page.getByText("Volume", { exact: true })).toBeVisible();
+  await expect(page.getByText("Reps", { exact: true })).toHaveCount(0);
 });
 
 test("edit habit: long-press → rename → Save persists", async ({ page }) => {

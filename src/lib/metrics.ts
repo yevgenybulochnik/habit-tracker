@@ -133,7 +133,8 @@ export function setsPreset(
     default:
       return {
         setValue: "volume",
-        unit: "reps",
+        // Graded and totalled as volume (weight × reps), on its own thresholds
+        unit: "volume",
         weightUnit,
         setFields: weightedFields(weightUnit),
       };

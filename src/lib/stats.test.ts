@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { logLevel, logActive, logSummary, habitStats } from "./stats";
 import { BUILTIN_UNITS } from "./defaults";
-import type { Habit, HabitLogs } from "../types";
+import { setsPreset } from "./metrics";
+import type { Habit, HabitLogs, SetEntry } from "../types";
 
 // "min" unit thresholds are [15, 30, 60].
 const minHabit: Habit = {
@@ -51,6 +52,58 @@ describe("logLevel (total mode)", () => {
     };
     expect(logLevel(doneH, { d: 0 }, BUILTIN_UNITS)).toBe(0);
     expect(logLevel(doneH, { d: 1 }, BUILTIN_UNITS)).toBe(2);
+  });
+});
+
+describe("logLevel (weighted sets)", () => {
+  // As the habit form creates it. "volume" unit thresholds are [1000, 2500, 5000].
+  const liftHabit: Habit = {
+    id: "h3",
+    name: "Lift",
+    emoji: "🏋️",
+    color: "Red",
+    intensityMode: "total",
+    metrics: [
+      { id: "b", name: "Bench", mode: "sets", ...setsPreset("weighted") },
+    ],
+  };
+  const level = (sets: SetEntry[]) =>
+    logLevel(liftHabit, { b: sets }, BUILTIN_UNITS);
+  const set = (w: number, r: number): SetEntry => ({ w, r });
+
+  it.each<[string, number, SetEntry[]]>([
+    ["no sets", 0, []],
+    ["one light set (675)", 1, [set(135, 5)]],
+    ["just under the first threshold (999)", 1, [set(111, 9)]],
+    ["the first threshold (1,000)", 2, [set(100, 10)]],
+    ["a short session (2,025)", 2, [set(135, 5), set(135, 10)]],
+    ["3 × 10 at 135 (4,050)", 3, [set(135, 10), set(135, 10), set(135, 10)]],
+    ["the top threshold (5,000)", 4, [set(250, 10), set(250, 10)]],
+    ["a heavy day (9,450)", 4, [set(315, 10), set(315, 10), set(315, 10)]],
+  ])("%s → level %i", (_, expected, sets) => {
+    expect(level(sets)).toBe(expected);
+  });
+
+  it("grades kg and lbs on the same thresholds", () => {
+    const kg: Habit = {
+      ...liftHabit,
+      metrics: [
+        {
+          id: "b",
+          name: "Bench",
+          mode: "sets",
+          ...setsPreset("weighted", "kg"),
+        },
+      ],
+    };
+    expect(logLevel(kg, { b: [set(60, 8)] }, BUILTIN_UNITS)).toBe(1); // 480
+  });
+
+  it("follows the volume unit's thresholds when they are edited", () => {
+    const units = BUILTIN_UNITS.map((u) =>
+      u.id === "volume" ? { ...u, thresholds: [500, 1000, 2000] } : u,
+    );
+    expect(logLevel(liftHabit, { b: [set(135, 5)] }, units)).toBe(2); // 675
   });
 });
 

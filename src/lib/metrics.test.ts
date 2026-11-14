@@ -23,7 +23,7 @@ const minM: Metric = { id: "m1", name: "Run", unit: "min" };
 const setM: SetsMetric = {
   id: "m2",
   name: "Bench",
-  unit: "reps",
+  unit: "volume",
   mode: "sets",
   weightUnit: "lbs",
   setFields: [
@@ -204,6 +204,10 @@ describe("setsPreset", () => {
     expect(p.setValue).toBe("volume");
     expect(p.setFields).toEqual(weightedFields("kg"));
     expect(p.weightUnit).toBe("kg");
+  });
+  it("weighted → measured in volume, not reps, whatever the weight unit", () => {
+    expect(setsPreset("weighted", "lbs").unit).toBe("volume");
+    expect(setsPreset("weighted", "kg").unit).toBe("volume");
   });
   it("reps → primary, single reps field", () => {
     const p = setsPreset("reps");
