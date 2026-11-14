@@ -48,7 +48,7 @@ const v2 = {
 
 // The same data in the current format.
 const v2Normalized: PersistedState = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   habits: [
     {
       id: "h1",
@@ -68,7 +68,7 @@ const v2Normalized: PersistedState = {
         {
           id: "m1",
           name: "Bench",
-          unit: "reps",
+          unit: "volume",
           mode: "sets",
           weightUnit: "kg",
           setValue: "volume",
@@ -90,8 +90,8 @@ const v2Normalized: PersistedState = {
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 1", () => {
-    expect(SCHEMA_VERSION).toBe(1);
+  it("is at schema version 2", () => {
+    expect(SCHEMA_VERSION).toBe(2);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -207,8 +207,8 @@ describe("normalizeState — rejected data", () => {
   });
 
   it("rejects data from a newer schema version", () => {
-    expect(reject({ ...v2Normalized, schemaVersion: 2 })).toBe(
-      "schema version 2 is newer than this app understands",
+    expect(reject({ ...v2Normalized, schemaVersion: 3 })).toBe(
+      "schema version 3 is newer than this app understands",
     );
     expect(reject({ ...v2Normalized, schemaVersion: "1" })).toBe(
       "schemaVersion is not a number",
@@ -234,7 +234,7 @@ describe("normalizeState — habits and metrics", () => {
   });
 
   it("gives a sets metric with no schema the weighted one, in lbs", () => {
-    const bare = { id: "m", name: "Bench", unit: "reps", mode: "sets" };
+    const bare = { id: "m", name: "Bench", unit: "volume", mode: "sets" };
     expect(withMetric(bare)).toEqual({
       ...bare,
       setValue: "volume",
@@ -288,6 +288,81 @@ describe("normalizeState — habits and metrics", () => {
     const done = { id: "m", name: "Completed", unit: "count", mode: "done" };
     expect(withMetric(plain)).toEqual(plain);
     expect(withMetric(done)).toEqual(done);
+  });
+});
+
+// Version 2 gave weighted sets the "volume" unit; before it they were "reps".
+describe("normalizeState — weighted sets from before the volume unit", () => {
+  const weighted = {
+    id: "w",
+    name: "Bench",
+    unit: "reps",
+    mode: "sets",
+    weightUnit: "lbs",
+    setValue: "volume",
+    setFields: [
+      { id: "w", label: "Weight", unit: "lbs", agg: "max" },
+      { id: "r", label: "Reps", agg: "sum", primary: true },
+    ],
+  };
+  const repsOnly = {
+    id: "p",
+    name: "Pull-ups",
+    unit: "reps",
+    mode: "sets",
+    setValue: "primary",
+    setFields: [{ id: "r", label: "Reps", agg: "sum", primary: true }],
+  };
+  const pushUps = { id: "u", name: "Push-ups", unit: "reps" };
+
+  /** The units of the metrics after normalizing them as version-1 data. */
+  const unitsOf = (metrics: object[], schemaVersion: number | undefined = 1) =>
+    accept({
+      schemaVersion,
+      habits: [{ id: "h1", name: "Lift", metrics }],
+    }).habits[0].metrics.map((m) => m.unit);
+
+  it("moves a weighted metric from reps to volume", () => {
+    expect(unitsOf([weighted])).toEqual(["volume"]);
+  });
+
+  it("does the same for data from before versions", () => {
+    expect(unitsOf([weighted], undefined)).toEqual(["volume"]);
+    // ...including a sets metric that had no schema yet
+    const bare = { id: "b", name: "Squat", unit: "reps", mode: "sets" };
+    expect(unitsOf([bare], undefined)).toEqual(["volume"]);
+  });
+
+  it("changes nothing else about the metric", () => {
+    const [m] = accept({
+      schemaVersion: 1,
+      habits: [{ id: "h1", name: "Lift", metrics: [weighted] }],
+    }).habits[0].metrics;
+    expect(m).toEqual({ ...weighted, unit: "volume" });
+  });
+
+  it("leaves reps that really are reps", () => {
+    expect(unitsOf([repsOnly, pushUps])).toEqual(["reps", "reps"]);
+    // One field, so its "volume" is just the reps added up
+    const summed = { ...repsOnly, setValue: "volume" };
+    expect(unitsOf([summed])).toEqual(["reps"]);
+  });
+
+  it("leaves a weighted metric that was given another unit", () => {
+    expect(unitsOf([{ ...weighted, unit: "tonnage" }])).toEqual(["tonnage"]);
+  });
+
+  it("leaves data that is already at version 2", () => {
+    expect(unitsOf([weighted], 2)).toEqual(["reps"]);
+  });
+
+  it("stamps the migrated data as version 2", () => {
+    const state = accept({
+      schemaVersion: 1,
+      habits: [{ id: "h1", name: "Lift", metrics: [weighted] }],
+    });
+    expect(state.schemaVersion).toBe(2);
+    expect(state.units.map((u) => u.id)).toContain("volume");
   });
 });
 

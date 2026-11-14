@@ -608,6 +608,9 @@ test("data stored by an older version loads, works, and is saved in the current 
   ).toBeVisible();
   await expect(page.getByText("SETS · kg")).toBeVisible();
   await expect(page.getByText("1 set · 480 kg vol").first()).toBeVisible();
+  // ...and is totalled as volume, where it used to be called reps
+  await expect(page.getByText("Volume", { exact: true })).toBeVisible();
+  await expect(page.getByText("Reps", { exact: true })).toHaveCount(0);
 
   // Logging another set works on the migrated metric
   await page.getByPlaceholder("Reps").fill("5");
@@ -620,14 +623,19 @@ test("data stored by an older version loads, works, and is saved in the current 
     schemaVersion: number;
     habits: {
       intensityMode: string;
-      metrics: { setValue: string; setFields: { id: string }[] }[];
+      metrics: {
+        unit: string;
+        setValue: string;
+        setFields: { id: string }[];
+      }[];
     }[];
     units: { id: string }[];
     config: { theme: string; dashView: string };
   };
-  expect(stored.schemaVersion).toBe(1);
+  expect(stored.schemaVersion).toBe(2);
   expect(stored.habits.map((h) => h.intensityMode)).toEqual(["total", "total"]);
   expect(stored.habits[0].metrics[0].setValue).toBe("volume");
+  expect(stored.habits[0].metrics[0].unit).toBe("volume"); // was "reps"
   expect(stored.habits[0].metrics[0].setFields.map((f) => f.id)).toEqual([
     "w",
     "r",

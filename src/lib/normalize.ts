@@ -1,5 +1,5 @@
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
-import { weightedFields } from "./metrics";
+import { isSetMetric, weightedFields } from "./metrics";
 import type {
   AppConfig,
   Habit,
@@ -11,8 +11,13 @@ import type {
   Unit,
 } from "../types";
 
-/** The format `normalizeState` produces. Bump it when a migration is added. */
-export const SCHEMA_VERSION = 1;
+/**
+ * The format `normalizeState` produces. Bump it when a migration is added.
+ *
+ * - 1: every default filled in, and the version stamped.
+ * - 2: weighted sets are measured in the `volume` unit instead of `reps`.
+ */
+export const SCHEMA_VERSION = 2;
 
 export type NormalizeResult =
   | { ok: true; state: PersistedState }
@@ -67,13 +72,26 @@ function normalizeMetric(raw: unknown, path: string): Metric {
   } as Metric;
 }
 
-function normalizeHabit(raw: unknown, path: string): Habit {
+/**
+ * Migration to version 2. A weighted metric's value is its volume (weight ×
+ * reps), but it used to carry the `reps` unit, so the heatmap graded volume on
+ * the reps thresholds. Reps that are reps (a single-field schema, a plain
+ * metric) and weighted metrics given some other unit stay as they are.
+ */
+function weightedToVolume(m: Metric): Metric {
+  const isWeighted =
+    isSetMetric(m) && m.setValue === "volume" && m.setFields.length > 1;
+  return isWeighted && m.unit === "reps" ? { ...m, unit: "volume" } : m;
+}
+
+function normalizeHabit(raw: unknown, path: string, version: number): Habit {
   const h = withId(raw, path);
+  const metrics = list(h.metrics, `${path}.metrics`).map((m, i) =>
+    normalizeMetric(m, `${path}.metrics[${i}]`),
+  );
   return {
     ...h,
-    metrics: list(h.metrics, `${path}.metrics`).map((m, i) =>
-      normalizeMetric(m, `${path}.metrics[${i}]`),
-    ),
+    metrics: version < 2 ? metrics.map(weightedToVolume) : metrics,
     intensityMode: h.intensityMode === "coverage" ? "coverage" : "total",
   } as Habit;
 }
@@ -137,7 +155,9 @@ function normalize(raw: unknown): PersistedState {
   if (!Array.isArray(raw.habits)) reject("habits is not a list");
   return {
     schemaVersion: SCHEMA_VERSION,
-    habits: raw.habits.map((h, i) => normalizeHabit(h, `habits[${i}]`)),
+    habits: raw.habits.map((h, i) =>
+      normalizeHabit(h, `habits[${i}]`, version),
+    ),
     logs: normalizeLogs(raw.logs),
     units: normalizeUnits(raw.units),
     config: normalizeConfig(raw.config),
@@ -151,7 +171,8 @@ function normalize(raw: unknown): PersistedState {
  *
  * Absent pieces get their defaults: a habit's `metrics` and `intensityMode`, a
  * sets metric's `setFields` and `setValue`, the config's settings, and the
- * built-in units. Data whose structure can't be read is rejected with a reason:
+ * built-in units. Data from an older `schemaVersion` is migrated (see
+ * `SCHEMA_VERSION`). Data whose structure can't be read is rejected with a reason:
  * a container of the wrong type, a habit, metric, set field or unit without an
  * id, a unit without its number lists, or a `schemaVersion` newer than this
  * code. Other values (names, colours, logged amounts) are kept as stored.

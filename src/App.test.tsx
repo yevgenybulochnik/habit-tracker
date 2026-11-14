@@ -12,6 +12,7 @@ import App from "./App";
 import { InvalidDataError, loadState, saveState } from "./lib/storage";
 import { captureDownloads } from "./test/downloads";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
+import { SCHEMA_VERSION } from "./lib/normalize";
 import type { PersistedState } from "./types";
 
 vi.mock("./lib/storage", async (importOriginal) => ({
@@ -141,7 +142,7 @@ describe("App saves", () => {
     thresholds: [2, 5, 10],
   };
   const loaded: PersistedState = {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     habits: [],
     logs: { gone: { "2026-05-24": { m1: 30 } } },
     units: [...BUILTIN_UNITS, km],
@@ -159,7 +160,7 @@ describe("App saves", () => {
     mockLoad.mockResolvedValue(null);
     render(<App />);
 
-    expect((await switchToTheme("Light")).schemaVersion).toBe(1);
+    expect((await switchToTheme("Light")).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it("saves a change on top of what was loaded", async () => {
@@ -176,7 +177,7 @@ describe("App saves", () => {
 
 describe("App at midnight", () => {
   const loaded: PersistedState = {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     habits: [
       {
         id: "h1",
@@ -274,7 +275,7 @@ describe("App backup import", () => {
 
     await waitFor(() => expect(mockSave).toHaveBeenCalled());
     expect(mockSave.mock.lastCall![0]).toEqual({
-      schemaVersion: 1,
+      schemaVersion: SCHEMA_VERSION,
       habits: [],
       logs: backup.logs,
       units: BUILTIN_UNITS,

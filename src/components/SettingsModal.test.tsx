@@ -3,12 +3,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SettingsModal from "./SettingsModal";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
+import { SCHEMA_VERSION } from "../lib/normalize";
 import { captureDownloads } from "../test/downloads";
 import type { PersistedState } from "../types";
 
 // Current-format state: what an export writes and an import hands back.
 const sample: PersistedState = {
-  schemaVersion: 1,
+  schemaVersion: SCHEMA_VERSION,
   habits: [
     {
       id: "h1",
@@ -102,7 +103,7 @@ describe("SettingsModal — Data backup", () => {
     ["a backup whose habits have no ids", '{"habits":[{"name":"Run"}]}'],
     [
       "a backup from a newer version",
-      JSON.stringify({ ...sample, schemaVersion: 2 }),
+      JSON.stringify({ ...sample, schemaVersion: SCHEMA_VERSION + 1 }),
     ],
   ])("shows an error for %s and does not import", async (_, content) => {
     const { onImportState } = renderModal();

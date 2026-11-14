@@ -9,11 +9,12 @@ import {
   RECOVERY_KEY,
 } from "./storage";
 import { BUILTIN_UNITS, DEFAULT_CONFIG, STORAGE_KEY } from "./defaults";
+import { SCHEMA_VERSION } from "./normalize";
 import type { PersistedState } from "../types";
 
 // Current-format state: loading it changes nothing.
 const sample: PersistedState = {
-  schemaVersion: 1,
+  schemaVersion: SCHEMA_VERSION,
   habits: [
     {
       id: "h1",
