@@ -216,10 +216,12 @@ How it landed:
   stays a prop, because it opens `App`'s modal rather than changing state.
 - Deleting a habit also drops its running timers, and metric ids come from
   `newId` too (two made in the same millisecond used to collide).
-- The E2E test "Quick/Calendar toggle … remembered across reloads" fails now
-  and then, before this phase as well (about 1 in 30 under parallel load). After
-  the reload the card is expanded but d3 has drawn no cells, so it looks like a
-  width-measuring race: worth a look when Phase 7 extracts `useElementWidth`.
+- The E2E test "Quick/Calendar toggle … remembered across reloads" failed now
+  and then, before this phase as well (about 1 in 10 under parallel load). It
+  looked like a width-measuring race, but a collapsed card body stays in the
+  accessibility snapshot. The real cause, found in Phase 7: the test reloaded
+  before the `dashView` write reached IndexedDB, so the app came back in Quick
+  view. It now waits for the stored value before reloading.
 
 ## Phase 7: Split the habit card
 
@@ -231,7 +233,7 @@ How it landed:
     zooms out, and forward from −N clamps to 0.
   - This removes the `setZoomed` call inside the `setOffset` updater, and
     `canFwd` becomes `!zoomed`.
-- [ ] **Hooks.** Extract `useLongPress` and `useElementWidth`, tested with fake
+- [x] **Hooks.** Extract `useLongPress` and `useElementWidth`, tested with fake
       timers and a mocked ResizeObserver.
 - [ ] **`CalendarPanel`.** Extract the controls, SVG, legend, tooltip and the
       three d3 effects. Move the d3 code as-is and keep it loosely typed.

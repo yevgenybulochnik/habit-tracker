@@ -90,6 +90,16 @@ test("Quick/Calendar toggle shows the heatmap and is remembered across reloads",
   // Switch to Calendar → cells appear
   await setDashView(page, "calendar");
   await expect(page.locator("svg rect.dc").first()).toBeVisible();
+  // The choice is saved asynchronously, and a reload aborts a write still in
+  // flight, so wait for it to land before reloading.
+  await expect
+    .poll(async () => {
+      const stored = (await readStored(page, "habit-tracker-v3")) as
+        | { config: { dashView: string } }
+        | undefined;
+      return stored?.config.dashView;
+    })
+    .toBe("calendar");
   // Persisted: reload stays in Calendar (cells present without toggling)
   await page.reload();
   await expect(
