@@ -53,7 +53,6 @@ function renderQL(habit: Habit, logs: HabitLogs, overrides = {}) {
       units={BUILTIN_UNITS}
       pal={pal}
       timers={{}}
-      habitId={habit.id}
       today={today}
       {...handlers}
     />,

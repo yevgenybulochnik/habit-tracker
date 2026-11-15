@@ -13,33 +13,18 @@ import {
 } from "../lib/d3layout";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
+import { useHabitActions } from "../hooks/useHabitActions";
 import type { DragActivator } from "./SortableHabitCard";
 import styles from "./D3Calendar.module.css";
-import type {
-  AppConfig,
-  DayLog,
-  Habit,
-  HabitLogs,
-  SetEntry,
-  Timers,
-  Unit,
-} from "../types";
+import type { AppConfig, Habit, HabitLogs, Timers, Unit } from "../types";
 
+// Changes to the habit's logs and timers go through useHabitActions.
 type Props = {
   habit: Habit;
   logs: HabitLogs;
   units: Unit[];
-  /** Persist an exact day's entry (from the inline day editor opened by tapping a cell). */
-  onSaveDay?: (dateKey: string, entry: DayLog) => void;
   onEdit?: () => void;
-  onQuickLog?: (metricId: string, amt: number) => void;
-  onQuickReset: (metricId: string) => void;
-  onAddSet?: ((metricId: string, set: SetEntry) => void) | null;
-  onRemoveSet: (metricId: string, idx: number) => void;
-  timers?: Timers;
-  onStartTimer: (metricId: string) => void;
-  onStopTimer: (metricId: string) => void;
-  habitId: string;
+  timers: Timers;
   appConfig: AppConfig;
   /** Today's date key: outlined in the calendar, and the day quick-log writes to. */
   today: string;
@@ -61,22 +46,15 @@ export default function D3Calendar({
   habit,
   logs,
   units,
-  onSaveDay,
   onEdit,
-  onQuickLog,
-  onQuickReset,
-  onAddSet,
-  onRemoveSet,
   timers,
-  onStartTimer,
-  onStopTimer,
-  habitId,
   appConfig: cfg,
   today,
   expanded = true,
   reorderMode = false,
   dragActivator,
 }: Props) {
+  const actions = useHabitActions(habit.id, today);
   // In reorder mode the card shows its header only — collapse the heatmap body
   // and quick-log, and reuse the existing expand/collapse animation.
   const effExpanded = expanded && !reorderMode;
@@ -801,7 +779,7 @@ export default function D3Calendar({
         className={`${styles.editor}${selectedDate ? ` ${styles.open}` : ""}`}
       >
         <div className={styles.inner}>
-          {editorDate && onSaveDay && (
+          {editorDate && (
             <DayEditor
               key={editorDate}
               habit={habit}
@@ -810,7 +788,7 @@ export default function D3Calendar({
               units={units}
               pal={pal}
               today={today}
-              onChange={(d, entry) => onSaveDay(d, entry)}
+              onChange={actions.saveDay}
               onClose={closeEditor}
             />
           )}
@@ -818,48 +796,41 @@ export default function D3Calendar({
       </div>
 
       {/* Quick-log for today — stays mounted; collapses while editing a day */}
-      {onQuickLog && (
-        <div
-          className={`${styles.quicklog}${reorderMode || selectedDate ? ` ${styles.closed}` : ""}`}
-        >
-          <div className={styles.inner}>
-            <QuickLogSection
-              dense={!effExpanded}
-              habit={habit}
-              logs={logs}
-              units={units}
-              pal={pal}
-              onQuickLog={(mId, amt) => {
-                if (expanded && !zoomed) {
-                  setZoomed(true);
-                  setOffset(0);
-                  setView("calendar");
-                }
-                onQuickLog(mId, amt);
-              }}
-              onQuickReset={onQuickReset}
-              onAddSet={
-                onAddSet
-                  ? (mId, set) => {
-                      if (expanded && !zoomed) {
-                        setZoomed(true);
-                        setOffset(0);
-                        setView("calendar");
-                      }
-                      onAddSet(mId, set);
-                    }
-                  : null
+      <div
+        className={`${styles.quicklog}${reorderMode || selectedDate ? ` ${styles.closed}` : ""}`}
+      >
+        <div className={styles.inner}>
+          <QuickLogSection
+            dense={!effExpanded}
+            habit={habit}
+            logs={logs}
+            units={units}
+            pal={pal}
+            onQuickLog={(mId, amt) => {
+              if (expanded && !zoomed) {
+                setZoomed(true);
+                setOffset(0);
+                setView("calendar");
               }
-              onRemoveSet={onRemoveSet}
-              timers={timers}
-              onStartTimer={onStartTimer}
-              onStopTimer={onStopTimer}
-              habitId={habitId}
-              today={today}
-            />
-          </div>
+              actions.add(mId, amt);
+            }}
+            onQuickReset={actions.reset}
+            onAddSet={(mId, set) => {
+              if (expanded && !zoomed) {
+                setZoomed(true);
+                setOffset(0);
+                setView("calendar");
+              }
+              actions.addSet(mId, set);
+            }}
+            onRemoveSet={actions.removeSet}
+            timers={timers}
+            onStartTimer={actions.startTimer}
+            onStopTimer={actions.stopTimer}
+            today={today}
+          />
         </div>
-      )}
+      </div>
 
       {/* Tooltip */}
       {tip && (

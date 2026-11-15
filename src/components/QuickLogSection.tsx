@@ -10,6 +10,7 @@ import {
 } from "../lib/metrics";
 import { fmtVal, fmtSets } from "../lib/format";
 import { logLevel } from "../lib/stats";
+import { timerKey } from "../lib/state";
 import SetInput from "./SetInput";
 import TimerButton from "./TimerButton";
 import type {
@@ -29,12 +30,11 @@ type Props = {
   pal: Palette;
   onQuickLog: (metricId: string, amt: number) => void;
   onQuickReset: (metricId: string) => void;
-  onAddSet: ((metricId: string, set: SetEntry) => void) | null;
+  onAddSet: (metricId: string, set: SetEntry) => void;
   onRemoveSet: (metricId: string, idx: number) => void;
-  timers?: Timers;
+  timers: Timers;
   onStartTimer: (metricId: string) => void;
   onStopTimer: (metricId: string) => void;
-  habitId: string;
   /** Today's date key: the day this section shows and logs to. */
   today: string;
   /** Dense layout (Quick view / collapsed card): drop the "Quick log today" label, trim spacing. */
@@ -53,7 +53,6 @@ export default function QuickLogSection({
   timers,
   onStartTimer,
   onStopTimer,
-  habitId,
   today,
   dense,
 }: Props) {
@@ -67,7 +66,6 @@ export default function QuickLogSection({
   // The only metric, when it is a sets metric
   const priSets = compact && isSetMetric(ms[0]) ? ms[0] : null;
   const priIsDone = compact && isDoneMetric(ms[0]);
-  const timerKey = (mId: string) => `${habitId}:${mId}`;
 
   const qAdd = (mId: string, amt: number) => {
     onQuickLog(mId, amt);
@@ -136,7 +134,7 @@ export default function QuickLogSection({
             metric={priSets}
             sets={todayLog[priSets.id] as SetEntry[]}
             pal={pal}
-            onAddSet={onAddSet!}
+            onAddSet={onAddSet}
             onRemoveSet={onRemoveSet}
             lastSet={findLastSet(logs, priSets.id, today)}
           />
@@ -176,7 +174,7 @@ export default function QuickLogSection({
           </div>
           {priIsMin && (
             <TimerButton
-              startTime={timers?.[timerKey(ms[0].id)]}
+              startTime={timers[timerKey(habit.id, ms[0].id)]}
               onStart={() => onStartTimer(ms[0].id)}
               onStop={() => onStopTimer(ms[0].id)}
               pal={pal}
@@ -231,7 +229,7 @@ export default function QuickLogSection({
                       metric={m}
                       sets={sets}
                       pal={pal}
-                      onAddSet={onAddSet!}
+                      onAddSet={onAddSet}
                       onRemoveSet={onRemoveSet}
                       lastSet={findLastSet(logs, m.id, today)}
                     />
@@ -264,7 +262,7 @@ export default function QuickLogSection({
                   <div className={styles.metricActions}>
                     {isMin && (
                       <TimerButton
-                        startTime={timers?.[timerKey(m.id)]}
+                        startTime={timers[timerKey(habit.id, m.id)]}
                         onStart={() => onStartTimer(m.id)}
                         onStop={() => onStopTimer(m.id)}
                         pal={pal}
