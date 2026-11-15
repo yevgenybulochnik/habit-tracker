@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   getUnit,
   getQuickAdd,
@@ -19,6 +19,10 @@ import {
 } from "./metrics";
 import { BUILTIN_UNITS } from "./defaults";
 import type { Metric, HabitLogs, SetsMetric } from "../types";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const minM: Metric = { id: "m1", name: "Run", unit: "min" };
 const setM: SetsMetric = {
@@ -77,6 +81,10 @@ describe("isDoneMetric / doneMetric", () => {
     expect(m.unit).toBe("count");
     expect(typeof m.id).toBe("string");
     expect(m.id.length).toBeGreaterThan(0);
+  });
+  it("doneMetric() gives each metric its own id, even in the same millisecond", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+    expect(doneMetric().id).not.toBe(doneMetric().id);
   });
 });
 

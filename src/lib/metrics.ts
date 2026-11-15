@@ -8,6 +8,7 @@ import type {
   Unit,
 } from "../types";
 import { addDays } from "./dates";
+import { newId } from "./ids";
 
 /** Resolve a unit by id, falling back to a generic count-like unit. */
 export function getUnit(id: string, units: Unit[]): Unit {
@@ -37,7 +38,7 @@ export function isDoneMetric(m: Metric): boolean {
 /** The default metric for a habit created without any: a daily check-off. */
 export function doneMetric(): Metric {
   return {
-    id: `m_${Date.now()}`,
+    id: newId("m"),
     name: "Completed",
     mode: "done",
     unit: "count",

@@ -8,6 +8,7 @@ import {
   setsPreset,
   setUnitLabel,
 } from "../lib/metrics";
+import { newId } from "../lib/ids";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
 import styles from "./HabitFormFields.module.css";
@@ -61,12 +62,12 @@ export default function HabitFormFields({
       const m: Metric =
         newMode === "sets"
           ? {
-              id: `m_${Date.now()}`,
+              id: newId("m"),
               name: newMN.trim(),
               mode: "sets",
               ...setsPreset(newPreset, newWU),
             }
-          : { id: `m_${Date.now()}`, name: newMN.trim(), unit: newMU };
+          : { id: newId("m"), name: newMN.trim(), unit: newMU };
       setMetrics((p) => [...p, m]);
       setNewMN("");
       setNewMode("normal");

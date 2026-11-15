@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -39,6 +39,10 @@ function Harness() {
   );
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("HabitFormFields", () => {
   /** Add a sets metric with the given preset through the form. */
   async function addSetsMetric(
@@ -69,6 +73,19 @@ describe("HabitFormFields", () => {
     expect(screen.getByText("Squats")).toBeInTheDocument();
     await user.click(screen.getByText("×"));
     expect(screen.queryByText("Squats")).not.toBeInTheDocument();
+  });
+
+  it("removes only the chosen metric when two were added in the same millisecond", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+    const user = userEvent.setup();
+    render(<Harness />);
+    for (const name of ["Squats", "Lunges"]) {
+      await user.type(screen.getByPlaceholderText(/Metric name/i), name);
+      await user.click(screen.getByRole("button", { name: /\+ Add/i }));
+    }
+    await user.click(screen.getAllByText("×")[0]);
+    expect(screen.queryByText("Squats")).not.toBeInTheDocument();
+    expect(screen.getByText("Lunges")).toBeInTheDocument();
   });
 
   it("reveals the sets presets when sets mode is enabled (weighted default)", async () => {
