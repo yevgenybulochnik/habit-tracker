@@ -276,7 +276,7 @@ How it landed:
       effect, and drop the ref that skips the first run.
   - Tests: mounting writes nothing, which also removes the extra dev-mode
     write. Each edit writes exactly once.
-- [ ] **`SetInput`.** Reset its fields inside `add()` instead of the `prevLen`
+- [x] **`SetInput`.** Reset its fields inside `add()` instead of the `prevLen`
       effect.
 - [ ] **Small dedupes.** `fmtSets` reuses `setUnitLabel`, and
       `QuickLogSection`'s four branches share one `IntensityBar` component.

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, Fragment } from "react";
 import type { CSSProperties } from "react";
 import { fmtSets } from "../lib/format";
 import type { Palette, SetEntry, SetsMetric } from "../types";
@@ -30,58 +30,27 @@ export default function SetInput({
     f.unit || f.label.toLowerCase();
   const hasSets = Array.isArray(sets) && sets.length > 0;
 
-  // Per-field text inputs, keyed by field id.
-  const seed = () => {
-    const src = hasSets ? sets![sets!.length - 1] : lastSet;
-    const v: Record<string, string> = {};
-    for (const f of fields)
-      v[f.id] = carries(f.agg) && src && src[f.id] ? String(src[f.id]) : "";
-    return v;
-  };
-  const [vals, setVals] = useState<Record<string, string>>(seed);
-
-  // After a set is added, re-seed carry fields with that set's values, clear the rest.
-  const prevLen = useRef(0);
-  useEffect(() => {
-    if (
-      Array.isArray(sets) &&
-      sets.length > prevLen.current &&
-      sets.length > 0
-    ) {
-      const last = sets[sets.length - 1];
-      setVals((p) => {
-        const n = { ...p };
-        for (const f of fields)
-          n[f.id] = carries(f.agg) ? String(last[f.id] ?? "") : "";
-        return n;
-      });
-    }
-    prevLen.current = Array.isArray(sets) ? sets.length : 0;
-  }, [sets]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Seed carry fields from history if nothing typed yet and no sets logged today.
-  useEffect(() => {
-    if (!hasSets && lastSet) {
-      setVals((p) => {
-        const n = { ...p };
-        for (const f of fields)
-          if (carries(f.agg) && !n[f.id] && lastSet[f.id])
-            n[f.id] = String(lastSet[f.id]);
-        return n;
-      });
-    }
-  }, [lastSet]); // eslint-disable-line react-hooks/exhaustive-deps
+  // What's been typed since the last set was added, keyed by field id. A field
+  // not typed in shows its default: a carry field the latest set's value
+  // (today's, else the last before today), anything else empty. So adding a
+  // set, here or elsewhere, refreshes the untouched fields without an effect.
+  const [typed, setTyped] = useState<Record<string, string>>({});
+  const latest = hasSets ? sets![sets!.length - 1] : lastSet;
+  const valueOf = (f: (typeof fields)[number]) =>
+    typed[f.id] ??
+    (carries(f.agg) && latest?.[f.id] ? String(latest[f.id]) : "");
 
   const setField = (id: string, raw: string) =>
-    setVals((p) => ({ ...p, [id]: raw.replace(/[^0-9]/g, "") }));
+    setTyped((p) => ({ ...p, [id]: raw.replace(/[^0-9]/g, "") }));
   const add = () => {
     const entry: SetEntry = {};
     for (const f of fields) {
-      const n = parseInt(vals[f.id], 10);
+      const n = parseInt(valueOf(f), 10);
       if (!(n > 0)) return; // every field must be a positive number
       entry[f.id] = n;
     }
     onAddSet(metric.id, entry);
+    setTyped({}); // this set is now the latest: weight carries, reps clear
   };
   const product = (s: SetEntry) =>
     fields.reduce((p, f) => p * (s[f.id] || 0), 1);
@@ -137,7 +106,7 @@ export default function SetInput({
               <input
                 type="text"
                 inputMode="numeric"
-                value={vals[f.id] ?? ""}
+                value={valueOf(f)}
                 onChange={(e) => setField(f.id, e.target.value)}
                 placeholder={f.label}
                 onKeyDown={(e) => e.key === "Enter" && add()}
