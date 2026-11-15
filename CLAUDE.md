@@ -77,8 +77,9 @@ most tests are. `dates` (date keys and date arithmetic), `metrics` (unit resolut
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
-current-format state), and `defaults` (storage key, built-in units, default config,
-month/weekday labels). Prefer adding logic here over inside components. `boundary.test.ts`
+current-format state), `state` (the app's reducer, below), `ids` (`newId`), and `defaults`
+(storage key, built-in units, default config, month/weekday labels). Prefer adding logic
+here over inside components. `boundary.test.ts`
 enforces the purity: a lib module may import only other lib modules, `../types`, and
 `idb-keyval`.
 
@@ -123,9 +124,16 @@ on `visibilitychange` (an iOS home-screen app resumes instead of reloading). It 
 new day on the next animation frame, so d3's animation clock catches up first after the page
 was asleep. Tests pass a fixed `today`; they never build keys from the real clock.
 
-**State & persistence (`src/App.tsx`).** `App` is the single stateful container: it holds
-`habits`, `logs`, `units`, `appConfig`, and `timers`, and every mutation funnels through one
-`save()` callback → `storage.saveState()`. On mount it calls `requestPersistence()` (asks iOS
+**State & persistence (`src/App.tsx`, `src/lib/state.ts`).** `App` is the single stateful
+container: one `useReducer` over `reduce` from `lib/state` holds `habits`, `logs`, `units`,
+`config` and `timers`, and every change is a dispatched `Action`. The reducer must stay pure
+(React calls it twice in dev), so anything else an action needs (a `newId`, `Date.now()` for
+a timer, the `today` key) is worked out by the caller and carried in the action. One effect in
+`App` saves each new state through `storage.saveState()`. It starts only after a load has
+succeeded, and it skips the loaded state itself, so opening the app writes nothing. Habit cards
+dispatch their own changes through `useHabitActions(habit.id, today)`
+(`src/hooks/useHabitActions.ts`), which reads `App`'s dispatch from `DispatchContext`; the
+smaller components below a card keep plain callback props. On mount `App` calls `requestPersistence()` (asks iOS
 to keep storage durable) then `loadState()`, which migrates a legacy `habit-tracker-v2` key
 forward to `habit-tracker-v3` and returns normalized state. If the stored data can't be
 normalized, `loadState` copies it to the `habit-tracker-recovery` key and rejects with an

@@ -182,7 +182,7 @@ so a 30-day streak doesn't show "0d" at 8am.
 **Goal:** every state change is a pure, tested function, and saving happens in
 one place.
 
-- [ ] **`src/lib/state.ts`.** `reduce(state, action)`, built one group of
+- [x] **`src/lib/state.ts`.** `reduce(state, action)`, built one group of
       actions per commit:
   - habits: add, update, delete, reorder
   - logs: set a day, add, reset, add a set, remove a set
@@ -191,21 +191,35 @@ one place.
   - Actions carry `id`, `now` and `dateKey`, computed by the caller. That keeps
     the reducer pure, which matters because React runs reducers twice in dev
     mode.
-- [ ] **`src/lib/ids.ts`.** `newId(prefix)` uses `crypto.randomUUID()` when it
+- [x] **`src/lib/ids.ts`.** `newId(prefix)` uses `crypto.randomUUID()` when it
       exists, with a fallback for the plain-HTTP `devbox.lan` host.
-- [ ] **Switch `App` to `useReducer`.**
+- [x] **Switch `App` to `useReducer`.**
   - One effect saves the state once it has loaded, and never while `loadError`
     is set.
   - `timersRef`, the four-argument `save` and all the dependency arrays go
     away.
   - `App.test.tsx` gets tests that act through the UI and check what
     `saveState` receives.
-- [ ] **Wiring.** Cards get one `useHabitActions(habitId)` helper instead of 8
+- [x] **Wiring.** Cards get one `useHabitActions(habitId)` helper instead of 8
       callbacks, and the duplicate `habitId` prop is dropped. Smaller components
       keep their callback props, so their tests don't change.
 
 This is the riskiest internal change, because the whole save path moves. Run
 E2E before merging.
+
+How it landed:
+
+- Loading and importing are separate actions: `state/load` keeps the stored
+  running timers, `state/import` drops a backup's.
+- `useHabitActions(habitId, today)` takes `today` as well, since it's passed in
+  rather than looked up. It covers the seven log and timer callbacks; `onEdit`
+  stays a prop, because it opens `App`'s modal rather than changing state.
+- Deleting a habit also drops its running timers, and metric ids come from
+  `newId` too (two made in the same millisecond used to collide).
+- The E2E test "Quick/Calendar toggle … remembered across reloads" fails now
+  and then, before this phase as well (about 1 in 30 under parallel load). After
+  the reload the card is expanded but d3 has drawn no cells, so it looks like a
+  width-measuring race: worth a look when Phase 7 extracts `useElementWidth`.
 
 ## Phase 7: Split the habit card
 
