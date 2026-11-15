@@ -1,9 +1,11 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useId } from "react";
 import { BUILTIN_UNITS } from "../lib/defaults";
 import { todayK } from "../lib/dates";
 import { normalizeState, SCHEMA_VERSION } from "../lib/normalize";
+import { unitFields } from "../lib/units";
 import { downloadJson } from "../download";
 import ModalShell from "./ModalShell";
+import UnitForm from "./UnitForm";
 import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
 import modal from "./modalForm.module.css";
 import styles from "./SettingsModal.module.css";
@@ -35,25 +37,14 @@ export default function SettingsModal({
 }: Props) {
   const [closing, setClosing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [eLabel, setELabel] = useState("");
-  const [eQA, setEQA] = useState("");
-  const [eThr, setEThr] = useState("");
-  const [newId, setNewId] = useState("");
-  const [newLabel, setNewLabel] = useState("");
-  const [newQA, setNewQA] = useState("1, 5, 10");
-  const [newThr, setNewThr] = useState("1, 3, 5");
   const [importErr, setImportErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const addTitleId = useId();
 
   const hClose = () => {
     setClosing(true);
     setTimeout(onClose, 350);
   };
-  const parseNums = (s: string) =>
-    s
-      .split(",")
-      .map((v) => parseInt(v.trim(), 10))
-      .filter((v) => !isNaN(v) && v > 0);
 
   const usedUnits = useMemo(() => {
     const s = new Set<string>();
@@ -61,44 +52,7 @@ export default function SettingsModal({
     return s;
   }, [habits]);
   const builtinIds = new Set(BUILTIN_UNITS.map((u) => u.id));
-
-  const startEdit = (u: Unit) => {
-    setEditId(u.id);
-    setELabel(u.label);
-    setEQA(u.quickAdd.join(", "));
-    setEThr(u.thresholds.join(", "));
-  };
-  const saveEdit = () => {
-    const qa = parseNums(eQA),
-      thr = parseNums(eThr);
-    if (eLabel.trim() && qa.length && thr.length) {
-      onUpdateUnit(editId!, {
-        label: eLabel.trim(),
-        quickAdd: qa.slice(0, 3),
-        thresholds: thr.slice(0, 3),
-      });
-      setEditId(null);
-    }
-  };
-  const addNew = () => {
-    const id = newId.trim().toLowerCase().replace(/\s+/g, "_");
-    if (id && newLabel.trim() && !units.find((u) => u.id === id)) {
-      const qa = parseNums(newQA),
-        thr = parseNums(newThr);
-      if (qa.length && thr.length) {
-        onAddUnit({
-          id,
-          label: newLabel.trim(),
-          quickAdd: qa.slice(0, 3),
-          thresholds: thr.slice(0, 3),
-        });
-        setNewId("");
-        setNewLabel("");
-        setNewQA("1, 5, 10");
-        setNewThr("1, 3, 5");
-      }
-    }
-  };
+  const unitIds = units.map((u) => u.id);
 
   const doExport = () => {
     const state: PersistedState = {
@@ -233,47 +187,21 @@ export default function SettingsModal({
             <div
               key={u.id}
               className={`${styles.unit}${isEditing ? ` ${styles.unitEditing}` : ""}`}
+              role={isEditing ? "group" : undefined}
+              aria-label={isEditing ? `Edit ${u.label}` : undefined}
             >
               {isEditing ? (
-                <div>
-                  <div className={styles.editGrid}>
-                    <div>
-                      <div className={styles.fieldLbl}>Label</div>
-                      <input
-                        value={eLabel}
-                        onChange={(e) => setELabel(e.target.value)}
-                        className={styles.smInput}
-                      />
-                    </div>
-                    <div>
-                      <div className={styles.fieldLbl}>Quick-add</div>
-                      <input
-                        value={eQA}
-                        onChange={(e) => setEQA(e.target.value)}
-                        className={styles.smInput}
-                      />
-                    </div>
-                    <div>
-                      <div className={styles.fieldLbl}>Thresholds</div>
-                      <input
-                        value={eThr}
-                        onChange={(e) => setEThr(e.target.value)}
-                        className={styles.smInput}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.editActions}>
-                    <button
-                      onClick={() => setEditId(null)}
-                      className={styles.pillCancel}
-                    >
-                      Cancel
-                    </button>
-                    <button onClick={saveEdit} className={styles.pillSave}>
-                      Save
-                    </button>
-                  </div>
-                </div>
+                <UnitForm
+                  initial={unitFields(u)}
+                  editing
+                  takenIds={unitIds.filter((id) => id !== u.id)}
+                  submitLabel="Save"
+                  onSubmit={({ id, ...changes }) => {
+                    onUpdateUnit(id, changes);
+                    setEditId(null);
+                  }}
+                  onCancel={() => setEditId(null)}
+                />
               ) : (
                 <div className={styles.unitDisplay}>
                   <span className={styles.unitLabel}>{u.label}</span>
@@ -289,9 +217,10 @@ export default function SettingsModal({
                     className={`${styles.iconActions}${inUse ? "" : ` ${styles.iconActionsPush}`}`}
                   >
                     <button
-                      onClick={() => startEdit(u)}
+                      onClick={() => setEditId(u.id)}
                       className={styles.editIcon}
                       title="Edit"
+                      aria-label={`Edit ${u.label}`}
                     >
                       ✎
                     </button>
@@ -300,6 +229,7 @@ export default function SettingsModal({
                         onClick={() => onDeleteUnit(u.id)}
                         className={styles.delIcon}
                         title="Delete"
+                        aria-label={`Delete ${u.label}`}
                       >
                         ×
                       </button>
@@ -313,50 +243,16 @@ export default function SettingsModal({
       </div>
 
       {/* Add new unit */}
-      <div className={styles.addPanel}>
-        <div className={styles.hdrMuted}>Add New Unit</div>
-        <div className={styles.addGrid}>
-          <div>
-            <div className={styles.fieldLbl}>ID</div>
-            <input
-              value={newId}
-              onChange={(e) => setNewId(e.target.value)}
-              placeholder="lbs"
-              className={styles.smInput}
-            />
-          </div>
-          <div>
-            <div className={styles.fieldLbl}>Label</div>
-            <input
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Pounds"
-              className={styles.smInput}
-            />
-          </div>
+      <section className={styles.addPanel} aria-labelledby={addTitleId}>
+        <div id={addTitleId} className={styles.hdrMuted}>
+          Add New Unit
         </div>
-        <div className={`${styles.addGrid} ${styles.addGridLast}`}>
-          <div>
-            <div className={styles.fieldLbl}>Quick-add</div>
-            <input
-              value={newQA}
-              onChange={(e) => setNewQA(e.target.value)}
-              className={styles.smInput}
-            />
-          </div>
-          <div>
-            <div className={styles.fieldLbl}>Thresholds</div>
-            <input
-              value={newThr}
-              onChange={(e) => setNewThr(e.target.value)}
-              className={styles.smInput}
-            />
-          </div>
-        </div>
-        <button onClick={addNew} className={styles.addUnitBtn}>
-          Add Unit
-        </button>
-      </div>
+        <UnitForm
+          takenIds={unitIds}
+          submitLabel="Add Unit"
+          onSubmit={onAddUnit}
+        />
+      </section>
 
       {/* ── Data (backup) ── */}
       <div className={styles.dataTop}>

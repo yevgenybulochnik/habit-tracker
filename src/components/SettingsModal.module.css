@@ -138,45 +138,6 @@
   border-color: var(--c-accent);
   background: var(--c-accentDim);
 }
-.editGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.fieldLbl {
-  font-size: 10px;
-  color: var(--c-muted);
-  margin-bottom: 3px;
-}
-.smInput {
-  composes: inp from "../styles/shared.module.css";
-  font-size: 12px;
-}
-.editActions {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-}
-.pillBtn {
-  padding: 5px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-}
-.pillCancel {
-  composes: pillBtn;
-  border: 1px solid var(--c-border);
-  background: transparent;
-  color: var(--c-muted);
-}
-.pillSave {
-  composes: pillBtn;
-  border: none;
-  background: var(--c-accent);
-  color: #fff;
-  font-weight: 600;
-}
 .unitDisplay {
   display: flex;
   align-items: center;
@@ -243,25 +204,6 @@
   border-radius: 8px;
   border: 1px dashed var(--c-border);
   background: var(--c-bg);
-}
-.addGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.addGridLast {
-  margin-bottom: 10px;
-}
-.addUnitBtn {
-  padding: 7px 16px;
-  border-radius: 6px;
-  border: none;
-  background: var(--c-accent);
-  color: #fff;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
 }
 
 /* Data / backup */
