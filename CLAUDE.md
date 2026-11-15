@@ -77,7 +77,8 @@ most tests are. `dates` (date keys and date arithmetic), `metrics` (unit resolut
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
-current-format state), `state` (the app's reducer, below), `ids` (`newId`), and `defaults`
+current-format state), `state` (the app's reducer, below), `calendarNav` (a card's calendar
+navigation, `navigate` over `{ offset, zoomed, view }`), `ids` (`newId`), and `defaults`
 (storage key, built-in units, default config, month/weekday labels). Prefer adding logic
 here over inside components. `boundary.test.ts`
 enforces the purity: a lib module may import only other lib modules, `../types`, and
@@ -87,7 +88,7 @@ enforces the purity: a lib module may import only other lib modules, `../types`,
 CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
 `src/globalCss.ts` (`CSS`). `src/download.ts` (`downloadJson`) is the shared file-download
 helper; it needs the DOM, so it isn't in lib. Anything used by a single component sits with
-it (`EMOJIS` in `components/emojis.ts`, the d3 easing `D3E` inside `D3Calendar`).
+it (`EMOJIS` in `components/emojis.ts`, the d3 easing `D3E` inside `CalendarPanel`).
 
 **The data model is nested and worth internalizing** (`src/types.ts`):
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
@@ -95,7 +96,7 @@ A metric is either **normal** (numeric, e.g. minutes/reps) or **sets mode** (`Se
 `mode: "sets"`, storing `{w, r}[]` weight×reps, with its own `setFields` schema and
 `setValue`; `isSetMetric` narrows to it). A weighted sets metric's value is its volume (weight ×
 reps), so the weighted preset gives it the built-in `volume` unit, not `reps`. Most helpers (`logLevel`, `metricVal`,
-`metricActive`, `logSummary`) operate on a **single `DayLog`**, while `D3Calendar` and
+`metricActive`, `logSummary`) operate on a **single `DayLog`**, while `CalendarPanel` and
 `habitStats` take one habit's `HabitLogs` (`dateKey → DayLog`). Intensity colouring has two
 modes per habit (`intensityMode`): `total` (sum vs `thresholds`) or `coverage` (fraction of
 metrics done), both producing a level 0–4 that maps to a palette shade. `total` only makes
@@ -142,14 +143,24 @@ normalized, `loadState` copies it to the `habit-tracker-recovery` key and reject
 is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`quick` |
 `calendar`) toggle.
 
-**`D3Calendar` is the one imperative component.** It renders the SVG heatmap/calendar via d3
-data-joins inside a `useEffect`; the pure geometry is extracted to `src/lib/d3layout.ts`. The
-d3 selection/animation code is intentionally **loosely typed (`any`) at the d3 boundary** —
-keep it that way rather than fighting d3's generics; correctness there is covered by E2E render
-checks, not unit tests. Each card collapses (Quick) or expands to its heatmap (Calendar) via an
-`expanded` prop, animated with `grid-template-rows`; the d3 build is gated off while collapsed.
-Tapping a calendar day opens an inline `DayEditor` for that date (exact-value entry +
-back-dating). Selection highlight and `pal` are kept out of the main build (separate effect /
+**The habit card (`HabitCard`).** Each habit is a `HabitCard`: a header (hold-to-edit via
+`useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
+`CalendarPanel`, an inline `DayEditor` and the quick-log. A card collapses (Quick) or expands
+to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-rows`. The card
+owns the calendar's navigation (`useReducer` over `navigate` from `lib/calendarNav`) rather than
+the panel, because logging from quick-log zooms the calendar in to this month as well as the
+arrows. It also owns the selected day: tapping a calendar day opens the inline `DayEditor` for
+that date (exact-value entry + back-dating).
+
+**`CalendarPanel` is the one imperative component.** It draws the SVG heatmap/calendar via d3
+data-joins inside `useEffect`s, with its view/month controls, legend and hover tooltip; it
+measures its own width with `useElementWidth` and gets `nav`/`onNav` and
+`selectedDate`/`onTapDay` from the card. The pure geometry is extracted to
+`src/lib/d3layout.ts`. The d3 selection/animation code is intentionally **loosely typed
+(`any`) at the d3 boundary**: keep it that way rather than fighting d3's generics. Its
+correctness is mostly covered by E2E render checks; `CalendarPanel.test.tsx` checks the wiring
+(cells drawn, taps, selection outline, tooltip) under jsdom. The d3 build is gated off while
+collapsed. Selection highlight and `pal` are kept out of the main build (separate effect /
 `useMemo`) so a tap doesn't re-ripple the heatmap. A cell outlives a change of `today`, so
 anything in the build that depends on `today` or on the selection must be set on the merged
 (enter + update) selection, not only on enter.
@@ -174,7 +185,7 @@ There are two things CSS Modules **don't** own:
   d3 SVG — can't be static classes. Palette colours are passed as **inline CSS custom
   properties** consumed by a class (`style={{ "--p4": pal.shades[4] }}` → `.x { color: var(--p4) }`);
   see `--p*` in `QuickLogSection`, `--tb-a*`/`--set-*`/`--de-*` in the timer/set/day-editor
-  modules. The **d3 layer in `D3Calendar` stays imperative** (only its React chrome is a module);
+  modules. The **d3 layer in `CalendarPanel` stays imperative** (only its React chrome is a module);
   `BrandMark` (size-driven, runtime-generated keyframes) and the dnd transform on
   `SortableHabitCard` also stay inline. No CSS framework.
 

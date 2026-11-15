@@ -25,7 +25,7 @@ type Props = {
 
 /**
  * DnD container for the habit list. Keeps the @dnd-kit surface out of App and
- * D3Calendar: it only knows the ordered ids and emits (activeId, overId) on
+ * HabitCard: it only knows the ordered ids and emits (activeId, overId) on
  * drop. Uses the dedicated Mouse + Touch sensors (more reliable on iOS than the
  * combined Pointer sensor) plus Keyboard for accessibility. A small activation
  * distance means a tap doesn't start a drag.

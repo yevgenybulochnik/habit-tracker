@@ -17,7 +17,7 @@ import { useToday } from "./hooks/useToday";
 import { DispatchContext } from "./hooks/useHabitActions";
 import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
-import D3Calendar from "./components/D3Calendar";
+import HabitCard from "./components/HabitCard";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
@@ -159,7 +159,7 @@ export default function App() {
     );
 
   // The card list. The sortable wrapper + DnD context stay mounted in both
-  // modes so toggling only flips props on the same D3Calendar instance — the
+  // modes so toggling only flips props on the same HabitCard instance — the
   // card animates its height down to the header (grid-template-rows) instead of
   // remounting. The grip handle is only rendered while reordering. Cards
   // dispatch their own changes, through useHabitActions.
@@ -169,7 +169,7 @@ export default function App() {
         {habits.map((h, i) => (
           <SortableHabitCard key={h.id} id={h.id} index={i}>
             {(drag) => (
-              <D3Calendar
+              <HabitCard
                 reorderMode={reorder}
                 dragActivator={reorder ? drag : undefined}
                 expanded={dashView === "calendar"}

@@ -237,7 +237,7 @@ How it landed:
       timers and a mocked ResizeObserver.
 - [x] **`CalendarPanel`.** Extract the controls, SVG, legend, tooltip and the
       three d3 effects. Move the d3 code as-is and keep it loosely typed.
-- [ ] **Rename.** `git mv` what's left (and its CSS module) to `HabitCard.tsx`
+- [x] **Rename.** `git mv` what's left (and its CSS module) to `HabitCard.tsx`
       so the file history follows. Update `CLAUDE.md`'s architecture section.
 - [ ] Merge the two copies of the auto-zoom-on-quick-log code into one handler.
 

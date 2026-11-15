@@ -10,7 +10,7 @@ import DayEditor from "./DayEditor";
 import { useHabitActions } from "../hooks/useHabitActions";
 import { useLongPress } from "../hooks/useLongPress";
 import type { DragActivator } from "./SortableHabitCard";
-import styles from "./D3Calendar.module.css";
+import styles from "./HabitCard.module.css";
 import type { AppConfig, Habit, HabitLogs, Timers, Unit } from "../types";
 
 // Changes to the habit's logs and timers go through useHabitActions.
@@ -32,7 +32,7 @@ type Props = {
   dragActivator?: DragActivator;
 };
 
-export default function D3Calendar({
+export default function HabitCard({
   habit,
   logs,
   units,

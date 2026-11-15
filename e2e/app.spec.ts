@@ -307,7 +307,7 @@ test("backup: export then import restores a deleted habit", async ({
 test("switching theme recolors the heatmap cells (cheap fill effect)", async ({
   page,
 }) => {
-  // Guards the D3Calendar fill split: theme is a dep of the cheap fill effect,
+  // Guards the CalendarPanel fill split: theme is a dep of the cheap fill effect,
   // and a stale-fill regression would be invisible to the page-bg theme test.
   await page.goto("/");
   await createHabit(page, "Reading");
