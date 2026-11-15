@@ -244,6 +244,26 @@ How it landed:
 d3 behaviour is only covered by E2E, so run E2E after each commit in this
 phase, not just at the end.
 
+How it landed:
+
+- `D3Calendar`'s 844 lines became `HabitCard` (285) and `CalendarPanel` (540).
+  The d3 effects moved unchanged.
+- `calendarNav`'s actions carry the step (`months`), since it comes from
+  config. A `zoomToday` action replaced the three setter calls in each quick-log
+  handler.
+- `HabitCard` keeps the navigation state, because quick-log zooms the calendar
+  too, and the selected day, because the `DayEditor` is its. `CalendarPanel` is
+  controlled through `nav`/`onNav` and `selectedDate`/`onTapDay`, and measures
+  its own width. The tooltip moved into the panel and still positions against
+  the card.
+- `useLongPress` restarts its wait when a second press starts before a release
+  (a touch followed by an emulated mousedown), instead of leaving the first
+  timer running.
+- d3 turned out to run well enough in jsdom for `CalendarPanel.test` to check
+  the wiring: cells drawn, taps, the selection outline and the tooltip.
+  `HabitCard.test` covers quick-log's auto-zoom.
+- The flaky E2E test wasn't a width race; see the Phase 6 notes.
+
 ## Phase 8: Forms, modals, effect cleanup
 
 - [ ] **Unit form.** `src/lib/units.ts` gets `parseNumList`, `normalizeUnitId`
