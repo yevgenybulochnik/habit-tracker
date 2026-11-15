@@ -134,3 +134,40 @@ describe("QuickLogSection and today", () => {
     expect(screen.getByPlaceholderText("Reps")).toHaveValue("");
   });
 });
+
+describe("QuickLogSection intensity bar", () => {
+  const meter = (name: string) => screen.getByRole("meter", { name });
+
+  it("shows today's level, out of 4, for a single metric", () => {
+    renderQL(minHabit, { [today]: { m1: 30 } }); // thresholds 15/30/60
+    expect(meter("Intensity")).toHaveAttribute("aria-valuenow", "3");
+    expect(meter("Intensity")).toHaveAttribute("aria-valuemax", "4");
+    expect(meter("Intensity").children).toHaveLength(4);
+  });
+
+  it("shows the level for a sets metric too", () => {
+    renderQL(setHabit, { [today]: { m2: [{ w: 135, r: 5 }] } }); // 675 vol
+    expect(meter("Intensity")).toHaveAttribute("aria-valuenow", "1");
+  });
+
+  it("shows how many of several metrics are done", () => {
+    const multi: Habit = {
+      ...minHabit,
+      metrics: [
+        { id: "m1", name: "Minutes", unit: "min" },
+        { id: "m4", name: "Pages", unit: "count" },
+        { id: "m5", name: "Notes", unit: "count" },
+      ],
+      intensityMode: "coverage",
+    };
+    renderQL(multi, { [today]: { m1: 10, m5: 2 } });
+    expect(meter("Metrics done")).toHaveAttribute("aria-valuenow", "2");
+    expect(meter("Metrics done")).toHaveAttribute("aria-valuemax", "3");
+    expect(meter("Metrics done").children).toHaveLength(3);
+  });
+
+  it("has none for a daily check-off, whose toggle shows its state", () => {
+    renderQL(doneHabit, { [today]: { m3: 1 } });
+    expect(screen.queryByRole("meter")).toBeNull();
+  });
+});

@@ -95,9 +95,14 @@ export default function QuickLogSection({
     "--p1a": `${pal.shades[1]}44`,
   } as CSSProperties;
 
-  // Intensity-bar segment background is per-segment, so it stays inline.
-  const barBg = (on: boolean, shade: number) =>
-    on ? pal.shades[shade] : "var(--c-bg)";
+  // A single metric's bar steps through the four intensity levels.
+  const levelBar = (
+    <IntensityBar
+      label="Intensity"
+      segments={[1, 2, 3, 4].map((i) => ({ on: level >= i, shade: i }))}
+      pal={pal}
+    />
+  );
 
   return (
     <div
@@ -138,15 +143,7 @@ export default function QuickLogSection({
             onRemoveSet={onRemoveSet}
             lastSet={findLastSet(logs, priSets.id, today)}
           />
-          <div className={styles.bars}>
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className={styles.barSeg}
-                style={{ background: barBg(level >= i, i) }}
-              />
-            ))}
-          </div>
+          {levelBar}
         </>
       ) : compact ? (
         <>
@@ -181,15 +178,7 @@ export default function QuickLogSection({
               compact={true}
             />
           )}
-          <div className={styles.bars}>
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className={styles.barSeg}
-                style={{ background: barBg(level >= i, i) }}
-              />
-            ))}
-          </div>
+          {levelBar}
         </>
       ) : (
         <>
@@ -296,17 +285,54 @@ export default function QuickLogSection({
               );
             })}
           </div>
-          <div className={`${styles.bars} ${styles.barsTight}`}>
-            {ms.map((m) => (
-              <div
-                key={m.id}
-                className={styles.barSeg}
-                style={{ background: barBg(metricActive(m, todayLog), 3) }}
-              />
-            ))}
-          </div>
+          {/* Several metrics: one segment per metric, lit once it's done */}
+          <IntensityBar
+            label="Metrics done"
+            segments={ms.map((m) => ({
+              on: metricActive(m, todayLog),
+              shade: 3,
+            }))}
+            pal={pal}
+            tight
+          />
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * A row of segments, each lit in its palette shade or left empty. It's a
+ * meter whose value is how many are lit.
+ */
+function IntensityBar({
+  label,
+  segments,
+  pal,
+  tight = false,
+}: {
+  label: string;
+  segments: { on: boolean; shade: number }[];
+  pal: Palette;
+  tight?: boolean;
+}) {
+  return (
+    <div
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={segments.length}
+      aria-valuenow={segments.filter((s) => s.on).length}
+      className={`${styles.bars}${tight ? ` ${styles.barsTight}` : ""}`}
+    >
+      {segments.map((s, i) => (
+        <div
+          key={i}
+          className={styles.barSeg}
+          // Each segment has its own colour, so it stays inline
+          style={{ background: s.on ? pal.shades[s.shade] : "var(--c-bg)" }}
+        />
+      ))}
     </div>
   );
 }

@@ -278,7 +278,7 @@ How it landed:
     write. Each edit writes exactly once.
 - [x] **`SetInput`.** Reset its fields inside `add()` instead of the `prevLen`
       effect.
-- [ ] **Small dedupes.** `fmtSets` reuses `setUnitLabel`, and
+- [x] **Small dedupes.** `fmtSets` reuses `setUnitLabel`, and
       `QuickLogSection`'s four branches share one `IntensityBar` component.
 
 ## Left out on purpose
