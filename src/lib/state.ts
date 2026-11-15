@@ -5,6 +5,7 @@ import type {
   DayLog,
   Habit,
   Logs,
+  PersistedState,
   SetEntry,
   Timers,
   Unit,
@@ -34,7 +35,15 @@ export type Action =
   | ({ type: "log/addSet"; set: SetEntry } & MetricDay)
   | ({ type: "log/removeSet"; index: number } & MetricDay)
   | { type: "timer/start"; habitId: string; metricId: string; now: number }
-  | ({ type: "timer/stop"; now: number } & MetricDay);
+  | ({ type: "timer/stop"; now: number } & MetricDay)
+  | { type: "unit/add"; unit: Unit }
+  | { type: "unit/update"; id: string; changes: Partial<Unit> }
+  | { type: "unit/delete"; id: string }
+  | { type: "config/update"; changes: Partial<AppConfig> }
+  /** State read from storage, running timers included. */
+  | { type: "state/load"; state: PersistedState }
+  /** A backup replacing everything; its timers are long stale. */
+  | { type: "state/import"; state: PersistedState };
 
 /** One metric of one habit on one day. */
 type MetricDay = { habitId: string; metricId: string; dateKey: string };
@@ -113,6 +122,33 @@ export function reduce(state: AppState, action: Action): AppState {
         action,
         (v) => numberOf(v) + mins,
       );
+    }
+
+    case "unit/add":
+      if (state.units.some((u) => u.id === action.unit.id)) return state;
+      return { ...state, units: [...state.units, action.unit] };
+    case "unit/update":
+      return {
+        ...state,
+        units: state.units.map((u) =>
+          u.id === action.id ? { ...u, ...action.changes } : u,
+        ),
+      };
+    case "unit/delete":
+      return { ...state, units: state.units.filter((u) => u.id !== action.id) };
+    case "config/update":
+      return { ...state, config: { ...state.config, ...action.changes } };
+
+    case "state/load":
+    case "state/import": {
+      const { habits, logs, units, config, timers = {} } = action.state;
+      return {
+        habits,
+        logs,
+        units,
+        config,
+        timers: action.type === "state/load" ? timers : {},
+      };
     }
   }
 }

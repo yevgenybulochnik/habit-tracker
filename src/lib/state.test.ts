@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { reduce, type Action, type AppState } from "./state";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
-import type { Habit } from "../types";
+import { SCHEMA_VERSION } from "./normalize";
+import type { Habit, PersistedState, Unit } from "../types";
 
 function habit(id: string, name = id): Habit {
   return {
@@ -187,5 +188,97 @@ describe("reduce: timers", () => {
       dateKey: day,
     });
     expect(out).toBe(s);
+  });
+});
+
+describe("reduce: units and config", () => {
+  const pages: Unit = {
+    id: "pages",
+    label: "pages",
+    quickAdd: [5, 10],
+    thresholds: [10, 30, 60],
+  };
+
+  it("adds a unit", () => {
+    const out = run(state({ units: [] }), { type: "unit/add", unit: pages });
+    expect(out.units).toEqual([pages]);
+  });
+
+  it("ignores a new unit whose id is taken", () => {
+    const s = state({ units: [pages] });
+    const out = reduce(s, {
+      type: "unit/add",
+      unit: { ...pages, label: "Pages" },
+    });
+    expect(out).toBe(s);
+  });
+
+  it("merges changes into the unit with the given id", () => {
+    const other = { ...pages, id: "other" };
+    const s = state({ units: [pages, other] });
+    const out = run(s, {
+      type: "unit/update",
+      id: "pages",
+      changes: { quickAdd: [1] },
+    });
+    expect(out.units).toEqual([{ ...pages, quickAdd: [1] }, other]);
+  });
+
+  it("deletes a unit", () => {
+    const s = state({ units: [pages, { ...pages, id: "other" }] });
+    const out = run(s, { type: "unit/delete", id: "pages" });
+    expect(out.units.map((u) => u.id)).toEqual(["other"]);
+  });
+
+  it("merges changes into the config", () => {
+    const out = run(state(), {
+      type: "config/update",
+      changes: { dashView: "calendar" },
+    });
+    expect(out.config).toEqual({ ...DEFAULT_CONFIG, dashView: "calendar" });
+  });
+});
+
+describe("reduce: replacing everything", () => {
+  const saved: PersistedState = {
+    schemaVersion: SCHEMA_VERSION,
+    habits: [habit("h9")],
+    logs: { h9: { "2026-11-01": { m1: 2 } } },
+    units: [],
+    config: { ...DEFAULT_CONFIG, theme: "light" },
+    timers: { "h9:m1": 1000 },
+  };
+  const before = state({
+    habits: [habit("h1")],
+    logs: { h1: {} },
+    timers: { "h1:m1": 500 },
+  });
+
+  it("loads stored state, keeping its running timers", () => {
+    const out = run(before, { type: "state/load", state: saved });
+    expect(out).toEqual({
+      habits: saved.habits,
+      logs: saved.logs,
+      units: saved.units,
+      config: saved.config,
+      timers: saved.timers,
+    });
+  });
+
+  it("loads stored state that has no timers", () => {
+    const { timers: _, ...noTimers } = saved;
+    const out = run(before, { type: "state/load", state: noTimers });
+    expect(out.timers).toEqual({});
+  });
+
+  it("imports a backup without bringing back its timers", () => {
+    const out = run(before, { type: "state/import", state: saved });
+    expect(out).toEqual({
+      habits: saved.habits,
+      logs: saved.logs,
+      units: saved.units,
+      config: saved.config,
+      timers: {},
+    });
   });
 });
