@@ -16,6 +16,7 @@ import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
 import { useHabitActions } from "../hooks/useHabitActions";
 import { useLongPress } from "../hooks/useLongPress";
+import { useElementWidth } from "../hooks/useElementWidth";
 import type { DragActivator } from "./SortableHabitCard";
 import styles from "./D3Calendar.module.css";
 import type { AppConfig, Habit, HabitLogs, Timers, Unit } from "../types";
@@ -61,9 +62,8 @@ export default function D3Calendar({
   // and quick-log, and reuse the existing expand/collapse animation.
   const effExpanded = expanded && !reorderMode;
   const NUM_MONTHS = cfg.numMonths;
-  const svgRef = useRef<SVGSVGElement>(null),
-    cRef = useRef<HTMLDivElement>(null);
-  const [cw, setCw] = useState(400);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [cRef, cw] = useElementWidth<HTMLDivElement>(400);
   const [tip, setTip] = useState<Tip | null>(null);
   const [nav, dispatchNav] = useReducer(navigate, INITIAL_NAV);
   const { view, offset, zoomed } = nav;
@@ -152,24 +152,6 @@ export default function D3Calendar({
         ? `${MONTHS[days[0].getMonth()]} ${days[0].getFullYear()}`
         : `${MONTHS[days[0].getMonth()]} – ${MONTHS[days[days.length - 1].getMonth()]} ${days[days.length - 1].getFullYear()}`
       : "";
-
-  useEffect(() => {
-    const el = cRef.current;
-    if (!el) return;
-    // Ignore zero widths: when the panel is hidden (display:none) the width
-    // reports 0; keeping the last real width means becoming visible again does
-    // not change cw and so doesn't re-run the (expensive) d3 build.
-    const obs = new ResizeObserver((e) => {
-      for (const en of e) {
-        const w = en.contentRect.width;
-        if (w > 0) setCw(w);
-      }
-    });
-    obs.observe(el);
-    const w0 = el.getBoundingClientRect().width;
-    if (w0 > 0) setCw(w0);
-    return () => obs.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!effExpanded || !svgRef.current) return; // body not rendered when collapsed/reordering
