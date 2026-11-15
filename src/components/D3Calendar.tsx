@@ -15,6 +15,7 @@ import { INITIAL_NAV, navigate, type CalendarView } from "../lib/calendarNav";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
 import { useHabitActions } from "../hooks/useHabitActions";
+import { useLongPress } from "../hooks/useLongPress";
 import type { DragActivator } from "./SortableHabitCard";
 import styles from "./D3Calendar.module.css";
 import type { AppConfig, Habit, HabitLogs, Timers, Unit } from "../types";
@@ -62,12 +63,12 @@ export default function D3Calendar({
   const NUM_MONTHS = cfg.numMonths;
   const svgRef = useRef<SVGSVGElement>(null),
     cRef = useRef<HTMLDivElement>(null);
-  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cw, setCw] = useState(400);
   const [tip, setTip] = useState<Tip | null>(null);
   const [nav, dispatchNav] = useReducer(navigate, INITIAL_NAV);
   const { view, offset, zoomed } = nav;
-  const [pressing, setPressing] = useState(false);
+  // Hold-to-edit is inert while reordering.
+  const longPress = useLongPress(() => onEdit?.(), { disabled: reorderMode });
   const [dragPressed, setDragPressed] = useState(false); // grip/region pressed → highlight this card
   const [svgHeight, setSvgHeight] = useState(120);
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // drives open/close animation
@@ -111,24 +112,8 @@ export default function D3Calendar({
     }
   }, [effExpanded]);
 
-  const startPress = () => {
-    if (reorderMode) return; // hold-to-edit is inert while reordering
-    setPressing(true);
-    longPressRef.current = setTimeout(() => {
-      setPressing(false);
-      if (onEdit) onEdit();
-    }, 500);
-  };
-  const cancelPress = () => {
-    setPressing(false);
-    if (longPressRef.current) {
-      clearTimeout(longPressRef.current);
-      longPressRef.current = null;
-    }
-  };
   useEffect(
     () => () => {
-      if (longPressRef.current) clearTimeout(longPressRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     },
     [],
@@ -627,7 +612,7 @@ export default function D3Calendar({
           // .reorder-drag sets touch-action:none on this region + descendants
           // (iOS won't inherit it) so a touch-drag from the icon/name isn't
           // hijacked by page scroll.
-          className={`${reorderMode ? "reorder-drag " : ""}${styles.dragRegion}${reorderMode ? ` ${styles.reorder}` : ""}${dragActivator?.isDragging ? ` ${styles.grabbing}` : ""}${pressing ? ` ${styles.pressing}` : ""}`}
+          className={`${reorderMode ? "reorder-drag " : ""}${styles.dragRegion}${reorderMode ? ` ${styles.reorder}` : ""}${dragActivator?.isDragging ? ` ${styles.grabbing}` : ""}${longPress.pressing ? ` ${styles.pressing}` : ""}`}
           ref={
             reorderMode && dragActivator
               ? dragActivator.setActivatorRef
@@ -642,14 +627,7 @@ export default function D3Calendar({
               }
             : // Long-press (hold-to-edit) only outside reorder mode, so it can't
               // clobber the Touch/Mouse sensor activators (onTouchStart/onMouseDown).
-              {
-                onMouseDown: startPress,
-                onMouseUp: cancelPress,
-                onMouseLeave: cancelPress,
-                onTouchStart: startPress,
-                onTouchEnd: cancelPress,
-                onTouchCancel: cancelPress,
-              })}
+              longPress.handlers)}
           // Highlight the pressed card; capture phase so it never shadows the
           // sensor activator. Pointer events fire alongside touch on iOS.
           onPointerDownCapture={() => {
