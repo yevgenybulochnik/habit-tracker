@@ -239,7 +239,7 @@ How it landed:
       three d3 effects. Move the d3 code as-is and keep it loosely typed.
 - [x] **Rename.** `git mv` what's left (and its CSS module) to `HabitCard.tsx`
       so the file history follows. Update `CLAUDE.md`'s architecture section.
-- [ ] Merge the two copies of the auto-zoom-on-quick-log code into one handler.
+- [x] Merge the two copies of the auto-zoom-on-quick-log code into one handler.
 
 d3 behaviour is only covered by E2E, so run E2E after each commit in this
 phase, not just at the end.

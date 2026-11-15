@@ -63,6 +63,14 @@ export default function HabitCard({
     setSelectedDate(null);
     closeTimerRef.current = setTimeout(() => setEditorDate(null), 450); // unmount after it collapses
   };
+  // Wraps a quick-log action so that logging today also brings the expanded
+  // calendar to this month, with the new entry in view.
+  const showingToday =
+    <A extends unknown[]>(log: (...args: A) => void) =>
+    (...args: A) => {
+      if (expanded) dispatchNav({ type: "zoomToday" });
+      log(...args);
+    };
   const tapDay = (k: string) => {
     if (reorderMode) return; // day-tap is inert while reordering
     if (closeTimerRef.current) {
@@ -261,15 +269,9 @@ export default function HabitCard({
             logs={logs}
             units={units}
             pal={pal}
-            onQuickLog={(mId, amt) => {
-              if (expanded) dispatchNav({ type: "zoomToday" });
-              actions.add(mId, amt);
-            }}
+            onQuickLog={showingToday(actions.add)}
             onQuickReset={actions.reset}
-            onAddSet={(mId, set) => {
-              if (expanded) dispatchNav({ type: "zoomToday" });
-              actions.addSet(mId, set);
-            }}
+            onAddSet={showingToday(actions.addSet)}
             onRemoveSet={actions.removeSet}
             timers={timers}
             onStartTimer={actions.startTimer}
