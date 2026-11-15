@@ -83,3 +83,60 @@ describe("reduce: habits", () => {
     expect(out.habits.map((h) => h.id)).toEqual(["c", "a", "b"]);
   });
 });
+
+describe("reduce: logs", () => {
+  const day = "2026-11-15";
+  const where = { habitId: "h1", metricId: "m1", dateKey: day };
+
+  it("sets a whole day's entry and keeps the other days", () => {
+    const s = state({ logs: { h1: { "2026-11-14": { m1: 3 } } } });
+    const out = run(s, {
+      type: "log/setDay",
+      habitId: "h1",
+      dateKey: day,
+      entry: { m1: 5, m2: 1 },
+    });
+    expect(out.logs.h1).toEqual({
+      "2026-11-14": { m1: 3 },
+      [day]: { m1: 5, m2: 1 },
+    });
+  });
+
+  it("adds an amount to the day's value and keeps the other metrics", () => {
+    const s = state({ logs: { h1: { [day]: { m1: 10, m2: 4 } } } });
+    const out = run(s, { type: "log/add", ...where, amount: 5 });
+    expect(out.logs.h1[day]).toEqual({ m1: 15, m2: 4 });
+  });
+
+  it("adds from zero when nothing is logged yet", () => {
+    const out = run(state(), { type: "log/add", ...where, amount: 5 });
+    expect(out.logs).toEqual({ h1: { [day]: { m1: 5 } } });
+  });
+
+  it("resets the day's value to zero and keeps the other metrics", () => {
+    const s = state({ logs: { h1: { [day]: { m1: 10, m2: 4 } } } });
+    const out = run(s, { type: "log/reset", ...where });
+    expect(out.logs.h1[day]).toEqual({ m1: 0, m2: 4 });
+  });
+
+  it("adds a set after the day's existing sets", () => {
+    const s = state({ logs: { h1: { [day]: { m1: [{ w: 60, r: 8 }] } } } });
+    const out = run(s, { type: "log/addSet", ...where, set: { w: 65, r: 6 } });
+    expect(out.logs.h1[day].m1).toEqual([
+      { w: 60, r: 8 },
+      { w: 65, r: 6 },
+    ]);
+  });
+
+  it("starts the day's sets with the first one", () => {
+    const out = run(state(), { type: "log/addSet", ...where, set: { r: 10 } });
+    expect(out.logs).toEqual({ h1: { [day]: { m1: [{ r: 10 }] } } });
+  });
+
+  it("removes the set at an index and keeps the rest", () => {
+    const sets = [{ r: 1 }, { r: 2 }, { r: 3 }];
+    const s = state({ logs: { h1: { [day]: { m1: sets } } } });
+    const out = run(s, { type: "log/removeSet", ...where, index: 1 });
+    expect(out.logs.h1[day].m1).toEqual([{ r: 1 }, { r: 3 }]);
+  });
+});
