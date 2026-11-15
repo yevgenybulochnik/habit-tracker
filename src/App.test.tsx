@@ -215,8 +215,13 @@ describe("App changes to habits", () => {
   });
 
   it("doesn't save what it has only just loaded", async () => {
+    // Strict mode loads twice and abandons the first load. Here that one
+    // finishes last, which mustn't count as a change either.
+    let finishFirstLoad!: (s: PersistedState) => void;
+    mockLoad.mockImplementationOnce(
+      () => new Promise((resolve) => (finishFirstLoad = resolve)),
+    );
     mockLoad.mockResolvedValue(loaded);
-    // Strict mode loads twice, which mustn't count as a change either
     render(
       <StrictMode>
         <App />
@@ -224,6 +229,8 @@ describe("App changes to habits", () => {
     );
 
     expect(await screen.findByText("0/1 completed today")).toBeInTheDocument();
+    await act(async () => finishFirstLoad(loaded));
+    expect(mockLoad).toHaveBeenCalledTimes(2);
     expect(mockSave).not.toHaveBeenCalled();
   });
 

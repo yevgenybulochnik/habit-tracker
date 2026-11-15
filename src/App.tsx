@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useReducer, useRef } from "react";
 import { CSS } from "./globalCss";
 import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
@@ -10,9 +10,9 @@ import {
   requestPersistence,
 } from "./lib/storage";
 import { SCHEMA_VERSION } from "./lib/normalize";
+import { reduce, type AppState } from "./lib/state";
+import { newId } from "./lib/ids";
 import { downloadJson } from "./download";
-import { setDayLog } from "./lib/logs";
-import { reorderById } from "./lib/reorder";
 import { useToday } from "./hooks/useToday";
 import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
@@ -21,27 +21,24 @@ import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
 import BrandMark from "./components/BrandMark";
-import type {
-  AppConfig,
-  DashView,
-  Habit,
-  Logs,
-  PersistedState,
-  SetEntry,
-  Timers,
-  Unit,
-} from "./types";
-import type { NewHabit } from "./components/AddHabitModal";
+import type { Habit, Unit } from "./types";
 import styles from "./App.module.css";
+
+const EMPTY: AppState = {
+  habits: [],
+  logs: {},
+  units: BUILTIN_UNITS,
+  config: DEFAULT_CONFIG,
+  timers: {},
+};
 
 export default function App() {
   // The one place the app learns what day it is. Everything below gets it
   // from here, so the whole UI moves to the new day together at midnight.
   const today = useToday();
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [logs, setLogs] = useState<Logs>({});
-  const [units, setUnits] = useState<Unit[]>(BUILTIN_UNITS);
-  const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG);
+  // Every change goes through the reducer; the effect below saves the result.
+  const [state, dispatch] = useReducer(reduce, EMPTY);
+  const { habits, logs, units, config: appConfig, timers } = state;
   const [showAdd, setShowAdd] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [showUnits, setShowUnits] = useState(false);
@@ -52,17 +49,9 @@ export default function App() {
   // as a download on the error screen.
   const [rawData, setRawData] = useState<unknown>(undefined);
   const [loadAttempt, setLoadAttempt] = useState(0); // bumped by Retry
-  // Saving is allowed only after a load has succeeded, so a failed (or
-  // unfinished) load can never write empty state over the real data.
-  const loadedRef = useRef(false);
   const [saveFailed, setSaveFailed] = useState(false); // last save threw
-  const [timers, setTimers] = useState<Timers>({}); // { "habitId:metricId": startTimestamp }
-  // Mirror timers in a ref so save() always serializes the latest value without
-  // every mutator having to thread it through (timers change only on start/stop).
-  const timersRef = useRef<Timers>({});
-  useEffect(() => {
-    timersRef.current = timers;
-  }, [timers]);
+  // The state as last loaded or saved. It stays null until a load succeeds.
+  const savedRef = useRef<AppState | null>(null);
 
   // Keep the page background and iOS status-bar color in sync with the theme
   // (body and the <meta> tag live outside the themed root element).
@@ -76,30 +65,45 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    // Strict mode runs this twice; only the latest load may set the state.
+    let stale = false;
     (async () => {
       try {
         await requestPersistence();
         const p = await loadState();
-        if (p) {
-          // loadState returns complete, current-format state
-          setHabits(p.habits);
-          setLogs(p.logs);
-          setUnits(p.units);
-          setAppConfig(p.config);
-          if (p.timers) {
-            setTimers(p.timers);
-            timersRef.current = p.timers;
-          }
-        }
-        loadedRef.current = true;
+        if (stale) return;
+        // loadState returns complete, current-format state
+        if (p) dispatch({ type: "state/load", state: p });
       } catch (e) {
+        if (stale) return;
         console.error("Couldn't load data", e);
         if (e instanceof InvalidDataError) setRawData(e.raw);
         setLoadError(e instanceof Error ? e.message : String(e));
       }
       setLoading(false);
     })();
+    return () => {
+      stale = true;
+    };
   }, [loadAttempt]);
+
+  // Save each new state. Saving starts only once a load has succeeded, so a
+  // failed (or unfinished) load can never write empty state over the real
+  // data. The first state after the load is the loaded data itself.
+  const loaded = !loading && loadError === null;
+  useEffect(() => {
+    if (!loaded || state === savedRef.current) return;
+    const first = savedRef.current === null;
+    savedRef.current = state;
+    if (first) return;
+    saveState({ schemaVersion: SCHEMA_VERSION, ...state }).then(
+      () => setSaveFailed(false),
+      (e) => {
+        console.error("Couldn't save data", e);
+        setSaveFailed(true);
+      },
+    );
+  }, [loaded, state]);
 
   const retryLoad = () => {
     setLoadError(null);
@@ -108,213 +112,9 @@ export default function App() {
     setLoadAttempt((n) => n + 1);
   };
 
-  const save = useCallback(
-    async (h: Habit[], l: Logs, u: Unit[], c: AppConfig) => {
-      if (!loadedRef.current) return;
-      try {
-        await saveState({
-          schemaVersion: SCHEMA_VERSION,
-          habits: h,
-          logs: l,
-          units: u,
-          config: c,
-          timers: timersRef.current,
-        });
-        setSaveFailed(false);
-      } catch (e) {
-        console.error("Couldn't save data", e);
-        setSaveFailed(true);
-      }
-    },
-    [],
-  );
-  const updateConfig = useCallback(
-    (c: AppConfig) => {
-      setAppConfig(c);
-      save(habits, logs, units, c);
-    },
-    [habits, logs, units, save],
-  );
-
-  const addUnit = useCallback(
-    (ud: Unit) => {
-      if (units.find((u) => u.id === ud.id)) return;
-      const nu = [...units, ud];
-      setUnits(nu);
-      save(habits, logs, nu, appConfig);
-    },
-    [units, habits, logs, appConfig, save],
-  );
-  const updateUnit = useCallback(
-    (id: string, updates: Partial<Unit>) => {
-      const nu = units.map((u) => (u.id === id ? { ...u, ...updates } : u));
-      setUnits(nu);
-      save(habits, logs, nu, appConfig);
-    },
-    [units, habits, logs, appConfig, save],
-  );
-  const deleteUnit = useCallback(
-    (id: string) => {
-      const nu = units.filter((u) => u.id !== id);
-      setUnits(nu);
-      save(habits, logs, nu, appConfig);
-    },
-    [units, habits, logs, appConfig, save],
-  );
-
-  const addHabit = useCallback(
-    (props: NewHabit) => {
-      const id = `h_${Date.now()}`;
-      const nh = [...habits, { id, ...props }];
-      const nl = { ...logs, [id]: {} };
-      setHabits(nh);
-      setLogs(nl);
-      save(nh, nl, units, appConfig);
-    },
-    [habits, logs, units, appConfig, save],
-  );
-  const updateHabit = useCallback(
-    (updated: Habit) => {
-      const nh = habits.map((h) => (h.id === updated.id ? updated : h));
-      setHabits(nh);
-      save(nh, logs, units, appConfig);
-    },
-    [habits, logs, units, appConfig, save],
-  );
-  const deleteHabit = useCallback(
-    (id: string) => {
-      const nh = habits.filter((h) => h.id !== id);
-      const nl = { ...logs };
-      delete nl[id];
-      setHabits(nh);
-      setLogs(nl);
-      save(nh, nl, units, appConfig);
-    },
-    [habits, logs, units, appConfig, save],
-  );
-  const reorderHabits = useCallback(
-    (activeId: string, overId: string) => {
-      const nh = reorderById(habits, activeId, overId);
-      setHabits(nh);
-      save(nh, logs, units, appConfig);
-    },
-    [habits, logs, units, appConfig, save],
-  );
-  const saveLog = useCallback(
-    (dateKey: string, parsed: Record<string, Logs[string][string]>) => {
-      let nl = logs;
-      Object.entries(parsed).forEach(([hId, entry]) => {
-        nl = setDayLog(nl, hId, dateKey, entry);
-      });
-      setLogs(nl);
-      save(habits, nl, units, appConfig);
-    },
-    [logs, habits, units, appConfig, save],
-  );
-  const quickLog = useCallback(
-    (hId: string, mId: string, amt: number) => {
-      const prev = logs[hId] || {};
-      const prevDay = prev[today] || {};
-      const nl = {
-        ...logs,
-        [hId]: {
-          ...prev,
-          [today]: { ...prevDay, [mId]: ((prevDay[mId] as number) || 0) + amt },
-        },
-      };
-      setLogs(nl);
-      save(habits, nl, units, appConfig);
-    },
-    [logs, habits, units, appConfig, save, today],
-  );
-  const quickReset = useCallback(
-    (hId: string, mId: string) => {
-      const prev = logs[hId] || {};
-      const prevDay = prev[today] || {};
-      const nl = {
-        ...logs,
-        [hId]: { ...prev, [today]: { ...prevDay, [mId]: 0 } },
-      };
-      setLogs(nl);
-      save(habits, nl, units, appConfig);
-    },
-    [logs, habits, units, appConfig, save, today],
-  );
-  const quickAddSet = useCallback(
-    (hId: string, mId: string, set: SetEntry) => {
-      const prev = logs[hId] || {};
-      const prevDay = prev[today] || {};
-      const curSets = Array.isArray(prevDay[mId])
-        ? (prevDay[mId] as SetEntry[])
-        : [];
-      const nl = {
-        ...logs,
-        [hId]: { ...prev, [today]: { ...prevDay, [mId]: [...curSets, set] } },
-      };
-      setLogs(nl);
-      save(habits, nl, units, appConfig);
-    },
-    [logs, habits, units, appConfig, save, today],
-  );
-  const quickRemoveSet = useCallback(
-    (hId: string, mId: string, idx: number) => {
-      const prev = logs[hId] || {};
-      const prevDay = prev[today] || {};
-      const curSets = Array.isArray(prevDay[mId])
-        ? [...(prevDay[mId] as SetEntry[])]
-        : [];
-      curSets.splice(idx, 1);
-      const nl = {
-        ...logs,
-        [hId]: { ...prev, [today]: { ...prevDay, [mId]: curSets } },
-      };
-      setLogs(nl);
-      save(habits, nl, units, appConfig);
-    },
-    [logs, habits, units, appConfig, save, today],
-  );
-  const startTimer = useCallback(
-    (hId: string, mId: string) => {
-      const nt = { ...timersRef.current, [`${hId}:${mId}`]: Date.now() };
-      timersRef.current = nt;
-      setTimers(nt);
-      save(habits, logs, units, appConfig); // persist so the timer survives a reload
-    },
-    [habits, logs, units, appConfig, save],
-  );
-  const stopTimer = useCallback(
-    (hId: string, mId: string) => {
-      const key = `${hId}:${mId}`;
-      const start = timersRef.current[key];
-      if (!start) return;
-      const mins = Math.max(1, Math.round((Date.now() - start) / 60000));
-      const nt = { ...timersRef.current };
-      delete nt[key];
-      timersRef.current = nt;
-      setTimers(nt);
-      quickLog(hId, mId, mins); // logs the minutes and persists (incl. the cleared timer)
-    },
-    [quickLog],
-  );
-
-  // Replace everything with an imported backup, which SettingsModal has
-  // already normalized into complete, current-format state.
-  const replaceAll = useCallback(
-    (state: PersistedState) => {
-      timersRef.current = {};
-      setTimers({}); // don't resurrect stale timers from a backup
-      setHabits(state.habits);
-      setLogs(state.logs);
-      setUnits(state.units);
-      setAppConfig(state.config);
-      save(state.habits, state.logs, state.units, state.config);
-    },
-    [save],
-  );
+  const addUnit = (unit: Unit) => dispatch({ type: "unit/add", unit });
 
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
-  const setDashView = (v: DashView) =>
-    updateConfig({ ...appConfig, dashView: v });
   const completed = habits.filter((h) =>
     logActive(h, logs[h.id]?.[today], units),
   ).length;
@@ -374,16 +174,62 @@ export default function App() {
               logs={logs[h.id] || {}}
               units={units}
               onSaveDay={(dateKey, entry) =>
-                saveLog(dateKey, { [h.id]: entry })
+                dispatch({ type: "log/setDay", habitId: h.id, dateKey, entry })
               }
               onEdit={() => setEditHabit(h)}
-              onQuickLog={(mId, amt) => quickLog(h.id, mId, amt)}
-              onQuickReset={(mId) => quickReset(h.id, mId)}
-              onAddSet={(mId, set) => quickAddSet(h.id, mId, set)}
-              onRemoveSet={(mId, idx) => quickRemoveSet(h.id, mId, idx)}
+              onQuickLog={(metricId, amount) =>
+                dispatch({
+                  type: "log/add",
+                  habitId: h.id,
+                  metricId,
+                  dateKey: today,
+                  amount,
+                })
+              }
+              onQuickReset={(metricId) =>
+                dispatch({
+                  type: "log/reset",
+                  habitId: h.id,
+                  metricId,
+                  dateKey: today,
+                })
+              }
+              onAddSet={(metricId, set) =>
+                dispatch({
+                  type: "log/addSet",
+                  habitId: h.id,
+                  metricId,
+                  dateKey: today,
+                  set,
+                })
+              }
+              onRemoveSet={(metricId, index) =>
+                dispatch({
+                  type: "log/removeSet",
+                  habitId: h.id,
+                  metricId,
+                  dateKey: today,
+                  index,
+                })
+              }
               timers={timers}
-              onStartTimer={(mId) => startTimer(h.id, mId)}
-              onStopTimer={(mId) => stopTimer(h.id, mId)}
+              onStartTimer={(metricId) =>
+                dispatch({
+                  type: "timer/start",
+                  habitId: h.id,
+                  metricId,
+                  now: Date.now(),
+                })
+              }
+              onStopTimer={(metricId) =>
+                dispatch({
+                  type: "timer/stop",
+                  habitId: h.id,
+                  metricId,
+                  now: Date.now(),
+                  dateKey: today,
+                })
+              }
               habitId={h.id}
               appConfig={appConfig}
               today={today}
@@ -457,7 +303,12 @@ export default function App() {
                     ).map((v) => (
                       <button
                         key={v.id}
-                        onClick={() => setDashView(v.id)}
+                        onClick={() =>
+                          dispatch({
+                            type: "config/update",
+                            changes: { dashView: v.id },
+                          })
+                        }
                         className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
                       >
                         {v.label}
@@ -476,7 +327,9 @@ export default function App() {
               </div>
               <SortableHabits
                 ids={habits.map((h) => h.id)}
-                onReorder={reorderHabits}
+                onReorder={(activeId, overId) =>
+                  dispatch({ type: "habit/reorder", activeId, overId })
+                }
               >
                 {habitList}
               </SortableHabits>
@@ -492,7 +345,9 @@ export default function App() {
       {/* Modals */}
       {showAdd && (
         <AddHabitModal
-          onAdd={addHabit}
+          onAdd={(habit) =>
+            dispatch({ type: "habit/add", id: newId("h"), habit })
+          }
           onClose={() => setShowAdd(false)}
           units={units}
           onAddUnit={addUnit}
@@ -501,9 +356,9 @@ export default function App() {
       {editHabit && (
         <EditHabitModal
           habit={editHabit}
-          onSave={updateHabit}
+          onSave={(habit) => dispatch({ type: "habit/update", habit })}
           onDelete={(id) => {
-            deleteHabit(id);
+            dispatch({ type: "habit/delete", id });
             setEditHabit(null);
           }}
           onClose={() => setEditHabit(null)}
@@ -516,12 +371,19 @@ export default function App() {
           units={units}
           habits={habits}
           logs={logs}
-          onUpdateUnit={updateUnit}
-          onDeleteUnit={deleteUnit}
+          onUpdateUnit={(id, changes) =>
+            dispatch({ type: "unit/update", id, changes })
+          }
+          onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
           onAddUnit={addUnit}
           appConfig={appConfig}
-          onUpdateConfig={updateConfig}
-          onImportState={replaceAll}
+          onUpdateConfig={(config) =>
+            dispatch({ type: "config/update", changes: config })
+          }
+          // SettingsModal has already normalized the backup
+          onImportState={(imported) =>
+            dispatch({ type: "state/import", state: imported })
+          }
           onClose={() => setShowUnits(false)}
         />
       )}
