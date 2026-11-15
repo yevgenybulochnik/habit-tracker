@@ -4,15 +4,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HabitFormFields from "./HabitFormFields";
 import { BUILTIN_UNITS } from "../lib/defaults";
-import type { IntensityMode, Metric } from "../types";
+import type { IntensityMode, Metric, Unit } from "../types";
 
-function Harness() {
+/** The form with its state, and units that grow as the form adds them. */
+function Harness({ onAddUnit = () => {} }: { onAddUnit?: (u: Unit) => void }) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🎯");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("Green");
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [intensityMode, setIntensityMode] = useState<IntensityMode>("total");
+  const [units, setUnits] = useState(BUILTIN_UNITS);
   const form = (
     <HabitFormFields
       name={name}
@@ -27,8 +29,11 @@ function Harness() {
       setMetrics={setMetrics}
       intensityMode={intensityMode}
       setIntensityMode={setIntensityMode}
-      units={BUILTIN_UNITS}
-      onAddUnit={() => {}}
+      units={units}
+      onAddUnit={(u) => {
+        onAddUnit(u);
+        setUnits((p) => [...p, u]);
+      }}
     />
   );
   return (
@@ -127,5 +132,60 @@ describe("HabitFormFields", () => {
     await user.click(screen.getByRole("button", { name: /\+ Add/i }));
     // metric chip shows the reps-based badge, not "lbs"
     expect(screen.getByText("SETS · reps")).toBeInTheDocument();
+  });
+
+  describe("custom unit", () => {
+    async function openCustomUnit(user: ReturnType<typeof userEvent.setup>) {
+      await user.selectOptions(screen.getByRole("combobox"), "+ Custom...");
+    }
+
+    it("adds a unit from the unit menu and picks it for the next metric", async () => {
+      const user = userEvent.setup();
+      const onAddUnit = vi.fn();
+      render(<Harness onAddUnit={onAddUnit} />);
+      await openCustomUnit(user);
+      await user.type(screen.getByLabelText("ID"), "Laps");
+      await user.type(screen.getByLabelText("Label"), "Pool laps");
+      await user.click(screen.getByRole("button", { name: "Add Unit" }));
+
+      expect(onAddUnit).toHaveBeenCalledWith({
+        id: "laps",
+        label: "Pool laps",
+        quickAdd: [1, 5, 10],
+        thresholds: [1, 3, 5],
+      });
+      expect(screen.queryByLabelText("ID")).not.toBeInTheDocument();
+      expect(screen.getByRole("combobox")).toHaveValue("laps");
+
+      await user.type(screen.getByPlaceholderText(/Metric name/i), "Swim");
+      await user.click(screen.getByRole("button", { name: /\+ Add/i }));
+      expect(
+        screen.getByText("Pool laps", { selector: "span" }),
+      ).toBeInTheDocument();
+    });
+
+    it("won't add a unit whose id is taken, and says so", async () => {
+      const user = userEvent.setup();
+      const onAddUnit = vi.fn();
+      render(<Harness onAddUnit={onAddUnit} />);
+      await openCustomUnit(user);
+      await user.type(screen.getByLabelText("ID"), "min");
+      await user.type(screen.getByLabelText("Label"), "Mins");
+      await user.click(screen.getByRole("button", { name: "Add Unit" }));
+
+      expect(screen.getByRole("alert")).toHaveTextContent(/already a unit/);
+      expect(onAddUnit).not.toHaveBeenCalled();
+      expect(screen.getByLabelText("ID")).toBeInTheDocument(); // still open
+    });
+
+    it("closes without adding on Cancel", async () => {
+      const user = userEvent.setup();
+      const onAddUnit = vi.fn();
+      render(<Harness onAddUnit={onAddUnit} />);
+      await openCustomUnit(user);
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByLabelText("ID")).not.toBeInTheDocument();
+      expect(onAddUnit).not.toHaveBeenCalled();
+    });
   });
 });

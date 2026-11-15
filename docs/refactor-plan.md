@@ -266,7 +266,7 @@ How it landed:
 
 ## Phase 8: Forms, modals, effect cleanup
 
-- [ ] **Unit form.** `src/lib/units.ts` gets `parseNumList`, `normalizeUnitId`
+- [x] **Unit form.** `src/lib/units.ts` gets `parseNumList`, `normalizeUnitId`
       and a validating `buildUnit(form)`. A shared `UnitForm` component replaces
       the duplicate forms in `SettingsModal` and `HabitFormFields`.
 - [ ] **Modal closing.** `ModalShell` owns the close animation. It exposes

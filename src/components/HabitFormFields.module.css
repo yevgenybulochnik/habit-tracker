@@ -220,48 +220,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.cuGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.cuGridLast {
-  margin-bottom: 10px;
-}
-.cuFieldLbl {
-  font-size: 10px;
-  color: var(--c-muted);
-  margin-bottom: 4px;
-}
-.cuInput {
-  composes: inp from "../styles/shared.module.css";
-  font-size: 12px;
-}
-.cuActions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.cuBtn {
-  padding: 6px 14px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 11px;
-}
-.cuCancel {
-  composes: cuBtn;
-  border: 1px solid var(--c-border);
-  background: transparent;
-  color: var(--c-muted);
-}
-.cuAdd {
-  composes: cuBtn;
-  border: none;
-  background: var(--c-accent);
-  color: #fff;
-  font-weight: 600;
-}
 
 /* Metrics hint */
 .hint {

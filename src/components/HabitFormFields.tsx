@@ -11,6 +11,7 @@ import {
 import { newId } from "../lib/ids";
 import type { SetPreset } from "../lib/metrics";
 import type { IntensityMode, Metric, Unit } from "../types";
+import UnitForm from "./UnitForm";
 import styles from "./HabitFormFields.module.css";
 
 type Props = {
@@ -52,10 +53,6 @@ export default function HabitFormFields({
   const [newPreset, setNewPreset] = useState<SetPreset>("weighted");
   const [newWU, setNewWU] = useState("lbs");
   const [showCU, setShowCU] = useState(false);
-  const [cuId, setCuId] = useState("");
-  const [cuLbl, setCuLbl] = useState("");
-  const [cuQA, setCuQA] = useState("1, 5, 10");
-  const [cuThr, setCuThr] = useState("1, 3, 5");
 
   const addMetric = () => {
     if (newMN.trim()) {
@@ -76,30 +73,10 @@ export default function HabitFormFields({
   };
   const rmMetric = (id: string) =>
     setMetrics((p) => p.filter((m) => m.id !== id));
-  const parseNums = (s: string) =>
-    s
-      .split(",")
-      .map((v) => parseInt(v.trim(), 10))
-      .filter((v) => !isNaN(v) && v > 0);
-  const addCU = () => {
-    const id = cuId.trim().toLowerCase().replace(/\s+/g, "_"),
-      l2 = cuLbl.trim(),
-      qa = parseNums(cuQA),
-      thr = parseNums(cuThr);
-    if (id && l2 && qa.length >= 1 && thr.length >= 1) {
-      onAddUnit({
-        id,
-        label: l2,
-        quickAdd: qa.slice(0, 3),
-        thresholds: thr.slice(0, 3),
-      });
-      setNewMU(id);
-      setShowCU(false);
-      setCuId("");
-      setCuLbl("");
-      setCuQA("1, 5, 10");
-      setCuThr("1, 3, 5");
-    }
+  const addCU = (u: Unit) => {
+    onAddUnit(u);
+    setNewMU(u.id); // the new unit is what the next metric will use
+    setShowCU(false);
   };
 
   useEffect(() => {
@@ -259,55 +236,12 @@ export default function HabitFormFields({
         {showCU && (
           <div className={styles.cu}>
             <div className={styles.cuTitle}>New Unit</div>
-            <div className={styles.cuGrid}>
-              <div>
-                <div className={styles.cuFieldLbl}>ID</div>
-                <input
-                  value={cuId}
-                  onChange={(e) => setCuId(e.target.value)}
-                  placeholder="lbs"
-                  className={styles.cuInput}
-                />
-              </div>
-              <div>
-                <div className={styles.cuFieldLbl}>Label</div>
-                <input
-                  value={cuLbl}
-                  onChange={(e) => setCuLbl(e.target.value)}
-                  placeholder="Pounds"
-                  className={styles.cuInput}
-                />
-              </div>
-            </div>
-            <div className={`${styles.cuGrid} ${styles.cuGridLast}`}>
-              <div>
-                <div className={styles.cuFieldLbl}>Quick-add</div>
-                <input
-                  value={cuQA}
-                  onChange={(e) => setCuQA(e.target.value)}
-                  className={styles.cuInput}
-                />
-              </div>
-              <div>
-                <div className={styles.cuFieldLbl}>Thresholds</div>
-                <input
-                  value={cuThr}
-                  onChange={(e) => setCuThr(e.target.value)}
-                  className={styles.cuInput}
-                />
-              </div>
-            </div>
-            <div className={styles.cuActions}>
-              <button
-                onClick={() => setShowCU(false)}
-                className={styles.cuCancel}
-              >
-                Cancel
-              </button>
-              <button onClick={addCU} className={styles.cuAdd}>
-                Add Unit
-              </button>
-            </div>
+            <UnitForm
+              takenIds={units.map((u) => u.id)}
+              submitLabel="Add Unit"
+              onSubmit={addCU}
+              onCancel={() => setShowCU(false)}
+            />
           </div>
         )}
         <div
