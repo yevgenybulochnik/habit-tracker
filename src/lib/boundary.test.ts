@@ -15,7 +15,7 @@ const TYPES = path.join(path.dirname(LIB), "types");
 function importsOf(source: string): string[] {
   const patterns = [
     /\bfrom\s*["']([^"']+)["']/g, // import … from "x", export … from "x"
-    /\bimport\s*["']([^"']+)["']/g, // import "x"
+    /^\s*import\s*["']([^"']+)["']/gm, // import "x", starting its line
     /\bimport\s*\(\s*["']([^"']+)["']/g, // import("x")
   ];
   return patterns.flatMap((re) => [...source.matchAll(re)].map((m) => m[1]));
@@ -40,6 +40,14 @@ describe("src/lib import boundary", () => {
     expect(importsOf(source).sort()).toEqual(
       ["../types", "./a", "./e", "pkg-c", "pkg-d", "pkg-f"].sort(),
     );
+  });
+
+  it("doesn't take a string ending in import for an import", () => {
+    const source = [
+      'type A = { type: "state/import"; state: S };',
+      'const b = "c";',
+    ].join("\n");
+    expect(importsOf(source)).toEqual([]);
   });
 
   it("allows only lib, types and the allowlisted packages", () => {
