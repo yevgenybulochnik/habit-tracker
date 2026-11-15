@@ -1,5 +1,5 @@
 import type { SetEntry, SetsMetric } from "../types";
-import { primaryField, setsMetricVal } from "./metrics";
+import { setsMetricVal, setUnitLabel } from "./metrics";
 
 /** Human-readable value, e.g. 90 min → "1h 30m", 5 reps → "5 reps". */
 export function fmtVal(v: number | undefined, unit: string): string {
@@ -19,13 +19,6 @@ export function fmtSets(sets: SetEntry[] | undefined, m: SetsMetric): string {
   if (!Array.isArray(sets) || !sets.length) return "—";
   const n = sets.length;
   const val = setsMetricVal(m, sets).toLocaleString();
-  let unit: string;
-  if (m.setValue === "volume") {
-    const weightField = m.setFields.find((f) => f.unit);
-    unit = `${weightField?.unit || "lbs"} vol`;
-  } else {
-    const p = primaryField(m);
-    unit = p.unit || p.label.toLowerCase();
-  }
+  const unit = setUnitLabel(m) + (m.setValue === "volume" ? " vol" : "");
   return `${n} set${n !== 1 ? "s" : ""} · ${val} ${unit}`;
 }
