@@ -1,0 +1,50 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.fieldLbl {
+  display: block;
+  font-size: 10px;
+  color: var(--c-muted);
+  margin-bottom: 3px;
+}
+.input {
+  composes: inp from "../styles/shared.module.css";
+  font-size: 12px;
+}
+.input:disabled {
+  color: var(--c-muted);
+  cursor: default;
+}
+.error {
+  font-size: 11px;
+  color: var(--c-danger);
+  margin: -2px 0 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn {
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.cancel {
+  composes: btn;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+}
+.submit {
+  composes: btn;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  font-weight: 600;
+}
