@@ -225,7 +225,7 @@ How it landed:
 
 **Goal:** `D3Calendar` shrinks to the d3 code its name describes.
 
-- [ ] **`src/lib/calendarNav.ts`.** A pure reducer over
+- [x] **`src/lib/calendarNav.ts`.** A pure reducer over
       `{ offset, zoomed, view }`.
   - Tests for the edge cases: forward at offset 0 zooms in, back while zoomed
     zooms out, and forward from −N clamps to 0.

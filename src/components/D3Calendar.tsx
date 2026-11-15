@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useReducer, useRef } from "react";
 import type { CSSProperties } from "react";
 import * as d3 from "d3";
 import { F, resolvePalette, THEMES } from "../theme";
@@ -11,6 +11,7 @@ import {
   compactHeatLayout,
   compactCalLayout,
 } from "../lib/d3layout";
+import { INITIAL_NAV, navigate, type CalendarView } from "../lib/calendarNav";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
 import { useHabitActions } from "../hooks/useHabitActions";
@@ -64,9 +65,8 @@ export default function D3Calendar({
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cw, setCw] = useState(400);
   const [tip, setTip] = useState<Tip | null>(null);
-  const [view, setView] = useState<"heatmap" | "calendar">("heatmap");
-  const [offset, setOffset] = useState(0);
-  const [zoomed, setZoomed] = useState(false);
+  const [nav, dispatchNav] = useReducer(navigate, INITIAL_NAV);
+  const { view, offset, zoomed } = nav;
   const [pressing, setPressing] = useState(false);
   const [dragPressed, setDragPressed] = useState(false); // grip/region pressed → highlight this card
   const [svgHeight, setSvgHeight] = useState(120);
@@ -159,32 +159,7 @@ export default function D3Calendar({
         : `${stats.totalVal}m`
       : stats.totalVal;
 
-  const navBack = () => {
-    if (zoomed) {
-      setZoomed(false);
-      setView("heatmap");
-    } else {
-      setOffset((o) => o - NUM_MONTHS);
-    }
-  };
-  const navFwd = () => {
-    if (offset === 0 && !zoomed) {
-      setZoomed(true);
-      setView("calendar");
-    } else if (zoomed) {
-      /* already at present */
-    } else {
-      setOffset((o) => {
-        const next = o + NUM_MONTHS;
-        if (next >= 0) {
-          setZoomed(false);
-          return 0;
-        }
-        return next;
-      });
-    }
-  };
-  const canFwd = zoomed ? false : offset < 0 || offset === 0;
+  const canFwd = !zoomed;
 
   const rangeLabel =
     days.length > 0
@@ -715,17 +690,17 @@ export default function D3Calendar({
           {/* Controls: view toggle + range + nav arrows */}
           <div className={styles.controls}>
             <div className={styles.viewSeg}>
-              {[
-                { id: "heatmap", label: "Heat" },
-                { id: "calendar", label: "Cal" },
-              ].map((v) => {
+              {(
+                [
+                  { id: "heatmap", label: "Heat" },
+                  { id: "calendar", label: "Cal" },
+                ] as const satisfies { id: CalendarView; label: string }[]
+              ).map((v) => {
                 const disabled = zoomed && v.id === "heatmap";
                 return (
                   <button
                     key={v.id}
-                    onClick={() => {
-                      if (!disabled) setView(v.id as "heatmap" | "calendar");
-                    }}
+                    onClick={() => dispatchNav({ type: "view", view: v.id })}
                     disabled={disabled}
                     className={`${styles.viewBtn}${view === v.id ? ` ${styles.on}` : ""}`}
                   >
@@ -736,11 +711,18 @@ export default function D3Calendar({
             </div>
             <div className={styles.range}>{rangeLabel}</div>
             <div className={styles.navGroup}>
-              <button onClick={navBack} className={styles.navBtn}>
+              <button
+                onClick={() =>
+                  dispatchNav({ type: "back", months: NUM_MONTHS })
+                }
+                className={styles.navBtn}
+              >
                 ‹
               </button>
               <button
-                onClick={navFwd}
+                onClick={() =>
+                  dispatchNav({ type: "forward", months: NUM_MONTHS })
+                }
                 disabled={!canFwd}
                 className={styles.navBtn}
               >
@@ -807,20 +789,12 @@ export default function D3Calendar({
             units={units}
             pal={pal}
             onQuickLog={(mId, amt) => {
-              if (expanded && !zoomed) {
-                setZoomed(true);
-                setOffset(0);
-                setView("calendar");
-              }
+              if (expanded) dispatchNav({ type: "zoomToday" });
               actions.add(mId, amt);
             }}
             onQuickReset={actions.reset}
             onAddSet={(mId, set) => {
-              if (expanded && !zoomed) {
-                setZoomed(true);
-                setOffset(0);
-                setView("calendar");
-              }
+              if (expanded) dispatchNav({ type: "zoomToday" });
               actions.addSet(mId, set);
             }}
             onRemoveSet={actions.removeSet}
