@@ -235,7 +235,7 @@ How it landed:
     `canFwd` becomes `!zoomed`.
 - [x] **Hooks.** Extract `useLongPress` and `useElementWidth`, tested with fake
       timers and a mocked ResizeObserver.
-- [ ] **`CalendarPanel`.** Extract the controls, SVG, legend, tooltip and the
+- [x] **`CalendarPanel`.** Extract the controls, SVG, legend, tooltip and the
       three d3 effects. Move the d3 code as-is and keep it loosely typed.
 - [ ] **Rename.** `git mv` what's left (and its CSS module) to `HabitCard.tsx`
       so the file history follows. Update `CLAUDE.md`'s architecture section.
