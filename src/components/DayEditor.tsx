@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import type { CSSProperties } from "react";
 import {
   isSetMetric,
@@ -60,47 +60,42 @@ export default function DayEditor({
     return v;
   });
 
-  const setV = (mId: string, val: string) =>
-    setLocal((p) => ({ ...p, [mId]: val.replace(/[^0-9]/g, "") }));
-  const qAdd = (mId: string, amt: number) =>
-    setLocal((p) => ({
-      ...p,
-      [mId]: String((parseInt((p[mId] as string) || "0", 10) || 0) + amt),
-    }));
-  const addSet = (mId: string, set: SetEntry) =>
-    setLocal((p) => ({
-      ...p,
-      [mId]: [...(Array.isArray(p[mId]) ? (p[mId] as SetEntry[]) : []), set],
-    }));
-  const rmSet = (mId: string, idx: number) =>
-    setLocal((p) => {
-      const c = Array.isArray(p[mId]) ? [...(p[mId] as SetEntry[])] : [];
-      c.splice(idx, 1);
-      return { ...p, [mId]: c };
-    });
-  const buildEntry = (): DayLog => {
+  const toEntry = (vals: Record<string, LocalVal>): DayLog => {
     const entry: DayLog = {};
     ms.forEach((m) => {
       if (isSetMetric(m))
-        entry[m.id] = Array.isArray(local[m.id])
-          ? (local[m.id] as SetEntry[])
+        entry[m.id] = Array.isArray(vals[m.id])
+          ? (vals[m.id] as SetEntry[])
           : [];
-      else entry[m.id] = parseInt((local[m.id] as string) || "0", 10) || 0;
+      else entry[m.id] = parseInt((vals[m.id] as string) || "0", 10) || 0;
     });
     return entry;
   };
+  // Each edit is written straight away, so the calendar cell recolours as you
+  // type or tap. Mounting writes nothing: the editor starts from what's stored.
+  const update = (mId: string, val: LocalVal) => {
+    if (val === local[mId]) return; // e.g. a rejected keystroke
+    const next = { ...local, [mId]: val };
+    setLocal(next);
+    onChange(dateKey, toEntry(next));
+  };
+  const setsOf = (mId: string) =>
+    Array.isArray(local[mId]) ? (local[mId] as SetEntry[]) : [];
 
-  // Live-persist edits so the calendar cell recolors as you type / tap presets.
-  // Skip the initial mount: the editor seeds from the stored value, so emitting
-  // on mount would be a redundant write (and re-trigger the heatmap effect).
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
-    onChange?.(dateKey, buildEntry());
-  }, [local]); // eslint-disable-line react-hooks/exhaustive-deps
+  const setV = (mId: string, val: string) =>
+    update(mId, val.replace(/[^0-9]/g, ""));
+  const qAdd = (mId: string, amt: number) =>
+    update(
+      mId,
+      String((parseInt((local[mId] as string) || "0", 10) || 0) + amt),
+    );
+  const addSet = (mId: string, set: SetEntry) =>
+    update(mId, [...setsOf(mId), set]);
+  const rmSet = (mId: string, idx: number) =>
+    update(
+      mId,
+      setsOf(mId).filter((_, i) => i !== idx),
+    );
 
   const isToday = dateKey === today;
   const disp = new Date(dateKey + "T12:00:00").toLocaleDateString("en-US", {

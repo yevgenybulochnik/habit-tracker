@@ -272,7 +272,7 @@ How it landed:
 - [x] **Modal closing.** `ModalShell` owns the close animation. It exposes
       `requestClose` and calls `onClose` when the animation ends. That replaces
       the three `setTimeout(onClose, 350)` copies and the hard-coded 350.
-- [ ] **`DayEditor`.** Call `onChange` from the event handlers instead of an
+- [x] **`DayEditor`.** Call `onChange` from the event handlers instead of an
       effect, and drop the ref that skips the first run.
   - Tests: mounting writes nothing, which also removes the extra dev-mode
     write. Each edit writes exactly once.

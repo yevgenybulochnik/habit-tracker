@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { StrictMode } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayEditor from "./DayEditor";
@@ -27,6 +28,8 @@ const setHabit: Habit = {
 };
 const pal = PALETTES[0];
 
+// Rendered in StrictMode, as in development: it runs effects twice on mount,
+// which is where an effect-driven write would sneak in.
 function renderEditor(
   h: Habit,
   logs: HabitLogs,
@@ -35,16 +38,18 @@ function renderEditor(
   today = "2026-05-24",
 ) {
   render(
-    <DayEditor
-      habit={h}
-      dateKey="2026-05-20"
-      habitLogs={logs}
-      units={BUILTIN_UNITS}
-      pal={pal}
-      today={today}
-      onChange={onChange}
-      onClose={onClose}
-    />,
+    <StrictMode>
+      <DayEditor
+        habit={h}
+        dateKey="2026-05-20"
+        habitLogs={logs}
+        units={BUILTIN_UNITS}
+        pal={pal}
+        today={today}
+        onChange={onChange}
+        onClose={onClose}
+      />
+    </StrictMode>,
   );
   return { onChange, onClose };
 }
@@ -91,9 +96,45 @@ describe("DayEditor", () => {
     expect(screen.queryByRole("button", { name: /Save/i })).toBeNull();
   });
 
-  it("does not emit onChange on initial mount", () => {
+  it("writes nothing on mount", () => {
     const { onChange } = renderEditor(habit, { "2026-05-20": { m1: 12 } });
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("writes each edit exactly once", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(habit, {});
+    await user.click(screen.getByRole("button", { name: "+5" }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    await user.type(screen.getByDisplayValue("5"), "12"); // -> "51", "512"
+    expect(onChange).toHaveBeenCalledTimes(3);
+    expect(onChange.mock.calls.map(([, entry]) => entry.m1)).toEqual([
+      5, 51, 512,
+    ]);
+  });
+
+  it("writes nothing for a keystroke the field rejects", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(habit, { "2026-05-20": { m1: 12 } });
+    await user.type(screen.getByDisplayValue("12"), "x");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("writes once when a set is removed", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(setHabit, {
+      "2026-05-20": {
+        m2: [
+          { w: 135, r: 5 },
+          { w: 145, r: 3 },
+        ],
+      },
+    });
+    await user.click(screen.getAllByRole("button", { name: "×" })[1]); // first set's ×
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith("2026-05-20", {
+      m2: [{ w: 145, r: 3 }],
+    });
   });
 
   it("closes via the × button", async () => {
