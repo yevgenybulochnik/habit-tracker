@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { StrictMode } from "react";
 import {
   act,
   cleanup,
@@ -13,7 +14,7 @@ import { InvalidDataError, loadState, saveState } from "./lib/storage";
 import { captureDownloads } from "./test/downloads";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
 import { SCHEMA_VERSION } from "./lib/normalize";
-import type { PersistedState } from "./types";
+import type { Habit, PersistedState } from "./types";
 
 vi.mock("./lib/storage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./lib/storage")>()),
@@ -147,6 +148,7 @@ describe("App saves", () => {
     logs: { gone: { "2026-05-24": { m1: 30 } } },
     units: [...BUILTIN_UNITS, km],
     config: { ...DEFAULT_CONFIG, numMonths: 6, theme: "light" },
+    timers: { "gone:m1": 1_700_000_000_000 },
   };
 
   async function switchToTheme(theme: "Light" | "Dark") {
@@ -170,7 +172,98 @@ describe("App saves", () => {
     expect(await switchToTheme("Dark")).toEqual({
       ...loaded,
       config: { ...loaded.config, theme: "dark" },
-      timers: {},
+    });
+  });
+});
+
+describe("App changes to habits", () => {
+  const run: Habit = {
+    id: "h1",
+    name: "Run",
+    emoji: "🏃",
+    color: "Green",
+    metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+    intensityMode: "total",
+  };
+  const loaded: PersistedState = {
+    schemaVersion: SCHEMA_VERSION,
+    habits: [run],
+    logs: { h1: { "2026-05-23": { m1: 30 } } },
+    units: BUILTIN_UNITS,
+    config: DEFAULT_CONFIG,
+  };
+  const lastSaved = () => mockSave.mock.lastCall![0];
+
+  beforeEach(() => {
+    // Only the date is faked: Date.now stays put until a test moves it
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 4, 24, 10, 0));
+    // A habit card measures its width, which jsdom can't do
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    cleanup(); // unmount while the ResizeObserver stub is still there
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("doesn't save what it has only just loaded", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    // Strict mode loads twice, which mustn't count as a change either
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText("0/1 completed today")).toBeInTheDocument();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("adds a habit with an id of its own and no logs", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /New Habit/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/Morning Workout/i),
+      "Read",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    const { habits, logs } = lastSaved();
+    expect(habits.map((h) => h.name)).toEqual(["Run", "Read"]);
+    const id = habits[1].id;
+    expect(id).toMatch(/^h_/);
+    expect(logs).toEqual({ ...loaded.logs, [id]: {} });
+  });
+
+  it("saves a running timer, and logs its minutes to today when stopped", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+    const start = Date.now();
+
+    await userEvent.click(await screen.findByRole("button", { name: /Timer/ }));
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    expect(lastSaved().timers).toEqual({ "h1:m1": start });
+
+    vi.setSystemTime(start + 12 * 60_000 + 20_000);
+    await userEvent.click(screen.getByRole("button", { name: /Stop/ }));
+    await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(2));
+    expect(lastSaved().timers).toEqual({});
+    expect(lastSaved().logs.h1).toEqual({
+      "2026-05-23": { m1: 30 },
+      "2026-05-24": { m1: 12 },
     });
   });
 });
