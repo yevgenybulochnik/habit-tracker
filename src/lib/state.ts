@@ -32,7 +32,9 @@ export type Action =
   | ({ type: "log/add"; amount: number } & MetricDay)
   | ({ type: "log/reset" } & MetricDay)
   | ({ type: "log/addSet"; set: SetEntry } & MetricDay)
-  | ({ type: "log/removeSet"; index: number } & MetricDay);
+  | ({ type: "log/removeSet"; index: number } & MetricDay)
+  | { type: "timer/start"; habitId: string; metricId: string; now: number }
+  | ({ type: "timer/stop"; now: number } & MetricDay);
 
 /** One metric of one habit on one day. */
 type MetricDay = { habitId: string; metricId: string; dateKey: string };
@@ -95,8 +97,29 @@ export function reduce(state: AppState, action: Action): AppState {
       return changeMetric(state, action, (v) =>
         setsOf(v).filter((_, i) => i !== action.index),
       );
+
+    case "timer/start": {
+      const key = timerKey(action.habitId, action.metricId);
+      return { ...state, timers: { ...state.timers, [key]: action.now } };
+    }
+    case "timer/stop": {
+      const key = timerKey(action.habitId, action.metricId);
+      const start = state.timers[key];
+      if (start === undefined) return state;
+      const { [key]: _, ...timers } = state.timers;
+      const mins = Math.max(1, Math.round((action.now - start) / 60_000));
+      return changeMetric(
+        { ...state, timers },
+        action,
+        (v) => numberOf(v) + mins,
+      );
+    }
   }
 }
+
+/** Where a metric's running timer is kept in `Timers`. */
+export const timerKey = (habitId: string, metricId: string) =>
+  `${habitId}:${metricId}`;
 
 type MetricValue = DayLog[string] | undefined;
 

@@ -140,3 +140,52 @@ describe("reduce: logs", () => {
     expect(out.logs.h1[day].m1).toEqual([{ r: 1 }, { r: 3 }]);
   });
 });
+
+describe("reduce: timers", () => {
+  const day = "2026-11-15";
+  const metric = { habitId: "h1", metricId: "m1" };
+  const MIN = 60_000;
+
+  it("starts a timer at the given time and keeps the others", () => {
+    const s = state({ timers: { "h2:m1": 500 } });
+    const out = run(s, { type: "timer/start", ...metric, now: 1000 });
+    expect(out.timers).toEqual({ "h2:m1": 500, "h1:m1": 1000 });
+  });
+
+  it("stops a timer and adds its rounded minutes to the given day", () => {
+    const s = state({
+      logs: { h1: { [day]: { m1: 5 } } },
+      timers: { "h1:m1": 1000, "h2:m1": 500 },
+    });
+    const out = run(s, {
+      type: "timer/stop",
+      ...metric,
+      now: 1000 + 10.6 * MIN,
+      dateKey: day,
+    });
+    expect(out.timers).toEqual({ "h2:m1": 500 });
+    expect(out.logs.h1[day].m1).toBe(5 + 11);
+  });
+
+  it("logs at least a minute for a timer stopped straight away", () => {
+    const s = state({ timers: { "h1:m1": 1000 } });
+    const out = run(s, {
+      type: "timer/stop",
+      ...metric,
+      now: 1000 + 0.2 * MIN,
+      dateKey: day,
+    });
+    expect(out.logs.h1[day].m1).toBe(1);
+  });
+
+  it("changes nothing when stopping a timer that isn't running", () => {
+    const s = state({ timers: { "h2:m1": 500 } });
+    const out = reduce(s, {
+      type: "timer/stop",
+      ...metric,
+      now: 1000,
+      dateKey: day,
+    });
+    expect(out).toBe(s);
+  });
+});
