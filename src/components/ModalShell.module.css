@@ -13,7 +13,7 @@
 }
 .backdropClosing {
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity var(--modal-close-ms) ease;
 }
 
 .content {
@@ -29,5 +29,5 @@
 .contentClosing {
   transform: scale(0.95) translateY(8px);
   opacity: 0;
-  transition: all 0.35s ease;
+  transition: all var(--modal-close-ms) ease;
 }

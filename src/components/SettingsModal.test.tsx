@@ -41,6 +41,7 @@ const oldBackup = {
 };
 
 function renderModal(onImportState = vi.fn()) {
+  const onClose = vi.fn();
   render(
     <SettingsModal
       units={BUILTIN_UNITS}
@@ -52,10 +53,10 @@ function renderModal(onImportState = vi.fn()) {
       appConfig={DEFAULT_CONFIG}
       onUpdateConfig={vi.fn()}
       onImportState={onImportState}
-      onClose={vi.fn()}
+      onClose={onClose}
     />,
   );
-  return { onImportState };
+  return { onImportState, onClose };
 }
 
 /** Pick `content` as the file to import. */
@@ -85,10 +86,11 @@ describe("SettingsModal — Data backup", () => {
     expect(JSON.parse(files[0].text)).toEqual(sample);
   });
 
-  it("imports a valid backup file", async () => {
-    const { onImportState } = renderModal();
+  it("imports a valid backup file, then closes", async () => {
+    const { onImportState, onClose } = renderModal();
     await importFile(JSON.stringify(sample));
     await waitFor(() => expect(onImportState).toHaveBeenCalledWith(sample));
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 
   it("imports a backup from an older version in the current format", async () => {
@@ -110,6 +112,7 @@ describe("SettingsModal — Data backup", () => {
     await importFile(content);
     expect(await screen.findByText(/valid backup file/i)).toBeInTheDocument();
     expect(onImportState).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument(); // still open
   });
 });
 

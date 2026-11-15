@@ -269,7 +269,7 @@ How it landed:
 - [x] **Unit form.** `src/lib/units.ts` gets `parseNumList`, `normalizeUnitId`
       and a validating `buildUnit(form)`. A shared `UnitForm` component replaces
       the duplicate forms in `SettingsModal` and `HabitFormFields`.
-- [ ] **Modal closing.** `ModalShell` owns the close animation. It exposes
+- [x] **Modal closing.** `ModalShell` owns the close animation. It exposes
       `requestClose` and calls `onClose` when the animation ends. That replaces
       the three `setTimeout(onClose, 350)` copies and the hard-coded 350.
 - [ ] **`DayEditor`.** Call `onChange` from the event handlers instead of an
