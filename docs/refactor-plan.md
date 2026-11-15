@@ -281,6 +281,27 @@ How it landed:
 - [x] **Small dedupes.** `fmtSets` reuses `setUnitLabel`, and
       `QuickLogSection`'s four branches share one `IntensityBar` component.
 
+How it landed:
+
+- `buildUnit(fields, takenIds)` returns the unit or the reason it can't be one,
+  and `UnitForm` shows that reason instead of silently doing nothing. The habit
+  form's custom unit had no duplicate-id check (the reducer ignored the
+  duplicate and the form picked the existing unit); now both forms refuse it.
+  `UnitForm` also replaced Settings' inline edit form, which shows the fixed id
+  in the same 2×2 layout.
+- `ModalShell` uses one timer rather than `transitionend`, which would need a
+  fallback timer anyway. Its `CLOSE_MS` is passed to the CSS as
+  `--modal-close-ms`, so they can't drift. `requestClose(then)` also covers
+  delete, the fourth copy of the timer, and closing twice now closes once. The
+  content became a `role="dialog"`.
+- `DayEditor`'s tests render in StrictMode, which showed the extra write.
+- `SetInput` went one step further than resetting in `add()`: it keeps only
+  what's been typed and derives the carried-over fields from the latest set.
+  That also removed the effect that re-seeded from `lastSet`, and means a set
+  added by the day editor no longer overwrites what's typed in the quick-log.
+- Only three of `QuickLogSection`'s four branches draw a bar (the check-off has
+  none). `IntensityBar` is a `role="meter"`.
+
 ## Left out on purpose
 
 Saving the whole state on every change stays as it is. It's fine at personal

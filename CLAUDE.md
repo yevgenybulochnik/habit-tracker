@@ -78,7 +78,8 @@ values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
 current-format state), `state` (the app's reducer, below), `calendarNav` (a card's calendar
-navigation, `navigate` over `{ offset, zoomed, view }`), `ids` (`newId`), and `defaults`
+navigation, `navigate` over `{ offset, zoomed, view }`), `units` (parsing and validating a
+unit form: `buildUnit`), `ids` (`newId`), and `defaults`
 (storage key, built-in units, default config, month/weekday labels). Prefer adding logic
 here over inside components. `boundary.test.ts`
 enforces the purity: a lib module may import only other lib modules, `../types`, and
@@ -165,10 +166,20 @@ collapsed. Selection highlight and `pal` are kept out of the main build (separat
 anything in the build that depends on `today` or on the selection must be set on the merged
 (enter + update) selection, not only on enter.
 
+**Modals and forms.** Every modal renders through `ModalShell`, which passes its content a
+`requestClose(then?)`: it plays the close animation, then runs `then` and `onClose`. The
+duration is `CLOSE_MS`, handed to the CSS as `--modal-close-ms`, so don't add close timers in a
+modal. Units are added and edited through the shared `UnitForm` (Settings and the habit form's
+"+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit.
+Components send edits up from their **event handlers, not from effects** watching local state:
+`DayEditor` writes each edit as it's made (mounting writes nothing, even under StrictMode's
+double effects), and `SetInput` derives its carried-over weight from the latest set instead of
+copying it into state.
+
 **Styling — CSS Modules.** Each component has a colocated `Component.module.css`; the
 component imports `styles` and sets `className={styles.x}` (Vite types `*.module.css` via
 `vite/client`; no config). Equal-width / wrapping layouts use **CSS grid** (e.g. the emoji
-picker and intensity selector in `HabitFormFields`, the unit forms in `SettingsModal`). State
+picker and intensity selector in `HabitFormFields`, the fields of `UnitForm`). State
 is expressed as **modifier classes** (`className={`${styles.btn}${on ? " "+styles.on : ""}`}`)
 and hover/focus via **`:hover`/`:focus-visible`** (not `onMouseEnter` handlers). Shared form
 classes (`inp`, `lbl`) live in `src/styles/shared.module.css` and are pulled in with `composes:`.

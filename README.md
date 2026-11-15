@@ -195,7 +195,7 @@ Most helper functions (`logLevel`, `metricVal`, `metricActive`, `logSummary` in 
 
 ```
 src/
-  lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, normalize, state, calendarNav, ids) — heavily unit-tested
+  lib/          pure logic, no React/DOM (dates, defaults, format, metrics, stats, d3layout, storage, normalize, state, calendarNav, units, ids) — heavily unit-tested
   components/   React components (HabitCard, CalendarPanel, DayEditor, modals, quick-log, timers, …)
   hooks/        useToday (today's date key, kept current past midnight), useHabitActions, useLongPress, useElementWidth
   types.ts      domain types (the data model above)
