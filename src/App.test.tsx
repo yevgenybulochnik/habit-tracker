@@ -431,6 +431,50 @@ describe("App groups", () => {
     ).toBeInTheDocument();
   });
 
+  /** Hold `el` until the group editor opens. */
+  async function holdToEdit(el: HTMLElement) {
+    fireEvent.mouseDown(el);
+    await screen.findByText("Edit Group", undefined, { timeout: 2000 });
+  }
+
+  it("renames a group and changes its habits from its editor", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+
+    const nav = await screen.findByRole("navigation", { name: "Groups" });
+    await holdToEdit(within(nav).getByRole("button", { name: /Music/ }));
+    const name = screen.getByRole("textbox", { name: "Group name" });
+    await userEvent.clear(name);
+    await userEvent.type(name, "Practice");
+    await userEvent.click(screen.getByRole("checkbox", { name: /Water/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(mockSave.mock.lastCall![0].habits[1].groupId).toBe("g1"),
+    );
+    const { groups, habits } = mockSave.mock.lastCall![0];
+    expect(groups[0].name).toBe("Practice");
+    expect(habits.map((h) => h.groupId)).toEqual(["g1", "g1", "g2"]);
+  });
+
+  it("deletes a group from its editor, keeping its habits", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+
+    const music = await screen.findByRole("region", { name: "Music" });
+    await holdToEdit(within(music).getByRole("button", { name: /Music/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete group" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete Group" }));
+
+    await waitFor(() =>
+      expect(mockSave.mock.lastCall![0].groups).toEqual([grouped.groups[1]]),
+    );
+    const { habits } = mockSave.mock.lastCall![0];
+    expect(habits.map((h) => h.name)).toEqual(["Piano", "Water", "Run"]);
+    expect(habits[0]).not.toHaveProperty("groupId");
+    expect(screen.queryByRole("region", { name: "Music" })).toBeNull();
+  });
+
   it("saves a section folded shut", async () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);

@@ -9,6 +9,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useSortSensors } from "./SortableHabits";
+import { useLongPress } from "../hooks/useLongPress";
 import styles from "./GroupBar.module.css";
 
 /** One group's chip: its name and how many of its habits are done today. */
@@ -30,6 +31,8 @@ type Props = {
   /** Reorder mode: chips are dragged sideways to reorder the groups. */
   reorder: boolean;
   onReorder: (activeId: string, overId: string) => void;
+  /** Holding a chip (outside reorder mode) edits its group. */
+  onEdit: (id: string) => void;
 };
 
 /** A chip only slides along the strip. */
@@ -37,7 +40,8 @@ const sideways: Modifier = ({ transform }) => ({ ...transform, y: 0 });
 
 /**
  * The bar pinned above the group sections: a scroll-to-top button, then a
- * strip of group chips that scrolls sideways. A chip jumps to its section. In
+ * strip of group chips that scrolls sideways. A chip jumps to its section, and
+ * holding it edits its group. In
  * reorder mode a chip is held (touch) or dragged (mouse) sideways to move its
  * group; a quick swipe still scrolls the strip.
  */
@@ -49,6 +53,7 @@ export default function GroupBar({
   barRef,
   reorder,
   onReorder,
+  onEdit,
 }: Props) {
   const stripRef = useRef<HTMLElement>(null);
   const sensors = useSortSensors();
@@ -95,6 +100,7 @@ export default function GroupBar({
                 on={c.id === active}
                 reorder={reorder}
                 onPick={onPick}
+                onEdit={onEdit}
               />
             ))}
           </nav>
@@ -109,9 +115,11 @@ type ChipProps = {
   on: boolean;
   reorder: boolean;
   onPick: (id: string) => void;
+  onEdit: (id: string) => void;
 };
 
-function ChipButton({ chip: c, on, reorder, onPick }: ChipProps) {
+function ChipButton({ chip: c, on, reorder, onPick, onEdit }: ChipProps) {
+  const longPress = useLongPress(() => onEdit(c.id), { disabled: reorder });
   const {
     attributes,
     listeners,
@@ -127,12 +135,12 @@ function ChipButton({ chip: c, on, reorder, onPick }: ChipProps) {
   return (
     <button
       ref={setNodeRef}
-      {...(reorder && { ...attributes, ...listeners })}
+      {...(reorder ? { ...attributes, ...listeners } : longPress.handlers)}
       data-chip={c.id}
       aria-current={on ? "true" : undefined}
       onClick={() => onPick(c.id)}
       style={style}
-      className={`${styles.chip}${on ? ` ${styles.on}` : ""}${reorder ? ` ${styles.sorting}` : ""}${isDragging ? ` ${styles.dragging}` : ""}`}
+      className={`${styles.chip}${on ? ` ${styles.on}` : ""}${reorder ? ` ${styles.sorting}` : ""}${isDragging ? ` ${styles.dragging}` : ""}${longPress.pressing ? ` ${styles.pressing}` : ""}`}
     >
       {reorder && (
         <span className={styles.grip} aria-hidden>

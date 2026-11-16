@@ -1,0 +1,76 @@
+.nameRow {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+}
+.emoji {
+  composes: inp from "../styles/shared.module.css";
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.habitRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--c-border);
+  cursor: pointer;
+}
+.check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--c-accent);
+  cursor: pointer;
+}
+.habitName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.other {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--c-dim);
+}
+.other.moving {
+  color: var(--c-accent);
+}
+
+/* The delete zone, as in the habit editor. */
+.danger {
+  composes: danger from "./EditHabitModal.module.css";
+}
+.dangerActive {
+  composes: dangerActive from "./EditHabitModal.module.css";
+}
+.delTitle {
+  composes: delTitle from "./EditHabitModal.module.css";
+}
+.delDesc {
+  composes: delDesc from "./EditHabitModal.module.css";
+}
+.dzRow {
+  composes: dzRow from "./EditHabitModal.module.css";
+}
+.keepBtn {
+  composes: keepBtn from "./EditHabitModal.module.css";
+}
+.deleteBtn {
+  composes: deleteBtn from "./EditHabitModal.module.css";
+}
+.idle {
+  composes: idle from "./EditHabitModal.module.css";
+}
+.hint {
+  composes: hint from "./EditHabitModal.module.css";
+}
+.delTrigger {
+  composes: delTrigger from "./EditHabitModal.module.css";
+}

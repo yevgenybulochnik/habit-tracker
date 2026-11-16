@@ -10,6 +10,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import GroupBar from "./GroupBar";
 import SortableHabits from "./SortableHabits";
+import { useLongPress } from "../hooks/useLongPress";
 import type { GroupSection } from "../lib/groups";
 import type { Group, Habit } from "../types";
 import styles from "./GroupSections.module.css";
@@ -25,6 +26,8 @@ type Props = {
   /** Reorder mode: groups are dragged by their chips or section headers. */
   reorder: boolean;
   onReorderGroups: (activeId: string, overId: string) => void;
+  /** Holding a chip or section header (outside reorder mode) edits its group. */
+  onEditGroup: (id: string) => void;
 };
 
 /**
@@ -32,7 +35,9 @@ type Props = {
  * then one collapsible section per group. A chip jumps to its section, and
  * the chip of the section under the bar is highlighted as the page scrolls.
  *
- * In reorder mode a group is dragged by its chip or its section's header, and
+ * Holding a chip or a section's header edits the group, the way holding a
+ * card's header edits a habit. In reorder mode a group is dragged by its chip
+ * or its section's header instead, and
  * a card within its own list (`renderList` makes each list its own context).
  */
 export default function GroupSections({
@@ -43,6 +48,7 @@ export default function GroupSections({
   onToggle,
   reorder,
   onReorderGroups,
+  onEditGroup,
 }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   const sectionEls = useRef<Record<string, HTMLElement | null>>({});
@@ -127,6 +133,7 @@ export default function GroupSections({
         barRef={barRef}
         reorder={reorder}
         onReorder={onReorderGroups}
+        onEdit={onEditGroup}
       />
       {ungrouped.length > 0 && renderList(ungrouped)}
       <SortableHabits
@@ -140,6 +147,7 @@ export default function GroupSections({
             done={doneOf(habits)}
             total={habits.length}
             onToggle={() => onToggle(group.id, !group.collapsed)}
+            onEdit={() => onEditGroup(group.id)}
             reorder={reorder}
             els={sectionEls}
           >
@@ -160,6 +168,7 @@ type SectionProps = {
   done: number;
   total: number;
   onToggle: () => void;
+  onEdit: () => void;
   reorder: boolean;
   /** Where the section registers its element, for the scroll tracking. */
   els: MutableRefObject<Record<string, HTMLElement | null>>;
@@ -167,18 +176,20 @@ type SectionProps = {
 };
 
 /**
- * One group's section: a header that folds it, over its cards. In reorder
- * mode the header is what picks the section up.
+ * One group's section: a header that folds it (or, held, edits the group),
+ * over its cards. In reorder mode the header is what picks the section up.
  */
 function Section({
   group,
   done,
   total,
   onToggle,
+  onEdit,
   reorder,
   els,
   children,
 }: SectionProps) {
+  const longPress = useLongPress(onEdit, { disabled: reorder });
   const {
     attributes,
     listeners,
@@ -206,10 +217,10 @@ function Section({
     >
       <button
         ref={setActivatorNodeRef}
-        {...(reorder && { ...attributes, ...listeners })}
+        {...(reorder ? { ...attributes, ...listeners } : longPress.handlers)}
         aria-expanded={!group.collapsed}
         onClick={onToggle}
-        className={`${styles.head}${reorder ? ` reorder-drag ${styles.sorting}` : ""}`}
+        className={`${styles.head}${reorder ? ` reorder-drag ${styles.sorting}` : ""}${longPress.pressing ? ` ${styles.pressing}` : ""}`}
       >
         {reorder ? (
           <span className={styles.grip} aria-hidden>

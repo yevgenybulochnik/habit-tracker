@@ -20,6 +20,7 @@ import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import HabitCard from "./components/HabitCard";
 import GroupSections from "./components/GroupSections";
+import GroupEditModal from "./components/GroupEditModal";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
@@ -45,6 +46,7 @@ export default function App() {
   const { habits, logs, units, config: appConfig, groups, timers } = state;
   const [showAdd, setShowAdd] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
+  const [editGroupId, setEditGroupId] = useState<string | null>(null);
   const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
@@ -120,6 +122,7 @@ export default function App() {
   const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
+  const editGroup = groups.find((g) => g.id === editGroupId);
   const completed = habits.filter((h) =>
     logActive(h, logs[h.id]?.[today], units),
   ).length;
@@ -302,6 +305,7 @@ export default function App() {
                     onReorderGroups={(activeId, overId) =>
                       dispatch({ type: "group/reorder", activeId, overId })
                     }
+                    onEditGroup={setEditGroupId}
                   />
                 ) : (
                   renderList(habits)
@@ -342,6 +346,19 @@ export default function App() {
           onAddUnit={addUnit}
           groups={groups}
           onAddGroup={addGroup}
+        />
+      )}
+      {editGroup && (
+        <GroupEditModal
+          group={editGroup}
+          groups={groups}
+          habits={habits}
+          onSave={(changes, habitIds) => {
+            dispatch({ type: "group/update", id: editGroup.id, changes });
+            dispatch({ type: "group/setMembers", id: editGroup.id, habitIds });
+          }}
+          onDelete={(id) => dispatch({ type: "group/delete", id })}
+          onClose={() => setEditGroupId(null)}
         />
       )}
       {showUnits && (

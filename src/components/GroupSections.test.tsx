@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import GroupSections from "./GroupSections";
 import { groupSections, ungroupedHabits } from "../lib/groups";
@@ -48,6 +48,7 @@ function renderSections(
 ) {
   const onToggle = vi.fn();
   const onReorderGroups = vi.fn();
+  const onEditGroup = vi.fn();
   const utils = render(
     <GroupSections
       sections={groupSections(hs, groups)}
@@ -57,9 +58,10 @@ function renderSections(
       onToggle={onToggle}
       reorder={reorder}
       onReorderGroups={onReorderGroups}
+      onEditGroup={onEditGroup}
     />,
   );
-  return { ...utils, onToggle, onReorderGroups };
+  return { ...utils, onToggle, onReorderGroups, onEditGroup };
 }
 
 /** What dnd-kit marks as something that can be picked up and moved. */
@@ -201,6 +203,48 @@ describe("GroupSections", () => {
       renderSections([music, fitness], habits, { reorder: true });
       await userEvent.click(chip(/Fitness/));
       expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    });
+  });
+
+  describe("hold to edit", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const hold = (el: HTMLElement) => {
+      fireEvent.mouseDown(el);
+      act(() => vi.advanceTimersByTime(500));
+      fireEvent.mouseUp(el);
+    };
+
+    it("edits a group when its chip is held", () => {
+      const { onEditGroup } = renderSections();
+      hold(chip(/Fitness/));
+      expect(onEditGroup).toHaveBeenCalledWith("g2");
+    });
+
+    it("edits a group when its section header is held", () => {
+      const { onEditGroup, onToggle } = renderSections();
+      hold(header("Music"));
+      expect(onEditGroup).toHaveBeenCalledWith("g1");
+      expect(onToggle).not.toHaveBeenCalled();
+    });
+
+    it("doesn't edit on a short press", () => {
+      const { onEditGroup } = renderSections();
+      fireEvent.mouseDown(chip(/Music/));
+      act(() => vi.advanceTimersByTime(300));
+      fireEvent.mouseUp(chip(/Music/));
+      act(() => vi.advanceTimersByTime(500));
+      expect(onEditGroup).not.toHaveBeenCalled();
+    });
+
+    it("doesn't edit in reorder mode, where holding picks a group up", () => {
+      const { onEditGroup } = renderSections([music, fitness], habits, {
+        reorder: true,
+      });
+      hold(chip(/Music/));
+      hold(header("Music"));
+      expect(onEditGroup).not.toHaveBeenCalled();
     });
   });
 });

@@ -30,6 +30,11 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+/* Held to edit: the name lights up, like a habit card's. */
+.head.pressing .name {
+  color: var(--c-accent);
+  transition: color 0.5s;
+}
 .head.sorting {
   cursor: grab;
 }
