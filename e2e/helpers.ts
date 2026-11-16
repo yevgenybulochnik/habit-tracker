@@ -6,20 +6,55 @@ import { expect, type Page } from "@playwright/test";
 
 /**
  * Create a single-metric habit via the New Habit modal.
- * Defaults to a "Reps" metric; pass `unit` (e.g. "min") to pick a different unit.
+ * Defaults to a "Reps" metric; pass `unit` (e.g. "min") to pick a different unit,
+ * and `group` to put it in the group with that name, made if it doesn't exist.
  */
 export async function createHabit(
   page: Page,
   name: string,
-  { metricName = "Reps", unit }: { metricName?: string; unit?: string } = {},
+  {
+    metricName = "Reps",
+    unit,
+    group,
+  }: { metricName?: string; unit?: string; group?: string } = {},
 ) {
   await page.getByRole("button", { name: /New Habit/i }).click();
   await page.getByPlaceholder(/Morning Workout/i).fill(name);
+  if (group) await chooseGroup(page, group);
   await page.getByPlaceholder(/Metric name/i).fill(metricName);
-  if (unit) await page.getByRole("combobox").selectOption(unit);
+  if (unit)
+    await page.getByRole("combobox", { name: "Unit" }).selectOption(unit);
   await page.getByRole("button", { name: /^\+ Add$/ }).click();
   await page.getByRole("button", { name: /^Create$/ }).click();
   await expect(page.getByRole("heading", { name, level: 3 })).toBeVisible();
+}
+
+/** In an open habit form, choose the group named `name`, making it if new. */
+async function chooseGroup(page: Page, name: string) {
+  const menu = page.getByRole("combobox", { name: "Group" });
+  const option = menu.locator("option").filter({ hasText: ` ${name}` });
+  if (await option.count()) {
+    const label = (await option.first().textContent())!;
+    await menu.selectOption({ label });
+  } else {
+    await menu.selectOption({ label: "+ New group…" });
+    await page.getByRole("textbox", { name: "Group name" }).fill(name);
+    await page.getByRole("button", { name: "Add Group" }).click();
+  }
+}
+
+/** The group bar's chip for the group named `name`. */
+export function groupChip(page: Page, name: string) {
+  return page
+    .getByRole("navigation", { name: "Groups" })
+    .getByRole("button", { name: new RegExp(name) });
+}
+
+/** The names of the group sections, top to bottom. */
+export function sectionNames(page: Page) {
+  return page
+    .getByRole("region")
+    .evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
 }
 
 export async function openSettings(page: Page) {

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
+import { SCHEMA_VERSION } from "../src/lib/normalize";
 import {
   createHabit,
   openSettings,
@@ -494,7 +495,7 @@ test("custom unit in Settings is usable by a new habit", async ({ page }) => {
   await page.getByRole("button", { name: /New Habit/i }).click();
   await page.getByPlaceholder(/Morning Workout/i).fill("Weighty");
   await page.getByPlaceholder(/Metric name/i).fill("Weight");
-  await page.getByRole("combobox").selectOption("lbs2");
+  await page.getByRole("combobox", { name: "Unit" }).selectOption("lbs2");
   await page.getByRole("button", { name: /^\+ Add$/ }).click();
   await page.getByRole("button", { name: /^Create$/ }).click();
   await expect(
@@ -643,7 +644,7 @@ test("data stored by an older version loads, works, and is saved in the current 
     units: { id: string }[];
     config: { theme: string; dashView: string };
   };
-  expect(stored.schemaVersion).toBe(2);
+  expect(stored.schemaVersion).toBe(SCHEMA_VERSION);
   expect(stored.habits.map((h) => h.intensityMode)).toEqual(["total", "total"]);
   expect(stored.habits[0].metrics[0].setValue).toBe("volume");
   expect(stored.habits[0].metrics[0].unit).toBe("volume"); // was "reps"
