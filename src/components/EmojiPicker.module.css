@@ -1,0 +1,22 @@
+/* Even 8-column grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.btn {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-bg);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn.sel {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+}

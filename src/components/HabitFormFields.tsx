@@ -13,6 +13,7 @@ import type { SetPreset } from "../lib/metrics";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
 import UnitForm from "./UnitForm";
 import GroupField from "./GroupField";
+import EmojiPicker from "./EmojiPicker";
 import styles from "./HabitFormFields.module.css";
 
 type Props = {
@@ -98,17 +99,12 @@ export default function HabitFormFields({
     <>
       <div className={styles.field}>
         <label className={styles.label}>Icon</label>
-        <div className={styles.emojiGrid}>
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              onClick={() => setEmoji(e)}
-              className={`${styles.emojiBtn}${emoji === e ? ` ${styles.sel}` : ""}`}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
+        <EmojiPicker
+          options={EMOJIS}
+          value={emoji}
+          onChange={setEmoji}
+          label="Icon"
+        />
       </div>
       <div className={styles.field}>
         <label className={styles.label}>Name</label>
