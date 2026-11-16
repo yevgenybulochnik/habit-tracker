@@ -7,6 +7,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
@@ -343,6 +344,90 @@ describe("App changes to habits", () => {
       "2026-05-23": { m1: 30 },
       "2026-05-24": { m1: 12 },
     });
+  });
+});
+
+describe("App groups", () => {
+  const habit = (id: string, name: string, groupId?: string): Habit => ({
+    id,
+    name,
+    emoji: "🎯",
+    color: "Green",
+    metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+    intensityMode: "total",
+    ...(groupId && { groupId }),
+  });
+  const grouped: PersistedState = {
+    schemaVersion: SCHEMA_VERSION,
+    habits: [
+      habit("h1", "Piano", "g1"),
+      habit("h2", "Water"),
+      habit("h3", "Run", "g2"),
+    ],
+    logs: {},
+    units: BUILTIN_UNITS,
+    config: DEFAULT_CONFIG,
+    groups: [
+      { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
+      { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("shows each group's section, under the habits in no group", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+
+    const music = await screen.findByRole("region", { name: "Music" });
+    expect(music).toHaveTextContent("Piano");
+    expect(screen.getByRole("region", { name: "Fitness" })).toHaveTextContent(
+      "Run",
+    );
+    const water = screen.getByText("Water");
+    expect(
+      water.compareDocumentPosition(music) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("navigation", { name: "Groups" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the plain list, with no group bar, while there are no groups", async () => {
+    mockLoad.mockResolvedValue({
+      ...grouped,
+      habits: grouped.habits.map(({ groupId: _, ...h }) => h),
+      groups: [],
+    });
+    render(<App />);
+
+    expect(await screen.findByText("Piano")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Groups" })).toBeNull();
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("saves a section folded shut", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+
+    const music = await screen.findByRole("region", { name: "Music" });
+    await userEvent.click(within(music).getByRole("button", { name: /Music/ }));
+    await waitFor(() => expect(mockSave).toHaveBeenCalled());
+    expect(mockSave.mock.lastCall![0].groups[0].collapsed).toBe(true);
   });
 });
 

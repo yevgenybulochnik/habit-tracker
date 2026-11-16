@@ -3,6 +3,7 @@ import { CSS } from "./globalCss";
 import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
 import { logActive } from "./lib/stats";
+import { groupSections, ungroupedHabits } from "./lib/groups";
 import {
   InvalidDataError,
   loadState,
@@ -18,6 +19,7 @@ import { DispatchContext } from "./hooks/useHabitActions";
 import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import HabitCard from "./components/HabitCard";
+import GroupSections from "./components/GroupSections";
 import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
@@ -160,15 +162,22 @@ export default function App() {
       </div>
     );
 
-  // The card list. The sortable wrapper + DnD context stay mounted in both
+  // A list of cards: every habit, or with groups the ungrouped ones or one
+  // section's. Each list is its own drag context, so a card is reordered
+  // within its list. The sortable wrapper + DnD context stay mounted in both
   // modes so toggling only flips props on the same HabitCard instance — the
   // card animates its height down to the header (grid-template-rows) instead of
   // remounting. The grip handle is only rendered while reordering. Cards
   // dispatch their own changes, through useHabitActions.
-  const habitList = (
-    <DispatchContext.Provider value={dispatch}>
+  const renderList = (list: Habit[]) => (
+    <SortableHabits
+      ids={list.map((h) => h.id)}
+      onReorder={(activeId, overId) =>
+        dispatch({ type: "habit/reorder", activeId, overId })
+      }
+    >
       <div>
-        {habits.map((h, i) => (
+        {list.map((h, i) => (
           <SortableHabitCard key={h.id} id={h.id} index={i}>
             {(drag) => (
               <HabitCard
@@ -187,7 +196,7 @@ export default function App() {
           </SortableHabitCard>
         ))}
       </div>
-    </DispatchContext.Provider>
+    </SortableHabits>
   );
 
   return (
@@ -275,14 +284,25 @@ export default function App() {
                   </button>
                 )}
               </div>
-              <SortableHabits
-                ids={habits.map((h) => h.id)}
-                onReorder={(activeId, overId) =>
-                  dispatch({ type: "habit/reorder", activeId, overId })
-                }
-              >
-                {habitList}
-              </SortableHabits>
+              <DispatchContext.Provider value={dispatch}>
+                {groups.length > 0 ? (
+                  <GroupSections
+                    sections={groupSections(habits, groups)}
+                    ungrouped={ungroupedHabits(habits, groups)}
+                    renderList={renderList}
+                    isDone={(h) => logActive(h, logs[h.id]?.[today], units)}
+                    onToggle={(id, collapsed) =>
+                      dispatch({
+                        type: "group/update",
+                        id,
+                        changes: { collapsed },
+                      })
+                    }
+                  />
+                ) : (
+                  renderList(habits)
+                )}
+              </DispatchContext.Provider>
             </>
           )}
         </div>

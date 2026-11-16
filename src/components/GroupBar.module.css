@@ -1,0 +1,101 @@
+/* Pinned under the notch, bleeding to the screen edges. */
+.bar {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  background: var(--c-bg);
+  padding: 8px 0 10px calc(20px + env(safe-area-inset-left));
+  margin: 0 calc(-20px - env(safe-area-inset-right)) 6px
+    calc(-20px - env(safe-area-inset-left));
+}
+.top {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.top:hover,
+.top:focus-visible {
+  border-color: var(--c-muted);
+  color: var(--c-text);
+}
+.strip {
+  position: relative; /* offsetParent for the chips */
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 1px calc(20px + env(safe-area-inset-right)) 1px 10px;
+  /* Chips fade out as they scroll under the top button. */
+  mask-image: linear-gradient(to right, transparent 0, #000 10px);
+}
+.strip::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s;
+}
+.chip:hover,
+.chip:focus-visible {
+  border-color: var(--c-muted);
+}
+.chip.on {
+  border-color: var(--c-accent);
+  background: var(--c-accentDim);
+  color: var(--c-text);
+  font-weight: 600;
+}
+.emoji {
+  font-size: 13px;
+}
+.count {
+  font-size: 10px;
+  color: var(--c-dim);
+  font-weight: 400;
+}
+.chip.on .count {
+  color: var(--c-accent);
+}
+.count.full,
+.chip.on .count.full {
+  color: var(--c-success);
+}
