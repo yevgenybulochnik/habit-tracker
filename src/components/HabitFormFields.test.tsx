@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HabitFormFields from "./HabitFormFields";
+import { GROUP_EMOJIS } from "./emojis";
 import { BUILTIN_UNITS } from "../lib/defaults";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
 
@@ -272,19 +273,45 @@ describe("HabitFormFields", () => {
       expect(screen.queryByRole("textbox", { name: "Group name" })).toBeNull();
     });
 
-    it("gives a new group the emoji typed for it", async () => {
+    it("gives a new group the emoji picked for it", async () => {
       const user = userEvent.setup();
       const onAddGroup = vi.fn();
       render(<Harness onAddGroup={onAddGroup} />);
       await openNewGroup(user);
-      await user.clear(screen.getByRole("textbox", { name: "Group emoji" }));
-      await user.paste("🗣️");
+      const picker = screen.getByRole("group", { name: "Group emoji" });
+      expect(
+        within(picker)
+          .getAllByRole("button")
+          .map((b) => b.textContent),
+      ).toEqual(GROUP_EMOJIS);
+      expect(
+        within(picker).getByRole("button", { pressed: true }),
+      ).toHaveTextContent("📁");
+      await user.click(within(picker).getByRole("button", { name: "💼" }));
       await user.type(
         screen.getByRole("textbox", { name: "Group name" }),
-        "Spanish",
+        "Work",
       );
       await user.click(screen.getByRole("button", { name: "Add Group" }));
-      expect(onAddGroup.mock.calls[0][0].emoji).toBe("🗣️");
+      expect(onAddGroup.mock.calls[0][0].emoji).toBe("💼");
+    });
+
+    it("starts the next new group from the default emoji", async () => {
+      const user = userEvent.setup();
+      const onAddGroup = vi.fn();
+      render(<Harness onAddGroup={onAddGroup} />);
+      await openNewGroup(user);
+      const picker = () => screen.getByRole("group", { name: "Group emoji" });
+      await user.click(within(picker()).getByRole("button", { name: "💼" }));
+      await user.type(
+        screen.getByRole("textbox", { name: "Group name" }),
+        "Work",
+      );
+      await user.click(screen.getByRole("button", { name: "Add Group" }));
+      await openNewGroup(user);
+      expect(
+        within(picker()).getByRole("button", { pressed: true }),
+      ).toHaveTextContent("📁");
     });
 
     it("won't add a group without a name", async () => {

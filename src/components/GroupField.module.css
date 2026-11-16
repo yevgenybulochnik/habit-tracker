@@ -9,17 +9,9 @@
 .panelTitle {
   composes: cuTitle from "./HabitFormFields.module.css";
 }
-.row {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.emoji {
+.name {
   composes: inp from "../styles/shared.module.css";
-  text-align: center;
-  padding-left: 4px;
-  padding-right: 4px;
+  margin: 10px 0;
 }
 .actions {
   composes: actions from "./UnitForm.module.css";

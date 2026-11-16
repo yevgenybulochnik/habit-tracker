@@ -2,6 +2,8 @@ import { useState } from "react";
 import { DEFAULT_GROUP_EMOJI } from "../lib/defaults";
 import { newId } from "../lib/ids";
 import type { Group } from "../types";
+import EmojiPicker from "./EmojiPicker";
+import { GROUP_EMOJIS } from "./emojis";
 import form from "./HabitFormFields.module.css";
 import styles from "./GroupField.module.css";
 
@@ -38,7 +40,7 @@ export default function GroupField({
     const group: Group = {
       id: newId("g"),
       name: name.trim(),
-      emoji: emoji.trim() || DEFAULT_GROUP_EMOJI,
+      emoji,
       collapsed: false,
     };
     onAddGroup(group);
@@ -76,23 +78,21 @@ export default function GroupField({
       {adding && (
         <div className={styles.panel}>
           <div className={styles.panelTitle}>New Group</div>
-          <div className={styles.row}>
-            <input
-              value={emoji}
-              onChange={(e) => setEmoji(e.target.value)}
-              aria-label="Group emoji"
-              className={styles.emoji}
-            />
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && add()}
-              placeholder="e.g. Music"
-              aria-label="Group name"
-              className={form.input}
-              autoFocus
-            />
-          </div>
+          <EmojiPicker
+            options={GROUP_EMOJIS}
+            value={emoji}
+            onChange={setEmoji}
+            label="Group emoji"
+          />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="e.g. Music"
+            aria-label="Group name"
+            className={styles.name}
+            autoFocus
+          />
           <div className={styles.actions}>
             <button onClick={() => setAdding(false)} className={styles.cancel}>
               Cancel
