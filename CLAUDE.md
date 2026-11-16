@@ -91,7 +91,8 @@ enforces the purity: a lib module may import only other lib modules, `../types`,
 CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
 `src/globalCss.ts` (`CSS`). `src/download.ts` (`downloadJson`) is the shared file-download
 helper; it needs the DOM, so it isn't in lib. Anything used by a single component sits with
-it (`EMOJIS` in `components/emojis.ts`, the d3 easing `D3E` inside `CalendarPanel`).
+it (the d3 easing `D3E` inside `CalendarPanel`). The emoji choices, `EMOJIS` for a habit and
+`GROUP_EMOJIS` for a group, are in `components/emojis.ts`.
 
 **The data model is nested and worth internalizing** (`src/types.ts`):
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
@@ -186,6 +187,8 @@ duration is `CLOSE_MS`, handed to the CSS as `--modal-close-ms`, so don't add cl
 modal. Units are added and edited through the shared `UnitForm` (Settings and the habit form's
 "+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
 habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
+Emojis are picked from a grid, the shared `EmojiPicker` (the habit form's icon, and a group's
+in `GroupField` and `GroupEditModal`), never typed: a text box is no way to choose one on a phone.
 Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
 finger moving more than 10px, and after a hold fires it prevents the release's click: the
 editor it opened is under the finger.
