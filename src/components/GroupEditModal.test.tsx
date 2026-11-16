@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import GroupEditModal from "./GroupEditModal";
+import { GROUP_EMOJIS } from "./emojis";
 import type { Group, Habit } from "../types";
 
 function habit(id: string, groupId?: string): Habit {
@@ -30,14 +31,14 @@ const habits = [
   habit("Water"),
 ];
 
-function renderModal() {
+function renderModal(group = music) {
   const onSave = vi.fn();
   const onDelete = vi.fn();
   const onClose = vi.fn();
   render(
     <GroupEditModal
-      group={music}
-      groups={[music, fitness]}
+      group={group}
+      groups={[group, fitness]}
       habits={habits}
       onSave={onSave}
       onDelete={onDelete}
@@ -50,15 +51,24 @@ function renderModal() {
 const box = (name: string) =>
   screen.getByRole("checkbox", { name: new RegExp(name) });
 
+const picker = () => screen.getByRole("group", { name: "Group emoji" });
+/** The emojis the picker offers, and the one it has chosen. */
+const offered = () =>
+  within(picker())
+    .getAllByRole("button")
+    .map((b) => b.textContent);
+const picked = () =>
+  within(picker())
+    .getAllByRole("button", { pressed: true })
+    .map((b) => b.textContent);
+
 describe("GroupEditModal", () => {
   it("shows the group's name and emoji, and its habits checked", () => {
     renderModal();
     expect(screen.getByRole("textbox", { name: "Group name" })).toHaveValue(
       "Music",
     );
-    expect(screen.getByRole("textbox", { name: "Group emoji" })).toHaveValue(
-      "🎵",
-    );
+    expect(picked()).toEqual(["🎵"]);
     expect(
       screen
         .getAllByRole("checkbox")
@@ -79,22 +89,34 @@ describe("GroupEditModal", () => {
     const name = screen.getByRole("textbox", { name: "Group name" });
     await userEvent.clear(name);
     await userEvent.type(name, " Practice ");
+    await userEvent.click(within(picker()).getByRole("button", { name: "🏠" }));
+    expect(picked()).toEqual(["🏠"]);
     await userEvent.click(box("Piano"));
     await userEvent.click(box("Run"));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(onSave).toHaveBeenCalledWith({ name: "Practice", emoji: "🎵" }, [
+    expect(onSave).toHaveBeenCalledWith({ name: "Practice", emoji: "🏠" }, [
       "Guitar",
       "Run",
     ]);
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 
-  it("gives an emptied emoji the default one", async () => {
-    const { onSave } = renderModal();
-    await userEvent.clear(screen.getByRole("textbox", { name: "Group emoji" }));
+  it("offers the group emojis to pick from", () => {
+    renderModal();
+    expect(offered()).toEqual(GROUP_EMOJIS);
+  });
+
+  it("keeps offering an emoji the group has that isn't among them", async () => {
+    const { onSave } = renderModal({ ...music, emoji: "🗣️" });
+    expect(offered()).toEqual(["🗣️", ...GROUP_EMOJIS]);
+    expect(picked()).toEqual(["🗣️"]);
+    // Still there to go back to after picking another
+    await userEvent.click(within(picker()).getByRole("button", { name: "📁" }));
+    expect(offered()[0]).toBe("🗣️");
+    await userEvent.click(within(picker()).getByRole("button", { name: "🗣️" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave.mock.calls[0][0].emoji).toBe("📁");
+    expect(onSave.mock.calls[0][0].emoji).toBe("🗣️");
   });
 
   it("won't save without a name", async () => {

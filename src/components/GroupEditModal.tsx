@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ModalShell from "./ModalShell";
-import { DEFAULT_GROUP_EMOJI } from "../lib/defaults";
+import EmojiPicker from "./EmojiPicker";
+import { GROUP_EMOJIS } from "./emojis";
 import type { Group, Habit } from "../types";
 import modal from "./modalForm.module.css";
 import form from "./HabitFormFields.module.css";
@@ -22,7 +23,7 @@ type Props = {
 
 /**
  * Edit a group, opened by holding its chip or section header: its name and
- * emoji, which habits are in it (checking a habit from another group moves
+ * emoji (picked from a grid), which habits are in it (checking a habit from another group moves
  * it here), or delete it, leaving its habits in no group. Like the habit
  * editor, nothing changes until Save.
  */
@@ -36,6 +37,10 @@ export default function GroupEditModal({
 }: Props) {
   const [name, setName] = useState(group.name);
   const [emoji, setEmoji] = useState(group.emoji);
+  // An emoji the group has from before the picker stays one to pick
+  const emojis = GROUP_EMOJIS.includes(group.emoji)
+    ? GROUP_EMOJIS
+    : [group.emoji, ...GROUP_EMOJIS];
   const [members, setMembers] = useState(
     () =>
       new Set(habits.filter((h) => h.groupId === group.id).map((h) => h.id)),
@@ -61,25 +66,27 @@ export default function GroupEditModal({
           <h2 className={modal.title}>Edit Group</h2>
 
           <div className={form.field}>
+            <div className={form.label}>Icon</div>
+            <EmojiPicker
+              options={emojis}
+              value={emoji}
+              onChange={setEmoji}
+              label="Group emoji"
+            />
+          </div>
+
+          <div className={form.field}>
             <label className={form.label} htmlFor="group-name">
               Name
             </label>
-            <div className={styles.nameRow}>
-              <input
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-                aria-label="Group emoji"
-                className={styles.emoji}
-              />
-              <input
-                id="group-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Music"
-                aria-label="Group name"
-                className={form.input}
-              />
-            </div>
+            <input
+              id="group-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Music"
+              aria-label="Group name"
+              className={form.input}
+            />
           </div>
 
           <div className={form.fieldLg}>
@@ -160,10 +167,7 @@ export default function GroupEditModal({
               disabled={!name.trim()}
               onClick={() => {
                 onSave(
-                  {
-                    name: name.trim(),
-                    emoji: emoji.trim() || DEFAULT_GROUP_EMOJI,
-                  },
+                  { name: name.trim(), emoji },
                   habits.filter((h) => members.has(h.id)).map((h) => h.id),
                 );
                 requestClose();
