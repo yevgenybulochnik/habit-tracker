@@ -77,7 +77,9 @@ most tests are. `dates` (date keys and date arithmetic), `metrics` (unit resolut
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
 `d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
-current-format state), `state` (the app's reducer, below), `calendarNav` (a card's calendar
+current-format state), `state` (the app's reducer, below), `groups` (habits split into group
+sections: `groupSections`, `ungroupedHabits`, and `setMembers` for a group's habits),
+`calendarNav` (a card's calendar
 navigation, `navigate` over `{ offset, zoomed, view }`), `units` (parsing and validating a
 unit form: `buildUnit`), `ids` (`newId`), and `defaults`
 (storage key, built-in units, default config, month/weekday labels). Prefer adding logic
@@ -105,10 +107,16 @@ sense within one unit: the habit form switches a habit to `coverage` when `hasMi
 its metrics differ. The current streak in `habitStats` counts back from today, or from
 yesterday while today has nothing logged, so an unfinished day doesn't break it.
 
+**Groups.** `PersistedState.groups` lists the `Group`s (`id`, `name`, `emoji`, `collapsed`)
+in display order, and a habit names its group with an optional `groupId`: absent means it's in
+none, and a habit is in at most one. The habit list keeps a single order, so a section's
+habits are that list filtered, and reordering within a section is a `habit/reorder`.
+
 **Data is normalized once, at the boundary (`src/lib/normalize.ts`).** Everything read from
 IndexedDB or a backup file passes through `normalizeState`, which fills in what older data
 lacks (a habit's `metrics`/`intensityMode`, a sets metric's `setFields`/`setValue`, config
-settings, built-in units) and stamps `schemaVersion`. The types therefore mark those fields
+settings, built-in units, the groups and a group's fields; it drops a `groupId` whose group
+doesn't exist) and stamps `schemaVersion`. The types therefore mark those fields
 required, and code that reads state must **not** add its own fallbacks for old data (no
 `habit.metrics || []`): a new default or a format migration goes in `normalizeState`, with
 a `SCHEMA_VERSION` bump for a migration (the versions are listed beside that constant; a
@@ -128,7 +136,7 @@ was asleep. Tests pass a fixed `today`; they never build keys from the real cloc
 
 **State & persistence (`src/App.tsx`, `src/lib/state.ts`).** `App` is the single stateful
 container: one `useReducer` over `reduce` from `lib/state` holds `habits`, `logs`, `units`,
-`config` and `timers`, and every change is a dispatched `Action`. The reducer must stay pure
+`config`, `groups` and `timers`, and every change is a dispatched `Action`. The reducer must stay pure
 (React calls it twice in dev), so anything else an action needs (a `newId`, `Date.now()` for
 a timer, the `today` key) is worked out by the caller and carried in the action. One effect in
 `App` saves each new state through `storage.saveState()`. It starts only after a load has
@@ -142,7 +150,13 @@ normalized, `loadState` copies it to the `habit-tracker-recovery` key and reject
 `InvalidDataError`; `App` then shows its load-error screen (where saving is blocked) with a
 "Download raw data" button. There is no external state library and no backend. The dashboard
 is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`quick` |
-`calendar`) toggle.
+`calendar`) toggle. With no groups it's one list of cards. Once there are groups it's
+`GroupSections`: a pinned `GroupBar` (a scroll-to-top button and a chip per group, with its
+count done today), the habits in no group, then a collapsible section per group; a chip jumps
+to its section and the chip of the section under the bar is highlighted. Each list of cards
+(`renderList` in `App`) is its own `SortableHabits` drag context, so reorder mode moves a card
+within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
+a header opens `GroupEditModal` (name, emoji, its habits as a checklist, delete).
 
 **The habit card (`HabitCard`).** Each habit is a `HabitCard`: a header (hold-to-edit via
 `useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
@@ -170,7 +184,11 @@ anything in the build that depends on `today` or on the selection must be set on
 `requestClose(then?)`: it plays the close animation, then runs `then` and `onClose`. The
 duration is `CLOSE_MS`, handed to the CSS as `--modal-close-ms`, so don't add close timers in a
 modal. Units are added and edited through the shared `UnitForm` (Settings and the habit form's
-"+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit.
+"+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
+habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
+Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
+finger moving more than 10px, and after a hold fires it prevents the release's click: the
+editor it opened is under the finger.
 Components send edits up from their **event handlers, not from effects** watching local state:
 `DayEditor` writes each edit as it's made (mounting writes nothing, even under StrictMode's
 double effects), and `SetInput` derives its carried-over weight from the latest set instead of
