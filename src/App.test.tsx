@@ -257,6 +257,75 @@ describe("App changes to habits", () => {
     expect(logs).toEqual({ ...loaded.logs, [id]: {} });
   });
 
+  it("adds a habit into a group made in its form", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /New Habit/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/Morning Workout/i),
+      "Spanish",
+    );
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Group" }),
+      "+ New group…",
+    );
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Group name" }),
+      "Languages",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Add Group" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(lastSaved().habits).toHaveLength(2));
+    const { groups, habits } = lastSaved();
+    expect(groups).toEqual([
+      {
+        id: expect.any(String),
+        name: "Languages",
+        emoji: "📁",
+        collapsed: false,
+      },
+    ]);
+    expect(habits[1].groupId).toBe(groups[0].id);
+  });
+
+  it("moves a habit to another group, or to none, from its editor", async () => {
+    mockLoad.mockResolvedValue({
+      ...loaded,
+      habits: [{ ...run, groupId: "g2" }],
+      groups: [
+        { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
+        { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+      ],
+    });
+    render(<App />);
+    const editRun = async () => {
+      fireEvent.mouseDown(await screen.findByText("Run"));
+      await screen.findByText("Edit Habit", undefined, { timeout: 2000 });
+    };
+
+    await editRun();
+    const menu = screen.getByRole("combobox", { name: "Group" });
+    expect(menu).toHaveValue("g2");
+    await userEvent.selectOptions(menu, "🎵 Music");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(lastSaved().habits[0].groupId).toBe("g1"));
+
+    await waitFor(() => expect(screen.queryByText("Edit Habit")).toBeNull());
+    await editRun();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Group" }),
+      "None",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(lastSaved().habits[0]).not.toHaveProperty("groupId"),
+    );
+  });
+
   it("saves a running timer, and logs its minutes to today when stopped", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);

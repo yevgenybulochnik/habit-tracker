@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ModalShell from "./ModalShell";
 import HabitFormFields from "./HabitFormFields";
-import type { Habit, IntensityMode, Metric, Unit } from "../types";
+import type { Group, Habit, IntensityMode, Metric, Unit } from "../types";
 import modal from "./modalForm.module.css";
 import styles from "./EditHabitModal.module.css";
 
@@ -12,6 +12,8 @@ type Props = {
   onClose: () => void;
   units: Unit[];
   onAddUnit: (u: Unit) => void;
+  groups: Group[];
+  onAddGroup: (g: Group) => void;
 };
 
 export default function EditHabitModal({
@@ -21,6 +23,8 @@ export default function EditHabitModal({
   onClose,
   units,
   onAddUnit,
+  groups,
+  onAddGroup,
 }: Props) {
   const [name, setName] = useState(habit.name);
   const [emoji, setEmoji] = useState(habit.emoji);
@@ -28,6 +32,7 @@ export default function EditHabitModal({
   const [color, setColor] = useState(habit.color);
   const [metrics, setMetrics] = useState<Metric[]>([...habit.metrics]);
   const [intMode, setIntMode] = useState<IntensityMode>(habit.intensityMode);
+  const [groupId, setGroupId] = useState(habit.groupId ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const canSave = !!name.trim() && metrics.length > 0;
   return (
@@ -50,6 +55,10 @@ export default function EditHabitModal({
             setIntensityMode={setIntMode}
             units={units}
             onAddUnit={onAddUnit}
+            groupId={groupId}
+            setGroupId={setGroupId}
+            groups={groups}
+            onAddGroup={onAddGroup}
           />
 
           {/* Danger zone */}
@@ -102,14 +111,16 @@ export default function EditHabitModal({
             <button
               disabled={!canSave}
               onClick={() => {
+                const { groupId: _, ...rest } = habit;
                 onSave({
-                  ...habit,
+                  ...rest,
                   name: name.trim(),
                   emoji,
                   description: desc.trim(),
                   color,
                   metrics,
                   intensityMode: intMode,
+                  ...(groupId && { groupId }),
                 });
                 requestClose();
               }}

@@ -22,7 +22,7 @@ import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
 import BrandMark from "./components/BrandMark";
-import type { Habit, Unit } from "./types";
+import type { Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
 
 const EMPTY: AppState = {
@@ -115,6 +115,7 @@ export default function App() {
   };
 
   const addUnit = (unit: Unit) => dispatch({ type: "unit/add", unit });
+  const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
   const completed = habits.filter((h) =>
@@ -300,6 +301,8 @@ export default function App() {
           onClose={() => setShowAdd(false)}
           units={units}
           onAddUnit={addUnit}
+          groups={groups}
+          onAddGroup={addGroup}
         />
       )}
       {editHabit && (
@@ -313,6 +316,8 @@ export default function App() {
           onClose={() => setEditHabit(null)}
           units={units}
           onAddUnit={addUnit}
+          groups={groups}
+          onAddGroup={addGroup}
         />
       )}
       {showUnits && (

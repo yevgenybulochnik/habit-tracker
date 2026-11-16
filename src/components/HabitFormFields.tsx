@@ -10,8 +10,9 @@ import {
 } from "../lib/metrics";
 import { newId } from "../lib/ids";
 import type { SetPreset } from "../lib/metrics";
-import type { IntensityMode, Metric, Unit } from "../types";
+import type { Group, IntensityMode, Metric, Unit } from "../types";
 import UnitForm from "./UnitForm";
+import GroupField from "./GroupField";
 import styles from "./HabitFormFields.module.css";
 
 type Props = {
@@ -29,6 +30,11 @@ type Props = {
   setIntensityMode: Dispatch<SetStateAction<IntensityMode>>;
   units: Unit[];
   onAddUnit: (u: Unit) => void;
+  /** The habit's group's id, or "" for none. */
+  groupId: string;
+  setGroupId: Dispatch<SetStateAction<string>>;
+  groups: Group[];
+  onAddGroup: (g: Group) => void;
 };
 
 export default function HabitFormFields({
@@ -46,6 +52,10 @@ export default function HabitFormFields({
   setIntensityMode,
   units,
   onAddUnit,
+  groupId,
+  setGroupId,
+  groups,
+  onAddGroup,
 }: Props) {
   const [newMN, setNewMN] = useState("");
   const [newMU, setNewMU] = useState("reps");
@@ -118,6 +128,12 @@ export default function HabitFormFields({
           className={styles.input}
         />
       </div>
+      <GroupField
+        value={groupId}
+        onChange={setGroupId}
+        groups={groups}
+        onAddGroup={onAddGroup}
+      />
       <div className={styles.fieldLg}>
         <label className={styles.label}>Color</label>
         <div className={styles.colorRow}>
@@ -166,6 +182,7 @@ export default function HabitFormFields({
             className={styles.addInput}
           />
           <select
+            aria-label="Unit"
             value={newMU}
             onChange={(e) => {
               if (e.target.value === "__custom__") setShowCU(true);

@@ -1,0 +1,36 @@
+.select {
+  composes: inp from "../styles/shared.module.css";
+  cursor: pointer;
+}
+/* The same panel as the unit menu's "+ Custom..." form. */
+.panel {
+  composes: cu from "./HabitFormFields.module.css";
+}
+.panelTitle {
+  composes: cuTitle from "./HabitFormFields.module.css";
+}
+.row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.emoji {
+  composes: inp from "../styles/shared.module.css";
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.actions {
+  composes: actions from "./UnitForm.module.css";
+}
+.cancel {
+  composes: cancel from "./UnitForm.module.css";
+}
+.submit {
+  composes: submit from "./UnitForm.module.css";
+}
+.submit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

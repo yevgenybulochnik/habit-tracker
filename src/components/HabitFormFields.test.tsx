@@ -4,10 +4,26 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HabitFormFields from "./HabitFormFields";
 import { BUILTIN_UNITS } from "../lib/defaults";
-import type { IntensityMode, Metric, Unit } from "../types";
+import type { Group, IntensityMode, Metric, Unit } from "../types";
 
-/** The form with its state, and units that grow as the form adds them. */
-function Harness({ onAddUnit = () => {} }: { onAddUnit?: (u: Unit) => void }) {
+const MUSIC: Group = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
+const FITNESS: Group = {
+  id: "g2",
+  name: "Fitness",
+  emoji: "🏋️",
+  collapsed: false,
+};
+
+/** The form with its state, and units and groups that grow as it adds them. */
+function Harness({
+  onAddUnit = () => {},
+  onAddGroup = () => {},
+  initialGroups = [MUSIC, FITNESS],
+}: {
+  onAddUnit?: (u: Unit) => void;
+  onAddGroup?: (g: Group) => void;
+  initialGroups?: Group[];
+}) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🎯");
   const [description, setDescription] = useState("");
@@ -15,6 +31,8 @@ function Harness({ onAddUnit = () => {} }: { onAddUnit?: (u: Unit) => void }) {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [intensityMode, setIntensityMode] = useState<IntensityMode>("total");
   const [units, setUnits] = useState(BUILTIN_UNITS);
+  const [groupId, setGroupId] = useState("");
+  const [groups, setGroups] = useState(initialGroups);
   const form = (
     <HabitFormFields
       name={name}
@@ -34,11 +52,19 @@ function Harness({ onAddUnit = () => {} }: { onAddUnit?: (u: Unit) => void }) {
         onAddUnit(u);
         setUnits((p) => [...p, u]);
       }}
+      groupId={groupId}
+      setGroupId={setGroupId}
+      groups={groups}
+      onAddGroup={(g) => {
+        onAddGroup(g);
+        setGroups((p) => [...p, g]);
+      }}
     />
   );
   return (
     <>
       <output data-testid="intensity-mode">{intensityMode}</output>
+      <output data-testid="group">{groupId}</output>
       {form}
     </>
   );
@@ -128,7 +154,7 @@ describe("HabitFormFields", () => {
     await user.click(screen.getByRole("button", { name: /Enable sets mode/i }));
     await user.click(screen.getByRole("button", { name: "Reps only" }));
     expect(screen.getByText(/Log reps per set/i)).toBeInTheDocument();
-    expect(screen.queryByRole("combobox")).not.toBeNull(); // unit select still present
+    expect(screen.queryByRole("combobox", { name: "Unit" })).not.toBeNull(); // unit select still present
     await user.click(screen.getByRole("button", { name: /\+ Add/i }));
     // metric chip shows the reps-based badge, not "lbs"
     expect(screen.getByText("SETS · reps")).toBeInTheDocument();
@@ -136,7 +162,10 @@ describe("HabitFormFields", () => {
 
   describe("custom unit", () => {
     async function openCustomUnit(user: ReturnType<typeof userEvent.setup>) {
-      await user.selectOptions(screen.getByRole("combobox"), "+ Custom...");
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Unit" }),
+        "+ Custom...",
+      );
     }
 
     it("adds a unit from the unit menu and picks it for the next metric", async () => {
@@ -155,7 +184,9 @@ describe("HabitFormFields", () => {
         thresholds: [1, 3, 5],
       });
       expect(screen.queryByLabelText("ID")).not.toBeInTheDocument();
-      expect(screen.getByRole("combobox")).toHaveValue("laps");
+      expect(screen.getByRole("combobox", { name: "Unit" })).toHaveValue(
+        "laps",
+      );
 
       await user.type(screen.getByPlaceholderText(/Metric name/i), "Swim");
       await user.click(screen.getByRole("button", { name: /\+ Add/i }));
@@ -186,6 +217,108 @@ describe("HabitFormFields", () => {
       await user.click(screen.getByRole("button", { name: "Cancel" }));
       expect(screen.queryByLabelText("ID")).not.toBeInTheDocument();
       expect(onAddUnit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("group", () => {
+    const groupMenu = () => screen.getByRole("combobox", { name: "Group" });
+    const chosen = () => screen.getByTestId("group").textContent;
+
+    async function openNewGroup(user: ReturnType<typeof userEvent.setup>) {
+      await user.selectOptions(groupMenu(), "+ New group…");
+    }
+
+    it("offers no group, each group, and a new one", () => {
+      render(<Harness />);
+      expect(groupMenu()).toHaveValue("");
+      const options = Array.from(groupMenu().querySelectorAll("option"));
+      expect(options.map((o) => o.textContent)).toEqual([
+        "None",
+        "🎵 Music",
+        "🏋️ Fitness",
+        "+ New group…",
+      ]);
+    });
+
+    it("puts the habit in the chosen group, or in none", async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      await user.selectOptions(groupMenu(), "🏋️ Fitness");
+      expect(chosen()).toBe("g2");
+      await user.selectOptions(groupMenu(), "None");
+      expect(chosen()).toBe("");
+    });
+
+    it("adds a new group from the menu and puts the habit in it", async () => {
+      const user = userEvent.setup();
+      const onAddGroup = vi.fn();
+      render(<Harness onAddGroup={onAddGroup} />);
+      await openNewGroup(user);
+      await user.type(
+        screen.getByRole("textbox", { name: "Group name" }),
+        "Languages",
+      );
+      await user.click(screen.getByRole("button", { name: "Add Group" }));
+
+      expect(onAddGroup).toHaveBeenCalledWith({
+        id: expect.any(String),
+        name: "Languages",
+        emoji: "📁",
+        collapsed: false,
+      });
+      const { id } = onAddGroup.mock.calls[0][0];
+      expect(chosen()).toBe(id);
+      expect(groupMenu()).toHaveValue(id);
+      expect(screen.queryByRole("textbox", { name: "Group name" })).toBeNull();
+    });
+
+    it("gives a new group the emoji typed for it", async () => {
+      const user = userEvent.setup();
+      const onAddGroup = vi.fn();
+      render(<Harness onAddGroup={onAddGroup} />);
+      await openNewGroup(user);
+      await user.clear(screen.getByRole("textbox", { name: "Group emoji" }));
+      await user.paste("🗣️");
+      await user.type(
+        screen.getByRole("textbox", { name: "Group name" }),
+        "Spanish",
+      );
+      await user.click(screen.getByRole("button", { name: "Add Group" }));
+      expect(onAddGroup.mock.calls[0][0].emoji).toBe("🗣️");
+    });
+
+    it("won't add a group without a name", async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      await openNewGroup(user);
+      const add = screen.getByRole("button", { name: "Add Group" });
+      expect(add).toBeDisabled();
+      await user.type(
+        screen.getByRole("textbox", { name: "Group name" }),
+        "  ",
+      );
+      expect(add).toBeDisabled();
+    });
+
+    it("closes without adding on Cancel, keeping the group chosen before", async () => {
+      const user = userEvent.setup();
+      const onAddGroup = vi.fn();
+      render(<Harness onAddGroup={onAddGroup} />);
+      await user.selectOptions(groupMenu(), "🎵 Music");
+      await openNewGroup(user);
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(onAddGroup).not.toHaveBeenCalled();
+      expect(groupMenu()).toHaveValue("g1");
+      expect(chosen()).toBe("g1");
+    });
+
+    it("offers just None and a new group when there are no groups", () => {
+      render(<Harness initialGroups={[]} />);
+      const options = Array.from(groupMenu().querySelectorAll("option"));
+      expect(options.map((o) => o.textContent)).toEqual([
+        "None",
+        "+ New group…",
+      ]);
     });
   });
 });
