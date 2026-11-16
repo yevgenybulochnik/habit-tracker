@@ -420,6 +420,17 @@ describe("App groups", () => {
     expect(screen.queryByRole("region")).toBeNull();
   });
 
+  it("offers Reorder for two groups, even with one habit", async () => {
+    mockLoad.mockResolvedValue({
+      ...grouped,
+      habits: [habit("h1", "Piano", "g1")],
+    });
+    render(<App />);
+    expect(
+      await screen.findByRole("button", { name: /Reorder/ }),
+    ).toBeInTheDocument();
+  });
+
   it("saves a section folded shut", async () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);

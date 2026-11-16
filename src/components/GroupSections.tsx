@@ -1,8 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import type { CSSProperties, MutableRefObject, ReactNode } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import GroupBar from "./GroupBar";
+import SortableHabits from "./SortableHabits";
 import type { GroupSection } from "../lib/groups";
-import type { Habit } from "../types";
+import type { Group, Habit } from "../types";
 import styles from "./GroupSections.module.css";
 
 type Props = {
@@ -13,12 +22,18 @@ type Props = {
   renderList: (habits: Habit[]) => ReactNode;
   isDone: (h: Habit) => boolean;
   onToggle: (groupId: string, collapsed: boolean) => void;
+  /** Reorder mode: groups are dragged by their chips or section headers. */
+  reorder: boolean;
+  onReorderGroups: (activeId: string, overId: string) => void;
 };
 
 /**
  * The dashboard once there are groups: the group bar, the habits in no group,
  * then one collapsible section per group. A chip jumps to its section, and
  * the chip of the section under the bar is highlighted as the page scrolls.
+ *
+ * In reorder mode a group is dragged by its chip or its section's header, and
+ * a card within its own list (`renderList` makes each list its own context).
  */
 export default function GroupSections({
   sections,
@@ -26,6 +41,8 @@ export default function GroupSections({
   renderList,
   isDone,
   onToggle,
+  reorder,
+  onReorderGroups,
 }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   const sectionEls = useRef<Record<string, HTMLElement | null>>({});
@@ -92,7 +109,10 @@ export default function GroupSections({
   const doneOf = (hs: Habit[]) => hs.filter(isDone).length;
 
   return (
-    <div style={{ "--bar-h": `${barH}px` } as CSSProperties}>
+    <div
+      style={{ "--bar-h": `${barH}px` } as CSSProperties}
+      className={reorder ? styles.reordering : undefined}
+    >
       <GroupBar
         chips={sections.map(({ group, habits }) => ({
           id: group.id,
@@ -105,52 +125,115 @@ export default function GroupSections({
         onPick={pick}
         onTop={toTop}
         barRef={barRef}
+        reorder={reorder}
+        onReorder={onReorderGroups}
       />
       {ungrouped.length > 0 && renderList(ungrouped)}
-      {sections.map(({ group, habits }) => {
-        const name = group.name || "Untitled";
-        return (
-          <section
+      <SortableHabits
+        ids={sections.map((s) => s.group.id)}
+        onReorder={onReorderGroups}
+      >
+        {sections.map(({ group, habits }) => (
+          <Section
             key={group.id}
-            ref={(el) => {
-              sectionEls.current[group.id] = el;
-            }}
-            aria-label={name}
-            className={styles.section}
+            group={group}
+            done={doneOf(habits)}
+            total={habits.length}
+            onToggle={() => onToggle(group.id, !group.collapsed)}
+            reorder={reorder}
+            els={sectionEls}
           >
-            <button
-              aria-expanded={!group.collapsed}
-              onClick={() => onToggle(group.id, !group.collapsed)}
-              className={styles.head}
-            >
-              <span
-                className={`${styles.chev}${group.collapsed ? ` ${styles.chevShut}` : ""}`}
-                aria-hidden
-              >
-                ▾
-              </span>
-              <span>{group.emoji}</span>
-              <span className={styles.name}>{name}</span>
-              <span className={styles.count}>
-                {doneOf(habits)}/{habits.length}
-              </span>
-            </button>
-            <div
-              className={`${styles.body}${group.collapsed ? ` ${styles.shut}` : ""}`}
-            >
-              <div className={styles.inner}>
-                {habits.length > 0 ? (
-                  renderList(habits)
-                ) : (
-                  <div className={styles.empty}>
-                    No habits in this group yet
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        );
-      })}
+            {habits.length > 0 ? (
+              renderList(habits)
+            ) : (
+              <div className={styles.empty}>No habits in this group yet</div>
+            )}
+          </Section>
+        ))}
+      </SortableHabits>
     </div>
+  );
+}
+
+type SectionProps = {
+  group: Group;
+  done: number;
+  total: number;
+  onToggle: () => void;
+  reorder: boolean;
+  /** Where the section registers its element, for the scroll tracking. */
+  els: MutableRefObject<Record<string, HTMLElement | null>>;
+  children: ReactNode;
+};
+
+/**
+ * One group's section: a header that folds it, over its cards. In reorder
+ * mode the header is what picks the section up.
+ */
+function Section({
+  group,
+  done,
+  total,
+  onToggle,
+  reorder,
+  els,
+  children,
+}: SectionProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: group.id, disabled: !reorder });
+  const ref = useCallback(
+    (el: HTMLElement | null) => {
+      setNodeRef(el);
+      els.current[group.id] = el;
+    },
+    [setNodeRef, els, group.id],
+  );
+  const name = group.name || "Untitled";
+
+  return (
+    <section
+      ref={ref}
+      aria-label={name}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={`${styles.section}${isDragging ? ` ${styles.dragging}` : ""}`}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        {...(reorder && { ...attributes, ...listeners })}
+        aria-expanded={!group.collapsed}
+        onClick={onToggle}
+        className={`${styles.head}${reorder ? ` reorder-drag ${styles.sorting}` : ""}`}
+      >
+        {reorder ? (
+          <span className={styles.grip} aria-hidden>
+            ⠿
+          </span>
+        ) : (
+          <span
+            className={`${styles.chev}${group.collapsed ? ` ${styles.chevShut}` : ""}`}
+            aria-hidden
+          >
+            ▾
+          </span>
+        )}
+        <span>{group.emoji}</span>
+        <span className={styles.name}>{name}</span>
+        <span className={styles.count}>
+          {done}/{total}
+        </span>
+      </button>
+      <div
+        className={`${styles.body}${group.collapsed ? ` ${styles.shut}` : ""}`}
+      >
+        <div className={styles.inner}>{children}</div>
+      </div>
+    </section>
   );
 }

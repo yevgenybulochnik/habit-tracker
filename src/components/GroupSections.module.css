@@ -3,7 +3,12 @@
   /* A chip jump lands the header just under the pinned bar. */
   scroll-margin-top: calc(var(--bar-h, 52px) + env(safe-area-inset-top));
   margin-bottom: 6px;
+  /* Opaque, so a dragged section covers the ones it passes. */
   background: var(--c-bg);
+}
+.section.dragging {
+  z-index: 10;
+  opacity: 0.95;
 }
 .head {
   display: flex;
@@ -24,6 +29,17 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+.head.sorting {
+  cursor: grab;
+}
+.dragging .head {
+  cursor: grabbing;
+}
+.grip {
+  display: inline-block;
+  width: 12px;
+  color: var(--c-dim);
 }
 .chev {
   display: inline-block;
@@ -63,4 +79,8 @@
   text-align: center;
   font-size: 12px;
   color: var(--c-dim);
+}
+/* While reordering, an open section mustn't clip the card being dragged. */
+.reordering .body:not(.shut) .inner {
+  overflow: visible;
 }

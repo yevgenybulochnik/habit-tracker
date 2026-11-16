@@ -275,7 +275,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-                {habits.length > 1 && (
+                {(habits.length > 1 || groups.length > 1) && (
                   <button
                     onClick={() => setReorder((r) => !r)}
                     className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
@@ -297,6 +297,10 @@ export default function App() {
                         id,
                         changes: { collapsed },
                       })
+                    }
+                    reorder={reorder}
+                    onReorderGroups={(activeId, overId) =>
+                      dispatch({ type: "group/reorder", activeId, overId })
                     }
                   />
                 ) : (

@@ -16,22 +16,21 @@ import {
 } from "@dnd-kit/sortable";
 
 type Props = {
-  /** Habit ids in their current display order. */
+  /** Ids (of habits, or groups) in their current display order. */
   ids: string[];
-  /** Called with (activeId, overId) when a drag ends on a different card. */
+  /** Called with (activeId, overId) when a drag ends on a different item. */
   onReorder: (activeId: string, overId: string) => void;
   children: ReactNode;
 };
 
 /**
- * DnD container for the habit list. Keeps the @dnd-kit surface out of App and
- * HabitCard: it only knows the ordered ids and emits (activeId, overId) on
- * drop. Uses the dedicated Mouse + Touch sensors (more reliable on iOS than the
- * combined Pointer sensor) plus Keyboard for accessibility. A small activation
+ * The sensors for every drag in the app (cards, group chips, group sections).
+ * The dedicated Mouse + Touch sensors are more reliable on iOS than the
+ * combined Pointer sensor, plus Keyboard for accessibility. A small activation
  * distance means a tap doesn't start a drag.
  */
-export default function SortableHabits({ ids, onReorder, children }: Props) {
-  const sensors = useSensors(
+export function useSortSensors() {
+  return useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     // Touch: press-and-hold to pick up. A delay (rather than a distance) avoids
     // the scroll-vs-drag ambiguity on iOS — with a distance constraint the
@@ -44,6 +43,15 @@ export default function SortableHabits({ ids, onReorder, children }: Props) {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+}
+
+/**
+ * DnD container for a vertical list: a list of habit cards, or the group
+ * sections. Keeps the @dnd-kit surface out of App and HabitCard: it only knows
+ * the ordered ids and emits (activeId, overId) on drop.
+ */
+export default function SortableHabits({ ids, onReorder, children }: Props) {
+  const sensors = useSortSensors();
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;

@@ -41,8 +41,13 @@ const renderList = (hs: Habit[]) => (
   </ul>
 );
 
-function renderSections(groups = [music, fitness], hs = habits) {
+function renderSections(
+  groups = [music, fitness],
+  hs = habits,
+  { reorder = false } = {},
+) {
   const onToggle = vi.fn();
+  const onReorderGroups = vi.fn();
   const utils = render(
     <GroupSections
       sections={groupSections(hs, groups)}
@@ -50,10 +55,16 @@ function renderSections(groups = [music, fitness], hs = habits) {
       renderList={renderList}
       isDone={(h) => done.has(h.id)}
       onToggle={onToggle}
+      reorder={reorder}
+      onReorderGroups={onReorderGroups}
     />,
   );
-  return { ...utils, onToggle };
+  return { ...utils, onToggle, onReorderGroups };
 }
+
+/** What dnd-kit marks as something that can be picked up and moved. */
+const draggables = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('[aria-roledescription="sortable"]'));
 
 const chip = (name: RegExp) =>
   within(screen.getByRole("navigation", { name: "Groups" })).getByRole(
@@ -159,6 +170,37 @@ describe("GroupSections", () => {
     expect(window.scrollTo).toHaveBeenCalledWith({
       top: 0,
       behavior: "smooth",
+    });
+  });
+
+  describe("reorder mode", () => {
+    it("has nothing to drag outside it", () => {
+      const { container } = renderSections();
+      expect(draggables(container)).toEqual([]);
+    });
+
+    it("picks a group up by its chip or its section's header", () => {
+      const { container } = renderSections([music, fitness], habits, {
+        reorder: true,
+      });
+      expect(draggables(container)).toEqual([
+        chip(/Music/),
+        chip(/Fitness/),
+        header("Music"),
+        header("Fitness"),
+      ]);
+    });
+
+    it("shows a grip on each header instead of the fold arrow", () => {
+      renderSections([music, fitness], habits, { reorder: true });
+      expect(header("Music")).toHaveTextContent("⠿");
+      expect(header("Music")).not.toHaveTextContent("▾");
+    });
+
+    it("still jumps to a section from its chip", async () => {
+      renderSections([music, fitness], habits, { reorder: true });
+      await userEvent.click(chip(/Fitness/));
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
     });
   });
 });
