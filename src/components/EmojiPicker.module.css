@@ -1,10 +1,14 @@
-/* Even 8-column grid */
+/* Even 8-column grid. minmax(0, …): a plain 1fr column grows to fit its
+   button, and an iPhone's emoji is wide enough to push the grid out of a
+   narrow form. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 6px;
 }
 .btn {
+  /* No default button padding: the emoji is centred, and has all the room */
+  padding: 0;
   aspect-ratio: 1;
   border-radius: 6px;
   border: 1.5px solid var(--c-border);
