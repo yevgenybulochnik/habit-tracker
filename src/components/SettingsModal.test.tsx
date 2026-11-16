@@ -23,6 +23,7 @@ const sample: PersistedState = {
   logs: { h1: { "2026-05-24": { m1: 30 } } },
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
+  groups: [],
 };
 
 // The same state as a backup from an older version: no schema version,
@@ -40,13 +41,14 @@ const oldBackup = {
   logs: { h1: { "2026-05-24": { m1: 30 } } },
 };
 
-function renderModal(onImportState = vi.fn()) {
+function renderModal(onImportState = vi.fn(), state = sample) {
   const onClose = vi.fn();
   render(
     <SettingsModal
       units={BUILTIN_UNITS}
-      habits={sample.habits}
-      logs={sample.logs}
+      habits={state.habits}
+      logs={state.logs}
+      groups={state.groups}
       onUpdateUnit={vi.fn()}
       onDeleteUnit={vi.fn()}
       onAddUnit={vi.fn()}
@@ -84,6 +86,19 @@ describe("SettingsModal — Data backup", () => {
     expect(files).toHaveLength(1);
     expect(files[0].name).toMatch(/^habit-tracker-backup-.*\.json$/);
     expect(JSON.parse(files[0].text)).toEqual(sample);
+  });
+
+  it("exports the groups and the group each habit is in", async () => {
+    const grouped: PersistedState = {
+      ...sample,
+      habits: [{ ...sample.habits[0], groupId: "g1" }],
+      groups: [{ id: "g1", name: "Fitness", emoji: "🏋️", collapsed: true }],
+    };
+    renderModal(vi.fn(), grouped);
+    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+
+    const [file] = await downloads.files();
+    expect(JSON.parse(file.text)).toEqual(grouped);
   });
 
   it("imports a valid backup file, then closes", async () => {
@@ -125,6 +140,7 @@ describe("SettingsModal — theme", () => {
         units={BUILTIN_UNITS}
         habits={sample.habits}
         logs={sample.logs}
+        groups={sample.groups}
         onUpdateUnit={vi.fn()}
         onDeleteUnit={vi.fn()}
         onAddUnit={vi.fn()}
@@ -153,6 +169,7 @@ describe("SettingsModal — units", () => {
         units={BUILTIN_UNITS}
         habits={sample.habits}
         logs={sample.logs}
+        groups={sample.groups}
         appConfig={DEFAULT_CONFIG}
         onUpdateConfig={vi.fn()}
         onImportState={vi.fn()}

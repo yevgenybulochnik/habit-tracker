@@ -148,6 +148,7 @@ describe("App saves", () => {
     logs: { gone: { "2026-05-24": { m1: 30 } } },
     units: [...BUILTIN_UNITS, km],
     config: { ...DEFAULT_CONFIG, numMonths: 6, theme: "light" },
+    groups: [],
     timers: { "gone:m1": 1_700_000_000_000 },
   };
 
@@ -191,6 +192,7 @@ describe("App changes to habits", () => {
     logs: { h1: { "2026-05-23": { m1: 30 } } },
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
+    groups: [],
   };
   const lastSaved = () => mockSave.mock.lastCall![0];
 
@@ -291,6 +293,7 @@ describe("App at midnight", () => {
     logs: { h1: { "2026-05-24": { m1: 30 } } },
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
+    groups: [],
   };
 
   beforeEach(() => {
@@ -380,6 +383,7 @@ describe("App backup import", () => {
       logs: backup.logs,
       units: BUILTIN_UNITS,
       config: DEFAULT_CONFIG,
+      groups: [],
       timers: {},
     });
   });

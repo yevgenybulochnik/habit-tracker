@@ -21,6 +21,7 @@ function state(over: Partial<AppState> = {}): AppState {
     logs: {},
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
+    groups: [],
     timers: {},
     ...over,
   };
@@ -242,10 +243,11 @@ describe("reduce: units and config", () => {
 describe("reduce: replacing everything", () => {
   const saved: PersistedState = {
     schemaVersion: SCHEMA_VERSION,
-    habits: [habit("h9")],
+    habits: [{ ...habit("h9"), groupId: "g1" }],
     logs: { h9: { "2026-11-01": { m1: 2 } } },
     units: [],
     config: { ...DEFAULT_CONFIG, theme: "light" },
+    groups: [{ id: "g1", name: "Music", emoji: "🎵", collapsed: false }],
     timers: { "h9:m1": 1000 },
   };
   const before = state({
@@ -261,6 +263,7 @@ describe("reduce: replacing everything", () => {
       logs: saved.logs,
       units: saved.units,
       config: saved.config,
+      groups: saved.groups,
       timers: saved.timers,
     });
   });
@@ -278,6 +281,7 @@ describe("reduce: replacing everything", () => {
       logs: saved.logs,
       units: saved.units,
       config: saved.config,
+      groups: saved.groups,
       timers: {},
     });
   });

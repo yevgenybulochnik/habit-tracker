@@ -30,6 +30,7 @@ const EMPTY: AppState = {
   logs: {},
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
+  groups: [],
   timers: {},
 };
 
@@ -39,7 +40,7 @@ export default function App() {
   const today = useToday();
   // Every change goes through the reducer; the effect below saves the result.
   const [state, dispatch] = useReducer(reduce, EMPTY);
-  const { habits, logs, units, config: appConfig, timers } = state;
+  const { habits, logs, units, config: appConfig, groups, timers } = state;
   const [showAdd, setShowAdd] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [showUnits, setShowUnits] = useState(false);
@@ -319,6 +320,7 @@ export default function App() {
           units={units}
           habits={habits}
           logs={logs}
+          groups={groups}
           onUpdateUnit={(id, changes) =>
             dispatch({ type: "unit/update", id, changes })
           }

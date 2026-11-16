@@ -51,6 +51,17 @@ export type Habit = {
   metrics: Metric[];
   intensityMode: IntensityMode;
   thresholds?: number[];
+  /** The group the habit is in; absent when it's in none. */
+  groupId?: string;
+};
+
+/** A named set of habits, shown as a section. A habit is in at most one. */
+export type Group = {
+  id: string;
+  name: string;
+  emoji: string;
+  /** Its section is folded shut. */
+  collapsed: boolean;
 };
 
 /** A named color palette (5 shades from empty → max intensity). */
@@ -96,6 +107,8 @@ export type PersistedState = {
   logs: Logs;
   units: Unit[];
   config: AppConfig;
+  /** In display order. */
+  groups: Group[];
   /** Running timers (absolute start timestamps) so they survive a reload. */
   timers?: Timers;
 };

@@ -6,7 +6,14 @@ import { unitFields } from "../lib/units";
 import { downloadJson } from "../download";
 import ModalShell, { type RequestClose } from "./ModalShell";
 import UnitForm from "./UnitForm";
-import type { AppConfig, Habit, Logs, PersistedState, Unit } from "../types";
+import type {
+  AppConfig,
+  Group,
+  Habit,
+  Logs,
+  PersistedState,
+  Unit,
+} from "../types";
 import modal from "./modalForm.module.css";
 import styles from "./SettingsModal.module.css";
 
@@ -14,6 +21,7 @@ type Props = {
   units: Unit[];
   habits: Habit[];
   logs: Logs;
+  groups: Group[];
   onUpdateUnit: (id: string, updates: Partial<Unit>) => void;
   onDeleteUnit: (id: string) => void;
   onAddUnit: (u: Unit) => void;
@@ -27,6 +35,7 @@ export default function SettingsModal({
   units,
   habits,
   logs,
+  groups,
   onUpdateUnit,
   onDeleteUnit,
   onAddUnit,
@@ -55,6 +64,7 @@ export default function SettingsModal({
       logs,
       units,
       config: cfg,
+      groups,
     };
     downloadJson(`habit-tracker-backup-${todayK()}.json`, state);
   };

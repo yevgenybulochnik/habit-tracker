@@ -28,6 +28,7 @@ const sample: PersistedState = {
   logs: { h1: { "2026-05-24": { m1: 30 } } },
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
+  groups: [],
 };
 
 // The same state as an older version stored it: no schema version, intensity

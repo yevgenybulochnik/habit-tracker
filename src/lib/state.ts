@@ -3,6 +3,7 @@ import { reorderById } from "./reorder";
 import type {
   AppConfig,
   DayLog,
+  Group,
   Habit,
   Logs,
   PersistedState,
@@ -17,6 +18,7 @@ export type AppState = {
   logs: Logs;
   units: Unit[];
   config: AppConfig;
+  groups: Group[];
   timers: Timers;
 };
 
@@ -141,12 +143,13 @@ export function reduce(state: AppState, action: Action): AppState {
 
     case "state/load":
     case "state/import": {
-      const { habits, logs, units, config, timers = {} } = action.state;
+      const { habits, logs, units, config, groups, timers = {} } = action.state;
       return {
         habits,
         logs,
         units,
         config,
+        groups,
         timers: action.type === "state/load" ? timers : {},
       };
     }

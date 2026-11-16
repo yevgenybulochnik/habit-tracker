@@ -48,7 +48,7 @@ const v2 = {
 
 // The same data in the current format.
 const v2Normalized: PersistedState = {
-  schemaVersion: 2,
+  schemaVersion: SCHEMA_VERSION,
   habits: [
     {
       id: "h1",
@@ -87,11 +87,12 @@ const v2Normalized: PersistedState = {
   },
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
+  groups: [],
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 2", () => {
-    expect(SCHEMA_VERSION).toBe(2);
+  it("is at schema version 3", () => {
+    expect(SCHEMA_VERSION).toBe(3);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -207,8 +208,9 @@ describe("normalizeState — rejected data", () => {
   });
 
   it("rejects data from a newer schema version", () => {
-    expect(reject({ ...v2Normalized, schemaVersion: 3 })).toBe(
-      "schema version 3 is newer than this app understands",
+    const newer = SCHEMA_VERSION + 1;
+    expect(reject({ ...v2Normalized, schemaVersion: newer })).toBe(
+      `schema version ${newer} is newer than this app understands`,
     );
     expect(reject({ ...v2Normalized, schemaVersion: "1" })).toBe(
       "schemaVersion is not a number",
@@ -396,12 +398,12 @@ describe("normalizeState — weighted sets from before the volume unit", () => {
     });
   });
 
-  it("stamps the migrated data as version 2", () => {
+  it("stamps the migrated data with the current version", () => {
     const state = accept({
       schemaVersion: 1,
       habits: [{ id: "h1", name: "Lift", metrics: [weighted] }],
     });
-    expect(state.schemaVersion).toBe(2);
+    expect(state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(state.units.map((u) => u.id)).toContain("volume");
   });
 });
@@ -499,5 +501,65 @@ describe("normalizeState — logs and timers", () => {
 
   it("adds no timers when there are none", () => {
     expect(accept({ habits: [] })).not.toHaveProperty("timers");
+  });
+});
+
+describe("normalizeState — groups", () => {
+  const music = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
+  const fitness = { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: true };
+  const groupOf = (groupId: unknown, groups: unknown = [music]) =>
+    accept({ habits: [{ id: "h1", name: "Piano", groupId }], groups })
+      .habits[0];
+
+  it("starts with no groups when there are none", () => {
+    expect(accept({ habits: [] }).groups).toEqual([]);
+  });
+
+  it("keeps groups in their stored order", () => {
+    expect(accept({ habits: [], groups: [fitness, music] }).groups).toEqual([
+      fitness,
+      music,
+    ]);
+  });
+
+  it("fills in what a group lacks: open, with a name and an emoji", () => {
+    expect(accept({ habits: [], groups: [{ id: "g1" }] }).groups).toEqual([
+      { id: "g1", name: "", emoji: "📁", collapsed: false },
+    ]);
+  });
+
+  it("rejects groups that aren't a list of objects with ids", () => {
+    expect(reject({ habits: [], groups: {} })).toBe("groups is not a list");
+    expect(reject({ habits: [], groups: [null] })).toBe(
+      "groups[0] is not an object",
+    );
+    expect(reject({ habits: [], groups: [{ name: "Music" }] })).toBe(
+      "groups[0] has no id",
+    );
+  });
+
+  it("keeps a habit's group", () => {
+    expect(groupOf("g1").groupId).toBe("g1");
+  });
+
+  it("drops a habit's group when no group has that id", () => {
+    expect(groupOf("gone")).not.toHaveProperty("groupId");
+    expect(groupOf("g1", [])).not.toHaveProperty("groupId");
+  });
+
+  it("drops a group id that isn't a string", () => {
+    expect(groupOf(7)).not.toHaveProperty("groupId");
+    expect(groupOf(null)).not.toHaveProperty("groupId");
+  });
+
+  it("gives the same result when run twice", () => {
+    const once = accept({
+      habits: [
+        { id: "h1", name: "Piano", groupId: "g1" },
+        { id: "h2", name: "Run", groupId: "gone" },
+      ],
+      groups: [music, { id: "g2" }],
+    });
+    expect(accept(once)).toEqual(once);
   });
 });

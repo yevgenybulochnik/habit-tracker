@@ -1,7 +1,8 @@
-import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
+import { BUILTIN_UNITS, DEFAULT_CONFIG, DEFAULT_GROUP_EMOJI } from "./defaults";
 import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
 import type {
   AppConfig,
+  Group,
   Habit,
   Logs,
   Metric,
@@ -16,8 +17,11 @@ import type {
  *
  * - 1: every default filled in, and the version stamped.
  * - 2: weighted sets are measured in the `volume` unit instead of `reps`.
+ * - 3: habits can be in groups (`groups`, a habit's `groupId`). Nothing is
+ *   migrated; the bump makes an older app refuse the data rather than drop
+ *   the groups the next time it saves.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type NormalizeResult =
   | { ok: true; state: PersistedState }
@@ -87,8 +91,13 @@ function weightedToVolume(m: Metric): Metric {
   return isWeighted && m.unit === "reps" ? { ...m, unit: "volume" } : m;
 }
 
-function normalizeHabit(raw: unknown, path: string, version: number): Habit {
-  const h = withId(raw, path);
+function normalizeHabit(
+  raw: unknown,
+  path: string,
+  version: number,
+  groupIds: Set<string>,
+): Habit {
+  const { groupId, ...h } = withId(raw, path);
   const stored = list(h.metrics, `${path}.metrics`).map((m, i) =>
     normalizeMetric(m, `${path}.metrics[${i}]`),
   );
@@ -103,7 +112,23 @@ function normalizeHabit(raw: unknown, path: string, version: number): Habit {
       h.intensityMode === "coverage" || (moved && hasMixedUnits(metrics))
         ? "coverage"
         : "total",
+    // Only a group that exists; otherwise the habit is in none.
+    ...(typeof groupId === "string" && groupIds.has(groupId) && { groupId }),
   } as Habit;
+}
+
+/** Groups in their stored order, each open unless stored shut. */
+function normalizeGroups(raw: unknown): Group[] {
+  return list(raw, "groups").map((g, i) => {
+    const group = withId(g, `groups[${i}]`);
+    return {
+      ...group,
+      name: typeof group.name === "string" ? group.name : "",
+      emoji:
+        typeof group.emoji === "string" ? group.emoji : DEFAULT_GROUP_EMOJI,
+      collapsed: group.collapsed === true,
+    };
+  });
 }
 
 function normalizeLogs(raw: unknown): Logs {
@@ -163,14 +188,17 @@ function normalize(raw: unknown): PersistedState {
     reject(`schema version ${version} is newer than this app understands`);
   if (raw.habits == null) reject("habits is missing");
   if (!Array.isArray(raw.habits)) reject("habits is not a list");
+  const groups = normalizeGroups(raw.groups);
+  const groupIds = new Set(groups.map((g) => g.id));
   return {
     schemaVersion: SCHEMA_VERSION,
     habits: raw.habits.map((h, i) =>
-      normalizeHabit(h, `habits[${i}]`, version),
+      normalizeHabit(h, `habits[${i}]`, version, groupIds),
     ),
     logs: normalizeLogs(raw.logs),
     units: normalizeUnits(raw.units),
     config: normalizeConfig(raw.config),
+    groups,
     ...(raw.timers != null && { timers: normalizeTimers(raw.timers) }),
   };
 }
@@ -180,11 +208,12 @@ function normalize(raw: unknown): PersistedState {
  * the rest of the app never has to fill in defaults for older data.
  *
  * Absent pieces get their defaults: a habit's `metrics` and `intensityMode`, a
- * sets metric's `setFields` and `setValue`, the config's settings, and the
- * built-in units. Data from an older `schemaVersion` is migrated (see
+ * sets metric's `setFields` and `setValue`, the config's settings, the
+ * built-in units, and the groups (none) with a group's name, emoji and
+ * `collapsed`. A habit's `groupId` is dropped unless that group exists. Data from an older `schemaVersion` is migrated (see
  * `SCHEMA_VERSION`). Data whose structure can't be read is rejected with a reason:
- * a container of the wrong type, a habit, metric, set field or unit without an
- * id, a unit without its number lists, or a `schemaVersion` newer than this
+ * a container of the wrong type, a habit, metric, set field, unit or group
+ * without an id, a unit without its number lists, or a `schemaVersion` newer than this
  * code. Other values (names, colours, logged amounts) are kept as stored.
  *
  * Running it on its own output changes nothing.
