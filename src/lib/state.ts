@@ -1,3 +1,4 @@
+import { setMembers } from "./groups";
 import { setDayLog } from "./logs";
 import { reorderById } from "./reorder";
 import type {
@@ -42,6 +43,13 @@ export type Action =
   | { type: "unit/update"; id: string; changes: Partial<Unit> }
   | { type: "unit/delete"; id: string }
   | { type: "config/update"; changes: Partial<AppConfig> }
+  | { type: "group/add"; group: Group }
+  | { type: "group/update"; id: string; changes: Partial<Omit<Group, "id">> }
+  /** Make these habits the group's: see `setMembers`. */
+  | { type: "group/setMembers"; id: string; habitIds: string[] }
+  /** Remove a group; its habits stay, in no group. */
+  | { type: "group/delete"; id: string }
+  | { type: "group/reorder"; activeId: string; overId: string }
   /** State read from storage, running timers included. */
   | { type: "state/load"; state: PersistedState }
   /** A backup replacing everything; its timers are long stale. */
@@ -140,6 +148,33 @@ export function reduce(state: AppState, action: Action): AppState {
       return { ...state, units: state.units.filter((u) => u.id !== action.id) };
     case "config/update":
       return { ...state, config: { ...state.config, ...action.changes } };
+
+    case "group/add":
+      if (state.groups.some((g) => g.id === action.group.id)) return state;
+      return { ...state, groups: [...state.groups, action.group] };
+    case "group/update":
+      return {
+        ...state,
+        groups: state.groups.map((g) =>
+          g.id === action.id ? { ...g, ...action.changes } : g,
+        ),
+      };
+    case "group/setMembers":
+      return {
+        ...state,
+        habits: setMembers(state.habits, action.id, action.habitIds),
+      };
+    case "group/delete":
+      return {
+        ...state,
+        groups: state.groups.filter((g) => g.id !== action.id),
+        habits: setMembers(state.habits, action.id, []),
+      };
+    case "group/reorder":
+      return {
+        ...state,
+        groups: reorderById(state.groups, action.activeId, action.overId),
+      };
 
     case "state/load":
     case "state/import": {

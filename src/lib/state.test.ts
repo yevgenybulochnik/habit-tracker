@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { reduce, type Action, type AppState } from "./state";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
 import { SCHEMA_VERSION } from "./normalize";
-import type { Habit, PersistedState, Unit } from "../types";
+import type { Group, Habit, PersistedState, Unit } from "../types";
 
 function habit(id: string, name = id): Habit {
   return {
@@ -237,6 +237,100 @@ describe("reduce: units and config", () => {
       changes: { dashView: "calendar" },
     });
     expect(out.config).toEqual({ ...DEFAULT_CONFIG, dashView: "calendar" });
+  });
+});
+
+describe("reduce: groups", () => {
+  const music: Group = {
+    id: "g1",
+    name: "Music",
+    emoji: "🎵",
+    collapsed: false,
+  };
+  const fitness: Group = {
+    id: "g2",
+    name: "Fitness",
+    emoji: "🏋️",
+    collapsed: false,
+  };
+  const inGroup = (id: string, groupId: string) => ({ ...habit(id), groupId });
+
+  it("adds a group at the end", () => {
+    const out = run(state({ groups: [music] }), {
+      type: "group/add",
+      group: fitness,
+    });
+    expect(out.groups).toEqual([music, fitness]);
+  });
+
+  it("ignores a group whose id is taken", () => {
+    const out = run(state({ groups: [music] }), {
+      type: "group/add",
+      group: { ...fitness, id: "g1" },
+    });
+    expect(out.groups).toEqual([music]);
+  });
+
+  it("adds a habit straight into a group", () => {
+    const { id: _, ...props } = inGroup("h1", "g1");
+    const out = run(state({ groups: [music] }), {
+      type: "habit/add",
+      id: "h1",
+      habit: props,
+    });
+    expect(out.habits[0].groupId).toBe("g1");
+  });
+
+  it("renames a group, changes its emoji, or folds it shut", () => {
+    const s = state({ groups: [music, fitness] });
+    const out = run(s, {
+      type: "group/update",
+      id: "g1",
+      changes: { name: "Practice", emoji: "🎹", collapsed: true },
+    });
+    expect(out.groups).toEqual([
+      { id: "g1", name: "Practice", emoji: "🎹", collapsed: true },
+      fitness,
+    ]);
+  });
+
+  it("sets a group's habits, moving them from other groups", () => {
+    const s = state({
+      groups: [music, fitness],
+      habits: [inGroup("piano", "g1"), inGroup("run", "g2"), habit("water")],
+    });
+    const out = run(s, {
+      type: "group/setMembers",
+      id: "g1",
+      habitIds: ["run", "water"],
+    });
+    expect(out.habits.map((h) => [h.id, h.groupId])).toEqual([
+      ["piano", undefined],
+      ["run", "g1"],
+      ["water", "g1"],
+    ]);
+  });
+
+  it("deletes a group, leaving its habits in no group", () => {
+    const s = state({
+      groups: [music, fitness],
+      habits: [inGroup("piano", "g1"), inGroup("run", "g2")],
+      logs: { piano: { "2026-11-01": { m1: 20 } } },
+    });
+    const out = run(s, { type: "group/delete", id: "g1" });
+    expect(out.groups).toEqual([fitness]);
+    expect(out.habits).toEqual([habit("piano"), inGroup("run", "g2")]);
+    expect(out.logs).toEqual(s.logs);
+  });
+
+  it("moves a group to where another one is", () => {
+    const third: Group = { ...music, id: "g3", name: "Mind" };
+    const out = run(state({ groups: [music, fitness, third] }), {
+      type: "group/reorder",
+      activeId: "g3",
+      overId: "g1",
+    });
+    expect(out.groups.map((g) => g.id)).toEqual(["g3", "g1", "g2"]);
   });
 });
 
