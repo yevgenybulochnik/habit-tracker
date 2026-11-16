@@ -20,9 +20,14 @@ function setup(options?: Parameters<typeof useLongPress>[1]) {
   const hook = renderHook(({ cb, opts }) => useLongPress(cb, opts), {
     initialProps: { cb: onLongPress, opts: options },
   });
-  const fire = (name: keyof LongPressHandlers) =>
-    act(() => hook.result.current.handlers[name]());
+  const fire = (name: keyof LongPressHandlers, event = touchAt(0, 0)) =>
+    act(() => hook.result.current.handlers[name](event));
   return { onLongPress, hook, fire };
+}
+
+/** A touch event's parts the hook reads, with a finger at (x, y). */
+function touchAt(x: number, y: number) {
+  return { touches: [{ clientX: x, clientY: y }], preventDefault: vi.fn() };
 }
 
 describe("useLongPress", () => {
@@ -82,6 +87,50 @@ describe("useLongPress", () => {
     expect(onLongPress).not.toHaveBeenCalled();
     advance(200);
     expect(onLongPress).toHaveBeenCalledOnce();
+  });
+
+  it("is cancelled when the finger moves more than 10px", () => {
+    const { onLongPress, hook, fire } = setup();
+    fire("onTouchStart", touchAt(100, 100));
+    fire("onTouchMove", touchAt(100, 111));
+    expect(hook.result.current.pressing).toBe(false);
+    advance(1000);
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it("isn't cancelled by a finger wobbling in place", () => {
+    const { onLongPress, fire } = setup();
+    fire("onTouchStart", touchAt(100, 100));
+    fire("onTouchMove", touchAt(106, 92));
+    advance(500);
+    expect(onLongPress).toHaveBeenCalledOnce();
+  });
+
+  it("stops the release after a hold from tapping what's under the finger", () => {
+    const { fire } = setup();
+    fire("onTouchStart");
+    advance(500);
+    const release = touchAt(0, 0);
+    fire("onTouchEnd", release);
+    expect(release.preventDefault).toHaveBeenCalled();
+  });
+
+  it("leaves the release of a short tap alone", () => {
+    const { fire } = setup();
+    fire("onTouchStart");
+    advance(200);
+    const release = touchAt(0, 0);
+    fire("onTouchEnd", release);
+    expect(release.preventDefault).not.toHaveBeenCalled();
+
+    // Nor does a hold carry over to the next tap.
+    fire("onTouchStart");
+    advance(500);
+    fire("onTouchEnd");
+    fire("onTouchStart");
+    const next = touchAt(0, 0);
+    fire("onTouchEnd", next);
+    expect(next.preventDefault).not.toHaveBeenCalled();
   });
 
   it("calls the latest callback", () => {
