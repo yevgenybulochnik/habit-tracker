@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { Palette } from "../types";
+import { fmtClock, fmtVal } from "../lib/format";
 import styles from "./TimerButton.module.css";
 
 type Props = {
@@ -42,8 +43,7 @@ export default function TimerButton({
     if (running) onStop();
     else onStart();
   };
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
+  const clock = fmtClock(elapsed);
 
   // Per-habit palette → CSS vars used by :hover and the .running modifier.
   const palVars = {
@@ -62,14 +62,10 @@ export default function TimerButton({
           <span className={styles.icon}>{running ? "■" : "▶"}</span>
           {running ? "Stop" : "Timer"}
         </button>
-        {running && (
-          <span className={styles.time}>
-            {mm}:{ss}
-          </span>
-        )}
+        {running && <span className={styles.time}>{clock}</span>}
         {running && (
           <span className={styles.approx}>
-            ≈ {Math.max(1, Math.round(elapsed / 60))}m
+            ≈ {fmtVal(Math.max(1, Math.round(elapsed / 60)), "min")}
           </span>
         )}
       </div>
@@ -84,7 +80,7 @@ export default function TimerButton({
       className={`${styles.btn} ${styles.inline}${running ? ` ${styles.running}` : ""}`}
     >
       <span className={styles.icon}>{running ? "■" : "▶"}</span>
-      {running ? `${mm}:${ss}` : ""}
+      {running ? clock : ""}
     </button>
   );
 }

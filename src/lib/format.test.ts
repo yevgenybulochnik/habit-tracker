@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmtVal, fmtSets } from "./format";
+import { fmtVal, fmtSets, fmtClock } from "./format";
 import { setsPreset } from "./metrics";
 import type { SetsMetric } from "../types";
 
@@ -83,5 +83,17 @@ describe("fmtSets", () => {
   });
   it("returns an em-dash for empty", () => {
     expect(fmtSets([], repsM)).toBe("—");
+  });
+});
+
+describe("fmtClock", () => {
+  it("shows minutes and seconds under an hour", () => {
+    expect(fmtClock(0)).toBe("00:00");
+    expect(fmtClock(65)).toBe("01:05");
+    expect(fmtClock(3599)).toBe("59:59");
+  });
+  it("rolls minutes over into hours", () => {
+    expect(fmtClock(3600)).toBe("1:00:00");
+    expect(fmtClock(2 * 3600 + 5 * 60 + 30)).toBe("2:05:30");
   });
 });
