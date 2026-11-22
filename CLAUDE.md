@@ -183,12 +183,20 @@ count done today), the habits in no group, then a collapsible section per group;
 to its section and the chip of the section under the bar is highlighted. Each list of cards
 (`renderList` in `App`) is its own `SortableHabits` drag context, so reorder mode moves a card
 within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
-a header opens `GroupEditModal` (name, emoji, its habits as a checklist, delete).
+a header opens `GroupEditPage` (name, emoji, its habits as a checklist, delete).
 
-**The Routines page.** The header's stopwatch slides the Routines page (`RoutinesView`: the
-list, and `RoutineEditor` as a page of its own) over the habits, which stay mounted underneath
-with the `.away` class (hidden and taking no height, not `display: none`, so cards keep their
-state) and get their scroll position back on the way back. `Routines`, mounted for as long as
+**Pages.** The forms and the Routines page are pages that slide in over the habits (`slide`, a
+view transition), not dialogs: `App` holds the open `page` (the Routines page, `NewHabitPage`,
+`EditHabitPage` held from a card, or `GroupEditPage` held from a chip or section header), and
+`openPage`/`closePage` do the slide and the scroll. The habits stay mounted underneath with the
+`.away` class (hidden and taking no height, not `display: none`, so cards keep their state) and
+get their scroll position back on the way back. A page is a `PageShell` (`PageHeader`, with the
+way back and the title as the page's `h1`, then a panel); a form closes through
+`ClosePage(then?)`, where `then` (the save or delete) runs as the page slides back, so the
+habits come back already showing it. Settings is the one dialog left (`ModalShell`).
+
+**The Routines page.** The header's stopwatch opens the Routines page (`RoutinesView`: the
+list, and `RoutineEditor` as a page of its own). `Routines`, mounted for as long as
 `App` is, holds the engine (`useRoutineRun`) and shows the page while it's open and a run over
 everything: `RoutineRunner` full screen (the `RoutineRing` timeline ring, the controls, and the
 log, a section per habit as the run reaches it: a counted one asks for its count, the others
@@ -218,17 +226,18 @@ collapsed. Selection highlight and `pal` are kept out of the main build (separat
 anything in the build that depends on `today` or on the selection must be set on the merged
 (enter + update) selection, not only on enter.
 
-**Modals and forms.** Every modal renders through `ModalShell`, which passes its content a
+**Modals and forms.** A modal (Settings) renders through `ModalShell`, which passes its content a
 `requestClose(then?)`: it plays the close animation, then runs `then` and `onClose`. The
 duration is `CLOSE_MS`, handed to the CSS as `--modal-close-ms`, so don't add close timers in a
 modal. Units are added and edited through the shared `UnitForm` (Settings and the habit form's
 "+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
 habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
 Emojis are picked from a grid, the shared `EmojiPicker` (the habit form's icon, and a group's
-in `GroupField` and `GroupEditModal`), never typed: a text box is no way to choose one on a phone.
+in `GroupField` and `GroupEditPage`), never typed: a text box is no way to choose one on a phone.
 Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
 finger moving more than 10px, and after a hold fires it prevents the release's click: the
-editor it opened is under the finger.
+editor it opened is under the finger. While a slide runs, a touch or click lands on the page as a
+whole, so E2E specs wait for it with `slideDone` (`createHabit` does).
 Components send edits up from their **event handlers, not from effects** watching local state:
 `DayEditor` writes each edit as it's made (mounting writes nothing, even under StrictMode's
 double effects), and `SetInput` derives its carried-over weight from the latest set instead of
