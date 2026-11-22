@@ -1,0 +1,213 @@
+.hint {
+  font-size: 12px;
+  color: var(--c-muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+.listActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.smallBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.smallBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lbl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+}
+.lblText {
+  composes: lbl from "../../styles/shared.module.css";
+}
+.inp {
+  composes: inp from "../../styles/shared.module.css";
+  text-transform: none;
+  letter-spacing: normal;
+}
+.roundsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.roundsRow .lblText {
+  min-width: 96px;
+  margin: 0;
+}
+.rounds {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* A step: its grip, then the habit and × on top with its time and
+   what it logs below (a break is one line: label, time, ×). */
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 1fr 30px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 8px 8px 8px 4px;
+  background: var(--c-bg);
+}
+.step.break {
+  border-style: dashed;
+}
+.step.dragging {
+  z-index: 10;
+  border-color: var(--c-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+/* Held and dragged, never scrolled: touch-action isn't inherited, so its
+   icon gets it too. */
+.grip,
+.grip * {
+  touch-action: none;
+}
+.grip {
+  align-self: stretch;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--c-dim);
+  cursor: grab;
+}
+.work .grip {
+  grid-row: span 2;
+}
+.grip:hover,
+.grip:focus-visible {
+  color: var(--c-text);
+}
+.dragging .grip {
+  cursor: grabbing;
+  color: var(--c-accent);
+}
+.stepSub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.work .stepSub {
+  grid-column: 2 / 4;
+}
+.sel {
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+}
+.secs {
+  flex: 0 0 auto;
+  width: 78px;
+}
+.breakLabel {
+  flex: 1;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.capture {
+  flex: 1;
+  font-size: 11px;
+  color: var(--c-muted);
+}
+/* For time or for a count: a counted habit's choice. */
+.by {
+  flex: 0 0 auto;
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.byBtn {
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: var(--c-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.byBtn.on {
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+}
+.count {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--c-muted);
+}
+.countInput {
+  width: 52px;
+  text-align: center;
+}
+.remove {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.remove:hover,
+.remove:focus-visible {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+}
+.noSteps {
+  margin: 0 0 10px;
+  padding: 18px 12px;
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--c-dim);
+  text-align: center;
+}
+.deleteBtn {
+  margin-right: auto;
+  color: var(--c-danger);
+  border-color: var(--c-danger);
+}
