@@ -239,6 +239,19 @@ describe("App changes to habits", () => {
     expect(mockSave).not.toHaveBeenCalled();
   });
 
+  it("opens Settings on a page of its own, and Done comes back", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(await screen.findByTitle("Settings"));
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("heading", { name: "Settings" })).toBeNull();
+  });
+
   it("makes a new habit on a page of its own, in place of the habits", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);

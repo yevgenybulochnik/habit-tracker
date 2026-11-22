@@ -23,7 +23,7 @@ import GroupSections from "./components/GroupSections";
 import GroupEditPage from "./components/GroupEditPage";
 import NewHabitPage from "./components/NewHabitPage";
 import EditHabitPage from "./components/EditHabitPage";
-import SettingsModal from "./components/SettingsModal";
+import SettingsPage from "./components/SettingsPage";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
 import type { ClosePage } from "./components/PageShell";
@@ -37,7 +37,8 @@ type Page =
   | { kind: "routines" }
   | { kind: "newHabit" }
   | { kind: "editHabit"; habit: Habit }
-  | { kind: "editGroup"; id: string };
+  | { kind: "editGroup"; id: string }
+  | { kind: "settings" };
 
 const EMPTY: AppState = {
   habits: [],
@@ -64,7 +65,6 @@ export default function App() {
     routines,
     timers,
   } = state;
-  const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -280,7 +280,7 @@ export default function App() {
                 <Icon name="stopwatch" size={18} />
               </button>
               <button
-                onClick={() => setShowUnits(true)}
+                onClick={() => openPage({ kind: "settings" })}
                 title="Settings"
                 className={styles.iconBtn}
               >
@@ -417,6 +417,29 @@ export default function App() {
             onClose={closePage}
           />
         )}
+        {page?.kind === "settings" && (
+          <SettingsPage
+            units={units}
+            habits={habits}
+            logs={logs}
+            groups={groups}
+            routines={routines}
+            onUpdateUnit={(id, changes) =>
+              dispatch({ type: "unit/update", id, changes })
+            }
+            onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
+            onAddUnit={addUnit}
+            appConfig={appConfig}
+            onUpdateConfig={(config) =>
+              dispatch({ type: "config/update", changes: config })
+            }
+            // SettingsPage has already normalized the backup
+            onImportState={(imported) =>
+              dispatch({ type: "state/import", state: imported })
+            }
+            onClose={closePage}
+          />
+        )}
         {page?.kind === "editHabit" && (
           <EditHabitPage
             habit={page.habit}
@@ -430,31 +453,6 @@ export default function App() {
           />
         )}
       </div>
-
-      {/* Settings: a dialog */}
-      {showUnits && (
-        <SettingsModal
-          units={units}
-          habits={habits}
-          logs={logs}
-          groups={groups}
-          routines={routines}
-          onUpdateUnit={(id, changes) =>
-            dispatch({ type: "unit/update", id, changes })
-          }
-          onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
-          onAddUnit={addUnit}
-          appConfig={appConfig}
-          onUpdateConfig={(config) =>
-            dispatch({ type: "config/update", changes: config })
-          }
-          // SettingsModal has already normalized the backup
-          onImportState={(imported) =>
-            dispatch({ type: "state/import", state: imported })
-          }
-          onClose={() => setShowUnits(false)}
-        />
-      )}
     </div>
   );
 }
