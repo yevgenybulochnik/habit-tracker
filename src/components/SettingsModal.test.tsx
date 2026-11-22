@@ -24,6 +24,7 @@ const sample: PersistedState = {
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
   groups: [],
+  routines: [],
 };
 
 // The same state as a backup from an older version: no schema version,
@@ -49,6 +50,7 @@ function renderModal(onImportState = vi.fn(), state = sample) {
       habits={state.habits}
       logs={state.logs}
       groups={state.groups}
+      routines={state.routines}
       onUpdateUnit={vi.fn()}
       onDeleteUnit={vi.fn()}
       onAddUnit={vi.fn()}
@@ -101,6 +103,37 @@ describe("SettingsModal — Data backup", () => {
     expect(JSON.parse(file.text)).toEqual(grouped);
   });
 
+  it("exports the routines", async () => {
+    const withRoutine: PersistedState = {
+      ...sample,
+      routines: [
+        {
+          id: "r1",
+          name: "Morning",
+          rounds: 2,
+          prep: 5,
+          steps: [
+            {
+              kind: "habit",
+              id: "s1",
+              habitId: "h1",
+              metricId: "m1",
+              by: "time",
+              seconds: 60,
+              count: 10,
+            },
+            { kind: "break", id: "s2", seconds: 30 },
+          ],
+        },
+      ],
+    };
+    renderModal(vi.fn(), withRoutine);
+    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+
+    const [file] = await downloads.files();
+    expect(JSON.parse(file.text)).toEqual(withRoutine);
+  });
+
   it("imports a valid backup file, then closes", async () => {
     const { onImportState, onClose } = renderModal();
     await importFile(JSON.stringify(sample));
@@ -141,6 +174,7 @@ describe("SettingsModal — theme", () => {
         habits={sample.habits}
         logs={sample.logs}
         groups={sample.groups}
+        routines={sample.routines}
         onUpdateUnit={vi.fn()}
         onDeleteUnit={vi.fn()}
         onAddUnit={vi.fn()}
@@ -170,6 +204,7 @@ describe("SettingsModal — units", () => {
         habits={sample.habits}
         logs={sample.logs}
         groups={sample.groups}
+        routines={sample.routines}
         appConfig={DEFAULT_CONFIG}
         onUpdateConfig={vi.fn()}
         onImportState={vi.fn()}

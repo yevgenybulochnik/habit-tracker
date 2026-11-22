@@ -88,11 +88,12 @@ const v2Normalized: PersistedState = {
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
   groups: [],
+  routines: [],
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 3", () => {
-    expect(SCHEMA_VERSION).toBe(3);
+  it("is at schema version 4", () => {
+    expect(SCHEMA_VERSION).toBe(4);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -559,6 +560,138 @@ describe("normalizeState — groups", () => {
         { id: "h2", name: "Run", groupId: "gone" },
       ],
       groups: [music, { id: "g2" }],
+    });
+    expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeState — routines", () => {
+  const pushUps = {
+    id: "push",
+    name: "Push-ups",
+    metrics: [{ id: "r", name: "Reps", unit: "reps" }],
+  };
+  const reading = {
+    id: "read",
+    name: "Reading",
+    metrics: [{ id: "m", name: "Time", unit: "min" }],
+  };
+  const pushStep = {
+    kind: "habit",
+    id: "s1",
+    habitId: "push",
+    metricId: "r",
+    by: "count",
+    seconds: 45,
+    count: 12,
+  };
+  const pause = { kind: "break", id: "s2", seconds: 20 };
+  const morning = {
+    id: "r1",
+    name: "Morning",
+    rounds: 3,
+    prep: 0,
+    steps: [pushStep, pause],
+  };
+  const routinesOf = (routines: unknown) =>
+    accept({ habits: [pushUps, reading], routines }).routines;
+
+  it("starts with no routines when there are none", () => {
+    expect(accept({ habits: [] }).routines).toEqual([]);
+  });
+
+  it("keeps routines in their stored order, as they are", () => {
+    const evening = { ...morning, id: "r2", name: "Evening" };
+    expect(routinesOf([evening, morning])).toEqual([evening, morning]);
+  });
+
+  it("fills in what a routine lacks", () => {
+    expect(routinesOf([{ id: "r1" }])).toEqual([
+      { id: "r1", name: "", rounds: 1, prep: 5, steps: [] },
+    ]);
+    expect(
+      routinesOf([{ ...morning, rounds: 0, prep: -1, name: 7 }])[0],
+    ).toMatchObject({ name: "", rounds: 1, prep: 5 });
+  });
+
+  it("fills in what a step lacks: timed, a minute, a count of 10", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [
+          { kind: "habit", id: "a", habitId: "push", metricId: "r" },
+          { kind: "break", id: "b" },
+        ],
+      },
+    ]);
+    expect(r.steps).toEqual([
+      {
+        kind: "habit",
+        id: "a",
+        habitId: "push",
+        metricId: "r",
+        by: "time",
+        seconds: 60,
+        count: 10,
+      },
+      { kind: "break", id: "b", seconds: 30 },
+    ]);
+  });
+
+  it("drops a step whose habit or metric is gone", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [
+          { ...pushStep, habitId: "gone" },
+          { ...pushStep, id: "s3", metricId: "gone" },
+          { ...pushStep, id: "s4", habitId: 7 },
+          pause,
+        ],
+      },
+    ]);
+    expect(r.steps).toEqual([pause]);
+  });
+
+  it("times a counted step on a metric that doesn't count", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [{ ...pushStep, habitId: "read", metricId: "m" }],
+      },
+    ]);
+    expect(r.steps[0]).toMatchObject({ by: "time", seconds: 45 });
+  });
+
+  it("rejects routines and steps that aren't lists of objects with ids", () => {
+    expect(reject({ habits: [], routines: {} })).toBe("routines is not a list");
+    expect(reject({ habits: [], routines: [{ name: "x" }] })).toBe(
+      "routines[0] has no id",
+    );
+    expect(reject({ habits: [], routines: [{ id: "r", steps: 1 }] })).toBe(
+      "routines[0].steps is not a list",
+    );
+    expect(
+      reject({
+        habits: [],
+        routines: [{ id: "r", steps: [{ kind: "break" }] }],
+      }),
+    ).toBe("routines[0].steps[0] has no id");
+  });
+
+  it("rejects a step that's neither a habit nor a break", () => {
+    expect(
+      reject({
+        habits: [],
+        routines: [{ id: "r", steps: [{ id: "s", kind: "rest" }] }],
+      }),
+    ).toBe("routines[0].steps[0] is neither a habit nor a break");
+  });
+
+  it("gives the same result when run twice", () => {
+    const once = accept({
+      habits: [pushUps, reading],
+      routines: [morning, { id: "r2" }],
     });
     expect(accept(once)).toEqual(once);
   });

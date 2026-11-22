@@ -150,6 +150,7 @@ describe("App saves", () => {
     units: [...BUILTIN_UNITS, km],
     config: { ...DEFAULT_CONFIG, numMonths: 6, theme: "light" },
     groups: [],
+    routines: [],
     timers: { "gone:m1": 1_700_000_000_000 },
   };
 
@@ -194,6 +195,7 @@ describe("App changes to habits", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [],
+    routines: [],
   };
   const lastSaved = () => mockSave.mock.lastCall![0];
 
@@ -371,6 +373,7 @@ describe("App groups", () => {
       { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
       { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
     ],
+    routines: [],
   };
 
   beforeEach(() => {
@@ -503,6 +506,7 @@ describe("App at midnight", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [],
+    routines: [],
   };
 
   beforeEach(() => {
@@ -593,6 +597,7 @@ describe("App backup import", () => {
       units: BUILTIN_UNITS,
       config: DEFAULT_CONFIG,
       groups: [],
+      routines: [],
       timers: {},
     });
   });

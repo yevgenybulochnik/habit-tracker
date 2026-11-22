@@ -1,5 +1,6 @@
 import { BUILTIN_UNITS, DEFAULT_CONFIG, DEFAULT_GROUP_EMOJI } from "./defaults";
 import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
+import { DEFAULT_COUNT, fitRoutine, PREP_SECONDS } from "./routines";
 import type {
   AppConfig,
   Group,
@@ -7,6 +8,8 @@ import type {
   Logs,
   Metric,
   PersistedState,
+  Routine,
+  RoutineStep,
   SetField,
   Timers,
   Unit,
@@ -20,8 +23,10 @@ import type {
  * - 3: habits can be in groups (`groups`, a habit's `groupId`). Nothing is
  *   migrated; the bump makes an older app refuse the data rather than drop
  *   the groups the next time it saves.
+ * - 4: routines (`routines`). Nothing is migrated; the bump is for the same
+ *   reason as 3's.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export type NormalizeResult =
   | { ok: true; state: PersistedState }
@@ -131,6 +136,60 @@ function normalizeGroups(raw: unknown): Group[] {
   });
 }
 
+/** `v` when it's a number above `min` (or at it, with `orEqual`), else `fallback`. */
+function numberAbove(
+  v: unknown,
+  min: number,
+  fallback: number,
+  orEqual = false,
+) {
+  return typeof v === "number" &&
+    Number.isFinite(v) &&
+    (v > min || (orEqual && v === min))
+    ? v
+    : fallback;
+}
+
+function normalizeStep(raw: unknown, path: string): RoutineStep {
+  const s = withId(raw, path);
+  if (s.kind === "break")
+    return { kind: "break", id: s.id, seconds: numberAbove(s.seconds, 0, 30) };
+  if (s.kind !== "habit") reject(`${path} is neither a habit nor a break`);
+  return {
+    kind: "habit",
+    id: s.id,
+    // Not a string: no habit has it, so `fitRoutine` drops the step.
+    habitId: typeof s.habitId === "string" ? s.habitId : "",
+    metricId: typeof s.metricId === "string" ? s.metricId : "",
+    by: s.by === "count" ? "count" : "time",
+    seconds: numberAbove(s.seconds, 0, 60),
+    count: numberAbove(s.count, 0, DEFAULT_COUNT),
+  };
+}
+
+/** Routines in their stored order, each with what it lacks filled in and only
+ *  the steps that still stand (see `fitRoutine`). */
+function normalizeRoutines(raw: unknown, habits: Habit[]): Routine[] {
+  return list(raw, "routines").map((r, i) => {
+    const path = `routines[${i}]`;
+    const routine = withId(r, path);
+    const steps = list(routine.steps, `${path}.steps`).map((s, j) =>
+      normalizeStep(s, `${path}.steps[${j}]`),
+    );
+    const rounds = numberAbove(routine.rounds, 0, 1);
+    return fitRoutine(
+      {
+        id: routine.id,
+        name: typeof routine.name === "string" ? routine.name : "",
+        rounds: Number.isInteger(rounds) ? rounds : 1,
+        prep: numberAbove(routine.prep, 0, PREP_SECONDS, true),
+        steps,
+      },
+      habits,
+    );
+  });
+}
+
 function normalizeLogs(raw: unknown): Logs {
   if (raw == null) return {};
   if (!isObj(raw)) reject("logs is not an object");
@@ -190,15 +249,17 @@ function normalize(raw: unknown): PersistedState {
   if (!Array.isArray(raw.habits)) reject("habits is not a list");
   const groups = normalizeGroups(raw.groups);
   const groupIds = new Set(groups.map((g) => g.id));
+  const habits = raw.habits.map((h, i) =>
+    normalizeHabit(h, `habits[${i}]`, version, groupIds),
+  );
   return {
     schemaVersion: SCHEMA_VERSION,
-    habits: raw.habits.map((h, i) =>
-      normalizeHabit(h, `habits[${i}]`, version, groupIds),
-    ),
+    habits,
     logs: normalizeLogs(raw.logs),
     units: normalizeUnits(raw.units),
     config: normalizeConfig(raw.config),
     groups,
+    routines: normalizeRoutines(raw.routines, habits),
     ...(raw.timers != null && { timers: normalizeTimers(raw.timers) }),
   };
 }
@@ -209,11 +270,15 @@ function normalize(raw: unknown): PersistedState {
  *
  * Absent pieces get their defaults: a habit's `metrics` and `intensityMode`, a
  * sets metric's `setFields` and `setValue`, the config's settings, the
- * built-in units, and the groups (none) with a group's name, emoji and
- * `collapsed`. A habit's `groupId` is dropped unless that group exists. Data from an older `schemaVersion` is migrated (see
- * `SCHEMA_VERSION`). Data whose structure can't be read is rejected with a reason:
- * a container of the wrong type, a habit, metric, set field, unit or group
- * without an id, a unit without its number lists, or a `schemaVersion` newer than this
+ * built-in units, the groups (none) with a group's name, emoji and
+ * `collapsed`, and the routines (none) with a routine's name, rounds and
+ * get-ready and a step's timing. A habit's `groupId` is dropped unless that
+ * group exists, and a routine's step unless its habit and metric do (see
+ * `fitRoutine`). Data from an older `schemaVersion` is migrated (see
+ * `SCHEMA_VERSION`). Data whose structure can't be read is rejected with a
+ * reason: a container of the wrong type, a habit, metric, set field, unit,
+ * group, routine or step without an id, a step that's neither a habit nor a
+ * break, a unit without its number lists, or a `schemaVersion` newer than this
  * code. Other values (names, colours, logged amounts) are kept as stored.
  *
  * Running it on its own output changes nothing.
