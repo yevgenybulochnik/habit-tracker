@@ -22,7 +22,7 @@ import HabitCard from "./components/HabitCard";
 import GroupSections from "./components/GroupSections";
 import GroupEditModal from "./components/GroupEditModal";
 import NewHabitPage from "./components/NewHabitPage";
-import EditHabitModal from "./components/EditHabitModal";
+import EditHabitPage from "./components/EditHabitPage";
 import SettingsModal from "./components/SettingsModal";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
@@ -33,7 +33,10 @@ import type { Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
 
 /** A page slid over the habits, in their place. */
-type Page = { kind: "routines" } | { kind: "newHabit" };
+type Page =
+  | { kind: "routines" }
+  | { kind: "newHabit" }
+  | { kind: "editHabit"; habit: Habit };
 
 const EMPTY: AppState = {
   habits: [],
@@ -60,7 +63,6 @@ export default function App() {
     routines,
     timers,
   } = state;
-  const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [editGroupId, setEditGroupId] = useState<string | null>(null);
   const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
@@ -227,7 +229,7 @@ export default function App() {
                 habit={h}
                 logs={logs[h.id] || {}}
                 units={units}
-                onEdit={() => setEditHabit(h)}
+                onEdit={() => openPage({ kind: "editHabit", habit: h })}
                 timers={timers}
                 appConfig={appConfig}
                 today={today}
@@ -393,24 +395,21 @@ export default function App() {
             onAddGroup={addGroup}
           />
         )}
+        {page?.kind === "editHabit" && (
+          <EditHabitPage
+            habit={page.habit}
+            onSave={(habit) => dispatch({ type: "habit/update", habit })}
+            onDelete={(id) => dispatch({ type: "habit/delete", id })}
+            onClose={closePage}
+            units={units}
+            onAddUnit={addUnit}
+            groups={groups}
+            onAddGroup={addGroup}
+          />
+        )}
       </div>
 
       {/* Modals */}
-      {editHabit && (
-        <EditHabitModal
-          habit={editHabit}
-          onSave={(habit) => dispatch({ type: "habit/update", habit })}
-          onDelete={(id) => {
-            dispatch({ type: "habit/delete", id });
-            setEditHabit(null);
-          }}
-          onClose={() => setEditHabit(null)}
-          units={units}
-          onAddUnit={addUnit}
-          groups={groups}
-          onAddGroup={addGroup}
-        />
-      )}
       {editGroup && (
         <GroupEditModal
           group={editGroup}

@@ -313,6 +313,25 @@ describe("App changes to habits", () => {
     expect(habits[1].groupId).toBe(groups[0].id);
   });
 
+  it("edits a habit on a page of its own, held from its card", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    fireEvent.mouseDown(await screen.findByText("Run"));
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Edit Habit", level: 1 },
+        { timeout: 2000 },
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Delete habit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete Habit" }));
+    await waitFor(() => expect(lastSaved().habits).toEqual([]));
+    expect(screen.queryByRole("heading", { name: "Edit Habit" })).toBeNull();
+  });
+
   it("moves a habit to another group, or to none, from its editor", async () => {
     mockLoad.mockResolvedValue({
       ...loaded,
