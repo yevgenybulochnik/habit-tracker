@@ -3,7 +3,7 @@ import EmojiPicker from "./EmojiPicker";
 import PageShell, { type ClosePage } from "./PageShell";
 import { GROUP_EMOJIS } from "./emojis";
 import type { Group, Habit } from "../types";
-import modal from "./modalForm.module.css";
+import actions from "./formActions.module.css";
 import form from "./HabitFormFields.module.css";
 import styles from "./GroupEditPage.module.css";
 
@@ -156,8 +156,8 @@ export default function GroupEditPage({
         )}
       </div>
 
-      <div className={modal.footer}>
-        <button onClick={() => onClose()} className={modal.cancelBtn}>
+      <div className={actions.footer}>
+        <button onClick={() => onClose()} className={actions.cancelBtn}>
           Cancel
         </button>
         <button
@@ -170,7 +170,7 @@ export default function GroupEditPage({
               ),
             )
           }
-          className={modal.primaryBtn}
+          className={actions.primaryBtn}
         >
           Save
         </button>

@@ -1,10 +1,4 @@
-/* Shared modal chrome: title + footer action buttons. */
-.title {
-  margin: 0 0 20px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--c-text);
-}
+/* A form's footer and its buttons (Cancel, Save), shared by the forms. */
 .footer {
   display: flex;
   gap: 10px;

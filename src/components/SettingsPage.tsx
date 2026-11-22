@@ -15,7 +15,7 @@ import type {
   Routine,
   Unit,
 } from "../types";
-import modal from "./modalForm.module.css";
+import actions from "./formActions.module.css";
 import styles from "./SettingsPage.module.css";
 
 type Props = {
@@ -298,8 +298,8 @@ export default function SettingsPage({
         </div>
       </div>
 
-      <div className={modal.footer}>
-        <button onClick={() => onClose()} className={modal.cancelBtn}>
+      <div className={actions.footer}>
+        <button onClick={() => onClose()} className={actions.cancelBtn}>
           Done
         </button>
       </div>

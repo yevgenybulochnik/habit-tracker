@@ -3,7 +3,7 @@ import { useState } from "react";
 import HabitFormFields from "./HabitFormFields";
 import PageShell, { type ClosePage } from "./PageShell";
 import type { Group, Habit, IntensityMode, Metric, Unit } from "../types";
-import modal from "./modalForm.module.css";
+import actions from "./formActions.module.css";
 import styles from "./EditHabitPage.module.css";
 
 type Props = {
@@ -100,8 +100,8 @@ export default function EditHabitPage({
         )}
       </div>
 
-      <div className={modal.footer}>
-        <button onClick={() => onClose()} className={modal.cancelBtn}>
+      <div className={actions.footer}>
+        <button onClick={() => onClose()} className={actions.cancelBtn}>
           Cancel
         </button>
         <button
@@ -121,7 +121,7 @@ export default function EditHabitPage({
               }),
             );
           }}
-          className={modal.primaryBtn}
+          className={actions.primaryBtn}
         >
           Save
         </button>

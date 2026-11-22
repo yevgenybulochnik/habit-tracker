@@ -4,7 +4,7 @@ import { doneMetric } from "../lib/metrics";
 import HabitFormFields from "./HabitFormFields";
 import PageShell, { type ClosePage } from "./PageShell";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
-import modal from "./modalForm.module.css";
+import actions from "./formActions.module.css";
 
 export type NewHabit = {
   name: string;
@@ -66,8 +66,8 @@ export default function NewHabitPage({
         groups={groups}
         onAddGroup={onAddGroup}
       />
-      <div className={modal.footer}>
-        <button onClick={() => onClose()} className={modal.cancelBtn}>
+      <div className={actions.footer}>
+        <button onClick={() => onClose()} className={actions.cancelBtn}>
           Cancel
         </button>
         <button
@@ -86,7 +86,7 @@ export default function NewHabitPage({
               }),
             )
           }
-          className={modal.primaryBtn}
+          className={actions.primaryBtn}
         >
           Create
         </button>
