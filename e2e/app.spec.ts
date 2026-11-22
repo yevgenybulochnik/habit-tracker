@@ -392,14 +392,14 @@ test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorde
   await createHabit(page, "Beta");
   await expect(page.getByRole("button", { name: /Reorder/ })).toBeVisible();
 
-  // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit modal).
+  // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit page).
   await page.getByRole("button", { name: /Reorder/ }).click();
   await page
     .getByRole("heading", { name: "Alpha", level: 3 })
     .dispatchEvent("mousedown");
   await page.waitForTimeout(700); // exceed the 500ms long-press threshold
   await expect(
-    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+    page.getByRole("heading", { name: /Edit Habit/, level: 1 }),
   ).toHaveCount(0);
 });
 
@@ -489,13 +489,13 @@ test("edit habit: long-press → rename → Save persists", async ({ page }) => 
   await page.goto("/");
   await createHabit(page, "Old");
 
-  // Long-press the heading to trigger the edit modal (500ms threshold).
+  // Long-press the heading to open the habit's editor (500ms threshold).
   await page
     .getByRole("heading", { name: "Old", level: 3 })
     .dispatchEvent("mousedown");
   await page.waitForTimeout(700);
   await expect(
-    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+    page.getByRole("heading", { name: /Edit Habit/, level: 1 }),
   ).toBeVisible();
 
   // Rename and save.

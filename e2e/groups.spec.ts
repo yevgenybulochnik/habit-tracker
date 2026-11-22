@@ -1,13 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
-import { createHabit, groupChip, sectionNames } from "./helpers";
+import { createHabit, groupChip, sectionNames, slideDone } from "./helpers";
 
 /** Hold `name`'s chip (or a section header) long enough to edit its group. */
 async function holdToEdit(page: Page, target: ReturnType<Page["locator"]>) {
   await target.dispatchEvent("mousedown");
   await page.waitForTimeout(700); // the long-press threshold is 500ms
-  await target.dispatchEvent("mouseup");
+  // The editor's page has slid in over the chip: the release lands on it.
+  await page.locator("body").dispatchEvent("mouseup");
   await expect(
-    page.getByRole("heading", { name: "Edit Group", level: 2 }),
+    page.getByRole("heading", { name: "Edit Group", level: 1 }),
   ).toBeVisible();
 }
 
@@ -102,8 +103,6 @@ test("releasing a touch hold doesn't tap the editor it opened", async ({
   const page = await ctx.newPage();
   await page.goto("/");
   await createHabit(page, "Piano", { group: "Music" });
-  // Let the New Habit window finish closing, or the touch lands on it.
-  await expect(page.getByRole("heading", { name: "New Habit" })).toHaveCount(0);
 
   const cdp = await ctx.newCDPSession(page);
   const touchHold = async (box: {
@@ -141,19 +140,20 @@ test("releasing a touch hold doesn't tap the editor it opened", async ({
       .boundingBox())!,
   );
   await expect(
-    page.getByRole("heading", { name: "Edit Habit", level: 2 }),
+    page.getByRole("heading", { name: "Edit Habit", level: 1 }),
   ).toBeVisible();
   expect(await clicks()).toBe(0);
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("heading", { name: "Edit Habit" })).toHaveCount(
     0,
   );
+  await slideDone(page);
 
   // A group chip
   const before = await clicks();
   await touchHold((await groupChip(page, "Music").boundingBox())!);
   await expect(
-    page.getByRole("heading", { name: "Edit Group", level: 2 }),
+    page.getByRole("heading", { name: "Edit Group", level: 1 }),
   ).toBeVisible();
   expect(await clicks()).toBe(before);
   await ctx.close();
