@@ -239,6 +239,24 @@ describe("App changes to habits", () => {
     expect(mockSave).not.toHaveBeenCalled();
   });
 
+  it("makes a new habit on a page of its own, in place of the habits", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /New Habit/i }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "New Habit", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(screen.queryByRole("heading", { name: "New Habit" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Run", level: 3 }),
+    ).toBeInTheDocument();
+  });
+
   it("adds a habit with an id of its own and no logs", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);

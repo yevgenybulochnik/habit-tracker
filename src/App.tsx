@@ -21,15 +21,19 @@ import SortableHabitCard from "./components/SortableHabitCard";
 import HabitCard from "./components/HabitCard";
 import GroupSections from "./components/GroupSections";
 import GroupEditModal from "./components/GroupEditModal";
-import AddHabitModal from "./components/AddHabitModal";
+import NewHabitPage from "./components/NewHabitPage";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
+import type { ClosePage } from "./components/PageShell";
 import Routines from "./components/Routines";
 import { slide } from "./slide";
 import type { Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
+
+/** A page slid over the habits, in their place. */
+type Page = { kind: "routines" } | { kind: "newHabit" };
 
 const EMPTY: AppState = {
   habits: [],
@@ -56,7 +60,6 @@ export default function App() {
     routines,
     timers,
   } = state;
-  const [showAdd, setShowAdd] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [editGroupId, setEditGroupId] = useState<string | null>(null);
   const [showUnits, setShowUnits] = useState(false);
@@ -70,23 +73,26 @@ export default function App() {
   const [saveFailed, setSaveFailed] = useState(false); // last save threw
   // The state as last loaded or saved. It stays null until a load succeeds.
   const savedRef = useRef<AppState | null>(null);
-  // The header's stopwatch slides the Routines page over the habits, which
-  // stay mounted underneath (cards keep their state) and get their scroll
-  // position back on the way back.
-  const [routinesOpen, setRoutinesOpen] = useState(false);
+  // A page (the Routines page, a form) slides over the habits, which stay
+  // mounted underneath (cards keep their state) and get their scroll position
+  // back on the way back.
+  const [page, setPage] = useState<Page | null>(null);
   const habitsScroll = useRef(0);
-  const openRoutines = () => {
+  const openPage = (next: Page) => {
     habitsScroll.current = window.scrollY;
     slide(
       "forward",
-      () => setRoutinesOpen(true),
+      () => setPage(next),
       () => window.scrollTo(0, 0),
     );
   };
-  const closeRoutines = () =>
+  const closePage: ClosePage = (then) =>
     slide(
       "back",
-      () => setRoutinesOpen(false),
+      () => {
+        then?.();
+        setPage(null);
+      },
       () => window.scrollTo(0, habitsScroll.current),
     );
 
@@ -244,7 +250,7 @@ export default function App() {
           </div>
         )}
 
-        <div className={routinesOpen ? styles.away : undefined}>
+        <div className={page ? styles.away : undefined}>
           {/* Header */}
           <div className={`stagger-child ${styles.header}`}>
             <div>
@@ -260,7 +266,7 @@ export default function App() {
             </div>
             <div className={styles.headerActions}>
               <button
-                onClick={openRoutines}
+                onClick={() => openPage({ kind: "routines" })}
                 title="Routines"
                 className={styles.iconBtn}
               >
@@ -274,7 +280,7 @@ export default function App() {
                 ⚙
               </button>
               <button
-                onClick={() => setShowAdd(true)}
+                onClick={() => openPage({ kind: "newHabit" })}
                 className={styles.newBtn}
               >
                 <span className={styles.newBtnPlus}>+</span>
@@ -372,24 +378,24 @@ export default function App() {
           theme={theme}
           today={today}
           dispatch={dispatch}
-          open={routinesOpen}
-          onBack={closeRoutines}
+          open={page?.kind === "routines"}
+          onBack={() => closePage()}
         />
+        {page?.kind === "newHabit" && (
+          <NewHabitPage
+            onAdd={(habit) =>
+              dispatch({ type: "habit/add", id: newId("h"), habit })
+            }
+            onClose={closePage}
+            units={units}
+            onAddUnit={addUnit}
+            groups={groups}
+            onAddGroup={addGroup}
+          />
+        )}
       </div>
 
       {/* Modals */}
-      {showAdd && (
-        <AddHabitModal
-          onAdd={(habit) =>
-            dispatch({ type: "habit/add", id: newId("h"), habit })
-          }
-          onClose={() => setShowAdd(false)}
-          units={units}
-          onAddUnit={addUnit}
-          groups={groups}
-          onAddGroup={addGroup}
-        />
-      )}
       {editHabit && (
         <EditHabitModal
           habit={editHabit}
