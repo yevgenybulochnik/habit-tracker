@@ -138,10 +138,12 @@
   border-color: var(--c-accent);
   background: var(--c-accentDim);
 }
+/* Wraps on a phone, rather than pushing its buttons past the row's edge. */
 .unitDisplay {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
 }
 .unitLabel {
   font-size: 13px;
@@ -209,6 +211,8 @@
 /* Data / backup */
 .dataTop {
   margin-top: 20px;
+  /* Room before Done. */
+  margin-bottom: 20px;
 }
 .dataRow {
   display: flex;
