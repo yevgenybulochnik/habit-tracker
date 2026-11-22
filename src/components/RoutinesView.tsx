@@ -12,6 +12,7 @@ import {
 import { slide } from "../slide";
 import type { Habit, Routine, ThemeName } from "../types";
 import Icon from "./Icon";
+import PageShell, { PageHeader } from "./PageShell";
 import RoutineEditor, { newRoutine } from "./RoutineEditor";
 import { colorOf } from "./routineColors";
 import styles from "./RoutinesView.module.css";
@@ -48,57 +49,52 @@ export default function RoutinesView({
   const edit = (r: Routine) => slide("forward", () => setEditing(r), toTop);
   const doneEditing = () => slide("back", () => setEditing(null), toTop);
 
+  if (editing)
+    return (
+      <PageShell
+        title={isNew ? "New routine" : "Edit routine"}
+        subtitle="Each step logs to its habit"
+        backTo="routines"
+        onBack={doneEditing}
+      >
+        <RoutineEditor
+          routine={editing}
+          isNew={isNew}
+          habits={habits}
+          onCancel={doneEditing}
+          onSave={(r) => {
+            onSave(r);
+            doneEditing();
+          }}
+          onDelete={(id) => {
+            onDelete(id);
+            doneEditing();
+          }}
+        />
+      </PageShell>
+    );
+
   return (
     <div>
-      <div className={styles.header}>
+      <PageHeader
+        title="Routines"
+        subtitle={
+          routines.length
+            ? `${routines.length} routine${routines.length === 1 ? "" : "s"}`
+            : "Habits back to back, with breaks"
+        }
+        onBack={onBack}
+      >
         <button
-          onClick={editing ? doneEditing : onBack}
-          title={editing ? "Back to routines" : "Back to habits"}
-          className={styles.back}
+          onClick={() => edit(newRoutine())}
+          disabled={!habits.length}
+          className={styles.newBtn}
         >
-          <Icon name="left" size={18} />
+          <span className={styles.newBtnPlus}>+</span> New Routine
         </button>
-        <div className={styles.headText}>
-          <h1 className={styles.title}>
-            {!editing ? "Routines" : isNew ? "New routine" : "Edit routine"}
-          </h1>
-          <p className={styles.subtitle}>
-            {editing
-              ? "Each step logs to its habit"
-              : routines.length
-                ? `${routines.length} routine${routines.length === 1 ? "" : "s"}`
-                : "Habits back to back, with breaks"}
-          </p>
-        </div>
-        {!editing && (
-          <button
-            onClick={() => edit(newRoutine())}
-            disabled={!habits.length}
-            className={styles.newBtn}
-          >
-            <span className={styles.newBtnPlus}>+</span> New Routine
-          </button>
-        )}
-      </div>
+      </PageHeader>
 
-      {editing ? (
-        <div className={styles.panel}>
-          <RoutineEditor
-            routine={editing}
-            isNew={isNew}
-            habits={habits}
-            onCancel={doneEditing}
-            onSave={(r) => {
-              onSave(r);
-              doneEditing();
-            }}
-            onDelete={(id) => {
-              onDelete(id);
-              doneEditing();
-            }}
-          />
-        </div>
-      ) : routines.length === 0 ? (
+      {routines.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>
             <Icon name="stopwatch" size={40} />
