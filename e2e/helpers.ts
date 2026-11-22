@@ -5,7 +5,7 @@ import { expect, type Page } from "@playwright/test";
 // in one place.
 
 /**
- * Create a single-metric habit via the New Habit modal.
+ * Create a single-metric habit via the New Habit page.
  * Defaults to a "Reps" metric; pass `unit` (e.g. "min") to pick a different unit,
  * and `group` to put it in the group with that name, made if it doesn't exist.
  */
@@ -27,6 +27,15 @@ export async function createHabit(
   await page.getByRole("button", { name: /^\+ Add$/ }).click();
   await page.getByRole("button", { name: /^Create$/ }).click();
   await expect(page.getByRole("heading", { name, level: 3 })).toBeVisible();
+  await slideDone(page);
+}
+
+/**
+ * Wait for a page's slide (a view transition) to finish. While it runs, a
+ * touch or a click lands on the page as a whole, not on what's under it.
+ */
+export async function slideDone(page: Page) {
+  await page.waitForFunction(() => !document.documentElement.dataset.slide);
 }
 
 /** In an open habit form, choose the group named `name`, making it if new. */
@@ -76,7 +85,7 @@ export async function setTheme(page: Page, theme: "dark" | "light") {
   await page.getByRole("button", { name: "Done" }).click();
 }
 
-/** Delete a habit via the long-press → Edit modal → confirm flow. */
+/** Delete a habit via the long-press → Edit Habit page → confirm flow. */
 export async function deleteHabit(page: Page, name: string) {
   await page
     .getByRole("heading", { name, level: 3 })

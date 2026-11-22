@@ -106,6 +106,19 @@ test("persistence: a logged habit survives a reload", async ({ page }) => {
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(page.getByText("10 reps").first()).toBeVisible();
 
+  // The log is saved asynchronously, and a reload aborts a write still in
+  // flight, so wait for it to land before reloading.
+  await expect
+    .poll(async () => {
+      const stored = (await readStored(page, "habit-tracker-v3")) as
+        | { logs: Record<string, Record<string, Record<string, unknown>>> }
+        | undefined;
+      return Object.values(stored?.logs ?? {})
+        .flatMap((days) => Object.values(days))
+        .flatMap((day) => Object.values(day));
+    })
+    .toContain(10);
+
   await page.reload();
   // Value was persisted to IndexedDB and rehydrates
   await expect(
@@ -392,14 +405,14 @@ test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorde
   await createHabit(page, "Beta");
   await expect(page.getByRole("button", { name: /Reorder/ })).toBeVisible();
 
-  // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit modal).
+  // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit page).
   await page.getByRole("button", { name: /Reorder/ }).click();
   await page
     .getByRole("heading", { name: "Alpha", level: 3 })
     .dispatchEvent("mousedown");
   await page.waitForTimeout(700); // exceed the 500ms long-press threshold
   await expect(
-    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+    page.getByRole("heading", { name: /Edit Habit/, level: 1 }),
   ).toHaveCount(0);
 });
 
@@ -489,13 +502,13 @@ test("edit habit: long-press → rename → Save persists", async ({ page }) => 
   await page.goto("/");
   await createHabit(page, "Old");
 
-  // Long-press the heading to trigger the edit modal (500ms threshold).
+  // Long-press the heading to open the habit's editor (500ms threshold).
   await page
     .getByRole("heading", { name: "Old", level: 3 })
     .dispatchEvent("mousedown");
   await page.waitForTimeout(700);
   await expect(
-    page.getByRole("heading", { name: /Edit Habit/, level: 2 }),
+    page.getByRole("heading", { name: /Edit Habit/, level: 1 }),
   ).toBeVisible();
 
   // Rename and save.

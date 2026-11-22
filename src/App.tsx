@@ -20,16 +20,25 @@ import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import HabitCard from "./components/HabitCard";
 import GroupSections from "./components/GroupSections";
-import GroupEditModal from "./components/GroupEditModal";
-import AddHabitModal from "./components/AddHabitModal";
-import EditHabitModal from "./components/EditHabitModal";
-import SettingsModal from "./components/SettingsModal";
+import GroupEditPage from "./components/GroupEditPage";
+import NewHabitPage from "./components/NewHabitPage";
+import EditHabitPage from "./components/EditHabitPage";
+import SettingsPage from "./components/SettingsPage";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
+import type { ClosePage } from "./components/PageShell";
 import Routines from "./components/Routines";
 import { slide } from "./slide";
 import type { Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
+
+/** A page slid over the habits, in their place. */
+type Page =
+  | { kind: "routines" }
+  | { kind: "newHabit" }
+  | { kind: "editHabit"; habit: Habit }
+  | { kind: "editGroup"; id: string }
+  | { kind: "settings" };
 
 const EMPTY: AppState = {
   habits: [],
@@ -56,10 +65,6 @@ export default function App() {
     routines,
     timers,
   } = state;
-  const [showAdd, setShowAdd] = useState(false);
-  const [editHabit, setEditHabit] = useState<Habit | null>(null);
-  const [editGroupId, setEditGroupId] = useState<string | null>(null);
-  const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -70,23 +75,26 @@ export default function App() {
   const [saveFailed, setSaveFailed] = useState(false); // last save threw
   // The state as last loaded or saved. It stays null until a load succeeds.
   const savedRef = useRef<AppState | null>(null);
-  // The header's stopwatch slides the Routines page over the habits, which
-  // stay mounted underneath (cards keep their state) and get their scroll
-  // position back on the way back.
-  const [routinesOpen, setRoutinesOpen] = useState(false);
+  // A page (the Routines page, a form) slides over the habits, which stay
+  // mounted underneath (cards keep their state) and get their scroll position
+  // back on the way back.
+  const [page, setPage] = useState<Page | null>(null);
   const habitsScroll = useRef(0);
-  const openRoutines = () => {
+  const openPage = (next: Page) => {
     habitsScroll.current = window.scrollY;
     slide(
       "forward",
-      () => setRoutinesOpen(true),
+      () => setPage(next),
       () => window.scrollTo(0, 0),
     );
   };
-  const closeRoutines = () =>
+  const closePage: ClosePage = (then) =>
     slide(
       "back",
-      () => setRoutinesOpen(false),
+      () => {
+        then?.();
+        setPage(null);
+      },
       () => window.scrollTo(0, habitsScroll.current),
     );
 
@@ -153,7 +161,12 @@ export default function App() {
   const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
-  const editGroup = groups.find((g) => g.id === editGroupId);
+  const editGroup =
+    page?.kind === "editGroup"
+      ? groups.find((g) => g.id === page.id)
+      : undefined;
+  // The habits make way for a page, unless it's a group that's gone.
+  const away = !!page && (page.kind !== "editGroup" || !!editGroup);
   const completed = habits.filter((h) =>
     logActive(h, logs[h.id]?.[today], units),
   ).length;
@@ -221,7 +234,7 @@ export default function App() {
                 habit={h}
                 logs={logs[h.id] || {}}
                 units={units}
-                onEdit={() => setEditHabit(h)}
+                onEdit={() => openPage({ kind: "editHabit", habit: h })}
                 timers={timers}
                 appConfig={appConfig}
                 today={today}
@@ -244,7 +257,7 @@ export default function App() {
           </div>
         )}
 
-        <div className={routinesOpen ? styles.away : undefined}>
+        <div className={away ? styles.away : undefined}>
           {/* Header */}
           <div className={`stagger-child ${styles.header}`}>
             <div>
@@ -260,21 +273,21 @@ export default function App() {
             </div>
             <div className={styles.headerActions}>
               <button
-                onClick={openRoutines}
+                onClick={() => openPage({ kind: "routines" })}
                 title="Routines"
                 className={styles.iconBtn}
               >
                 <Icon name="stopwatch" size={18} />
               </button>
               <button
-                onClick={() => setShowUnits(true)}
+                onClick={() => openPage({ kind: "settings" })}
                 title="Settings"
                 className={styles.iconBtn}
               >
                 ⚙
               </button>
               <button
-                onClick={() => setShowAdd(true)}
+                onClick={() => openPage({ kind: "newHabit" })}
                 className={styles.newBtn}
               >
                 <span className={styles.newBtnPlus}>+</span>
@@ -350,7 +363,7 @@ export default function App() {
                       onReorderGroups={(activeId, overId) =>
                         dispatch({ type: "group/reorder", activeId, overId })
                       }
-                      onEditGroup={setEditGroupId}
+                      onEditGroup={(id) => openPage({ kind: "editGroup", id })}
                     />
                   ) : (
                     renderList(habits)
@@ -372,75 +385,74 @@ export default function App() {
           theme={theme}
           today={today}
           dispatch={dispatch}
-          open={routinesOpen}
-          onBack={closeRoutines}
+          open={page?.kind === "routines"}
+          onBack={() => closePage()}
         />
+        {page?.kind === "newHabit" && (
+          <NewHabitPage
+            onAdd={(habit) =>
+              dispatch({ type: "habit/add", id: newId("h"), habit })
+            }
+            onClose={closePage}
+            units={units}
+            onAddUnit={addUnit}
+            groups={groups}
+            onAddGroup={addGroup}
+          />
+        )}
+        {editGroup && (
+          <GroupEditPage
+            group={editGroup}
+            groups={groups}
+            habits={habits}
+            onSave={(changes, habitIds) => {
+              dispatch({ type: "group/update", id: editGroup.id, changes });
+              dispatch({
+                type: "group/setMembers",
+                id: editGroup.id,
+                habitIds,
+              });
+            }}
+            onDelete={(id) => dispatch({ type: "group/delete", id })}
+            onClose={closePage}
+          />
+        )}
+        {page?.kind === "settings" && (
+          <SettingsPage
+            units={units}
+            habits={habits}
+            logs={logs}
+            groups={groups}
+            routines={routines}
+            onUpdateUnit={(id, changes) =>
+              dispatch({ type: "unit/update", id, changes })
+            }
+            onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
+            onAddUnit={addUnit}
+            appConfig={appConfig}
+            onUpdateConfig={(config) =>
+              dispatch({ type: "config/update", changes: config })
+            }
+            // SettingsPage has already normalized the backup
+            onImportState={(imported) =>
+              dispatch({ type: "state/import", state: imported })
+            }
+            onClose={closePage}
+          />
+        )}
+        {page?.kind === "editHabit" && (
+          <EditHabitPage
+            habit={page.habit}
+            onSave={(habit) => dispatch({ type: "habit/update", habit })}
+            onDelete={(id) => dispatch({ type: "habit/delete", id })}
+            onClose={closePage}
+            units={units}
+            onAddUnit={addUnit}
+            groups={groups}
+            onAddGroup={addGroup}
+          />
+        )}
       </div>
-
-      {/* Modals */}
-      {showAdd && (
-        <AddHabitModal
-          onAdd={(habit) =>
-            dispatch({ type: "habit/add", id: newId("h"), habit })
-          }
-          onClose={() => setShowAdd(false)}
-          units={units}
-          onAddUnit={addUnit}
-          groups={groups}
-          onAddGroup={addGroup}
-        />
-      )}
-      {editHabit && (
-        <EditHabitModal
-          habit={editHabit}
-          onSave={(habit) => dispatch({ type: "habit/update", habit })}
-          onDelete={(id) => {
-            dispatch({ type: "habit/delete", id });
-            setEditHabit(null);
-          }}
-          onClose={() => setEditHabit(null)}
-          units={units}
-          onAddUnit={addUnit}
-          groups={groups}
-          onAddGroup={addGroup}
-        />
-      )}
-      {editGroup && (
-        <GroupEditModal
-          group={editGroup}
-          groups={groups}
-          habits={habits}
-          onSave={(changes, habitIds) => {
-            dispatch({ type: "group/update", id: editGroup.id, changes });
-            dispatch({ type: "group/setMembers", id: editGroup.id, habitIds });
-          }}
-          onDelete={(id) => dispatch({ type: "group/delete", id })}
-          onClose={() => setEditGroupId(null)}
-        />
-      )}
-      {showUnits && (
-        <SettingsModal
-          units={units}
-          habits={habits}
-          logs={logs}
-          groups={groups}
-          routines={routines}
-          onUpdateUnit={(id, changes) =>
-            dispatch({ type: "unit/update", id, changes })
-          }
-          onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
-          onAddUnit={addUnit}
-          appConfig={appConfig}
-          onUpdateConfig={(config) =>
-            dispatch({ type: "config/update", changes: config })
-          }
-          // SettingsModal has already normalized the backup
-          onImportState={(imported) =>
-            dispatch({ type: "state/import", state: imported })
-          }
-          onClose={() => setShowUnits(false)}
-        />
-      )}
     </div>
   );
 }

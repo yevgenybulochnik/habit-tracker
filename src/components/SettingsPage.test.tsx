@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import SettingsModal from "./SettingsModal";
+import SettingsPage from "./SettingsPage";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
 import { SCHEMA_VERSION } from "../lib/normalize";
 import { captureDownloads } from "../test/downloads";
@@ -42,10 +42,11 @@ const oldBackup = {
   logs: { h1: { "2026-05-24": { m1: 30 } } },
 };
 
-function renderModal(onImportState = vi.fn(), state = sample) {
-  const onClose = vi.fn();
+function renderPage(onImportState = vi.fn(), state = sample) {
+  // Closing the page runs what it's given as it closes.
+  const onClose = vi.fn((then?: () => void) => then?.());
   render(
-    <SettingsModal
+    <SettingsPage
       units={BUILTIN_UNITS}
       habits={state.habits}
       logs={state.logs}
@@ -79,9 +80,22 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("SettingsModal — Data backup", () => {
+describe("SettingsPage", () => {
+  it("is a page headed Settings, closed by Done or the way back", async () => {
+    const { onClose } = renderPage();
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
+    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("SettingsPage — Data backup", () => {
   it("exports the state, with its schema version, as a JSON download", async () => {
-    renderModal();
+    renderPage();
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
 
     const files = await downloads.files();
@@ -96,7 +110,7 @@ describe("SettingsModal — Data backup", () => {
       habits: [{ ...sample.habits[0], groupId: "g1" }],
       groups: [{ id: "g1", name: "Fitness", emoji: "🏋️", collapsed: true }],
     };
-    renderModal(vi.fn(), grouped);
+    renderPage(vi.fn(), grouped);
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
 
     const [file] = await downloads.files();
@@ -127,7 +141,7 @@ describe("SettingsModal — Data backup", () => {
         },
       ],
     };
-    renderModal(vi.fn(), withRoutine);
+    renderPage(vi.fn(), withRoutine);
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
 
     const [file] = await downloads.files();
@@ -135,14 +149,14 @@ describe("SettingsModal — Data backup", () => {
   });
 
   it("imports a valid backup file, then closes", async () => {
-    const { onImportState, onClose } = renderModal();
+    const { onImportState, onClose } = renderPage();
     await importFile(JSON.stringify(sample));
     await waitFor(() => expect(onImportState).toHaveBeenCalledWith(sample));
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 
   it("imports a backup from an older version in the current format", async () => {
-    const { onImportState } = renderModal();
+    const { onImportState } = renderPage();
     await importFile(JSON.stringify(oldBackup));
     await waitFor(() => expect(onImportState).toHaveBeenCalledWith(sample));
   });
@@ -156,20 +170,23 @@ describe("SettingsModal — Data backup", () => {
       JSON.stringify({ ...sample, schemaVersion: SCHEMA_VERSION + 1 }),
     ],
   ])("shows an error for %s and does not import", async (_, content) => {
-    const { onImportState } = renderModal();
+    const { onImportState, onClose } = renderPage();
     await importFile(content);
     expect(await screen.findByText(/valid backup file/i)).toBeInTheDocument();
     expect(onImportState).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog")).toBeInTheDocument(); // still open
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument(); // still open
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
 
-describe("SettingsModal — theme", () => {
+describe("SettingsPage — theme", () => {
   it("switches theme when a theme button is clicked", async () => {
     const user = userEvent.setup();
     const onUpdateConfig = vi.fn();
     render(
-      <SettingsModal
+      <SettingsPage
         units={BUILTIN_UNITS}
         habits={sample.habits}
         logs={sample.logs}
@@ -191,7 +208,7 @@ describe("SettingsModal — theme", () => {
   });
 });
 
-describe("SettingsModal — units", () => {
+describe("SettingsPage — units", () => {
   function renderUnits() {
     const handlers = {
       onAddUnit: vi.fn(),
@@ -199,7 +216,7 @@ describe("SettingsModal — units", () => {
       onDeleteUnit: vi.fn(),
     };
     render(
-      <SettingsModal
+      <SettingsPage
         units={BUILTIN_UNITS}
         habits={sample.habits}
         logs={sample.logs}

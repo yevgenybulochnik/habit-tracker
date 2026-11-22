@@ -41,7 +41,7 @@ import {
 } from "../lib/routineRun";
 import type { Habit, HabitStep, Routine, RoutineStep } from "../types";
 import Icon from "./Icon";
-import form from "./modalForm.module.css";
+import actions from "./formActions.module.css";
 import styles from "./RoutineEditor.module.css";
 
 const CAPTURE_HINT = {
@@ -210,7 +210,7 @@ export default function RoutineEditor({
           ? `To save it, ${problems.join(" and ")}.`
           : `${length}. The last round skips its closing break.`}
       </p>
-      <div className={form.footer}>
+      <div className={actions.footer}>
         {!isNew && (
           <button
             onClick={() => {
@@ -219,18 +219,18 @@ export default function RoutineEditor({
               )
                 onDelete(routine.id);
             }}
-            className={`${form.cancelBtn} ${styles.deleteBtn}`}
+            className={`${actions.cancelBtn} ${styles.deleteBtn}`}
           >
             Delete
           </button>
         )}
-        <button onClick={onCancel} className={form.cancelBtn}>
+        <button onClick={onCancel} className={actions.cancelBtn}>
           Cancel
         </button>
         <button
           onClick={() => onSave({ ...draft, name: draft.name.trim() })}
           disabled={problems.length > 0}
-          className={form.primaryBtn}
+          className={actions.primaryBtn}
         >
           Save
         </button>

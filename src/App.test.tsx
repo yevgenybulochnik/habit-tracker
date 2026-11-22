@@ -239,6 +239,37 @@ describe("App changes to habits", () => {
     expect(mockSave).not.toHaveBeenCalled();
   });
 
+  it("opens Settings on a page of its own, and Done comes back", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(await screen.findByTitle("Settings"));
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("heading", { name: "Settings" })).toBeNull();
+  });
+
+  it("makes a new habit on a page of its own, in place of the habits", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /New Habit/i }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "New Habit", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(screen.queryByRole("heading", { name: "New Habit" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Run", level: 3 }),
+    ).toBeInTheDocument();
+  });
+
   it("adds a habit with an id of its own and no logs", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
@@ -293,6 +324,25 @@ describe("App changes to habits", () => {
       },
     ]);
     expect(habits[1].groupId).toBe(groups[0].id);
+  });
+
+  it("edits a habit on a page of its own, held from its card", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    fireEvent.mouseDown(await screen.findByText("Run"));
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Edit Habit", level: 1 },
+        { timeout: 2000 },
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Delete habit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete Habit" }));
+    await waitFor(() => expect(lastSaved().habits).toEqual([]));
+    expect(screen.queryByRole("heading", { name: "Edit Habit" })).toBeNull();
   });
 
   it("moves a habit to another group, or to none, from its editor", async () => {

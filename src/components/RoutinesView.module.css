@@ -1,45 +1,3 @@
-/* Header: laid out like the habits page's, with a way back at its start. */
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.back {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 6px;
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
-  color: var(--c-dim);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.back:hover,
-.back:focus-visible {
-  border-color: var(--c-muted);
-  color: var(--c-text);
-}
-.headText {
-  flex: 1;
-  min-width: 0;
-}
-.title {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.subtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--c-muted);
-}
 .newBtn {
   flex: 0 0 auto;
   padding: 9px 14px;
@@ -213,12 +171,4 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--c-dim);
-}
-
-/* The editor's page. */
-.panel {
-  padding: 18px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
 }

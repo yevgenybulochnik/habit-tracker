@@ -4,11 +4,7 @@
 export const CSS = `
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes backdropIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(4px)}}
 .stagger-child{animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both}
-.modal-backdrop{animation:backdropIn .4s ease both}
-.modal-content{animation:scaleIn .5s cubic-bezier(.16,1,.3,1) both}
 /* >=16px keeps iOS Safari from auto-zooming when an input is focused.
    !important overrides the smaller inline font sizes on individual fields. */
 input,select,textarea{font-size:16px !important}
