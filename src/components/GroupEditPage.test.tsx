@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import GroupEditModal from "./GroupEditModal";
+import GroupEditPage from "./GroupEditPage";
 import { GROUP_EMOJIS } from "./emojis";
 import type { Group, Habit } from "../types";
 
@@ -31,12 +31,13 @@ const habits = [
   habit("Water"),
 ];
 
-function renderModal(group = music) {
+function renderPage(group = music) {
   const onSave = vi.fn();
   const onDelete = vi.fn();
-  const onClose = vi.fn();
+  // Closing the page runs what it's given as it closes.
+  const onClose = vi.fn((then?: () => void) => then?.());
   render(
-    <GroupEditModal
+    <GroupEditPage
       group={group}
       groups={[group, fitness]}
       habits={habits}
@@ -63,8 +64,18 @@ const picked = () =>
     .map((b) => b.textContent);
 
 describe("GroupEditModal", () => {
+  it("is a page headed Edit Group, with the way back", async () => {
+    const { onClose, onSave } = renderPage();
+    expect(
+      screen.getByRole("heading", { name: "Edit Group", level: 1 }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it("shows the group's name and emoji, and its habits checked", () => {
-    renderModal();
+    renderPage();
     expect(screen.getByRole("textbox", { name: "Group name" })).toHaveValue(
       "Music",
     );
@@ -77,7 +88,7 @@ describe("GroupEditModal", () => {
   });
 
   it("says which other group a habit is in, and that checking moves it", async () => {
-    renderModal();
+    renderPage();
     expect(box("Run")).toHaveAccessibleName(/Run.*Fitness/);
     expect(box("Water")).not.toHaveAccessibleName(/in /);
     await userEvent.click(box("Run"));
@@ -85,7 +96,7 @@ describe("GroupEditModal", () => {
   });
 
   it("saves the name, emoji and checked habits, then closes", async () => {
-    const { onSave, onClose } = renderModal();
+    const { onSave, onClose } = renderPage();
     const name = screen.getByRole("textbox", { name: "Group name" });
     await userEvent.clear(name);
     await userEvent.type(name, " Practice ");
@@ -103,12 +114,12 @@ describe("GroupEditModal", () => {
   });
 
   it("offers the group emojis to pick from", () => {
-    renderModal();
+    renderPage();
     expect(offered()).toEqual(GROUP_EMOJIS);
   });
 
   it("keeps offering an emoji the group has that isn't among them", async () => {
-    const { onSave } = renderModal({ ...music, emoji: "🗣️" });
+    const { onSave } = renderPage({ ...music, emoji: "🗣️" });
     expect(offered()).toEqual(["🗣️", ...GROUP_EMOJIS]);
     expect(picked()).toEqual(["🗣️"]);
     // Still there to go back to after picking another
@@ -120,13 +131,13 @@ describe("GroupEditModal", () => {
   });
 
   it("won't save without a name", async () => {
-    renderModal();
+    renderPage();
     await userEvent.clear(screen.getByRole("textbox", { name: "Group name" }));
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("deletes the group once confirmed, after closing", async () => {
-    const { onDelete, onSave } = renderModal();
+    const { onDelete, onSave } = renderPage();
     await userEvent.click(screen.getByRole("button", { name: "Delete group" }));
     expect(
       screen.getByText(/Its habits stay, in no group/),
@@ -137,7 +148,7 @@ describe("GroupEditModal", () => {
   });
 
   it("keeps the group if the delete isn't confirmed", async () => {
-    const { onDelete } = renderModal();
+    const { onDelete } = renderPage();
     await userEvent.click(screen.getByRole("button", { name: "Delete group" }));
     await userEvent.click(screen.getByRole("button", { name: "Keep it" }));
     expect(
@@ -147,7 +158,7 @@ describe("GroupEditModal", () => {
   });
 
   it("changes nothing on Cancel", async () => {
-    const { onSave, onDelete, onClose } = renderModal();
+    const { onSave, onDelete, onClose } = renderPage();
     await userEvent.click(box("Water"));
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());

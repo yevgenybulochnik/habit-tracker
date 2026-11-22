@@ -20,7 +20,7 @@ import SortableHabits from "./components/SortableHabits";
 import SortableHabitCard from "./components/SortableHabitCard";
 import HabitCard from "./components/HabitCard";
 import GroupSections from "./components/GroupSections";
-import GroupEditModal from "./components/GroupEditModal";
+import GroupEditPage from "./components/GroupEditPage";
 import NewHabitPage from "./components/NewHabitPage";
 import EditHabitPage from "./components/EditHabitPage";
 import SettingsModal from "./components/SettingsModal";
@@ -36,7 +36,8 @@ import styles from "./App.module.css";
 type Page =
   | { kind: "routines" }
   | { kind: "newHabit" }
-  | { kind: "editHabit"; habit: Habit };
+  | { kind: "editHabit"; habit: Habit }
+  | { kind: "editGroup"; id: string };
 
 const EMPTY: AppState = {
   habits: [],
@@ -63,7 +64,6 @@ export default function App() {
     routines,
     timers,
   } = state;
-  const [editGroupId, setEditGroupId] = useState<string | null>(null);
   const [showUnits, setShowUnits] = useState(false);
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
   const [loading, setLoading] = useState(true);
@@ -161,7 +161,12 @@ export default function App() {
   const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
   const dashView = appConfig.dashView; // persisted Quick/Calendar choice
-  const editGroup = groups.find((g) => g.id === editGroupId);
+  const editGroup =
+    page?.kind === "editGroup"
+      ? groups.find((g) => g.id === page.id)
+      : undefined;
+  // The habits make way for a page, unless it's a group that's gone.
+  const away = !!page && (page.kind !== "editGroup" || !!editGroup);
   const completed = habits.filter((h) =>
     logActive(h, logs[h.id]?.[today], units),
   ).length;
@@ -252,7 +257,7 @@ export default function App() {
           </div>
         )}
 
-        <div className={page ? styles.away : undefined}>
+        <div className={away ? styles.away : undefined}>
           {/* Header */}
           <div className={`stagger-child ${styles.header}`}>
             <div>
@@ -358,7 +363,7 @@ export default function App() {
                       onReorderGroups={(activeId, overId) =>
                         dispatch({ type: "group/reorder", activeId, overId })
                       }
-                      onEditGroup={setEditGroupId}
+                      onEditGroup={(id) => openPage({ kind: "editGroup", id })}
                     />
                   ) : (
                     renderList(habits)
@@ -395,6 +400,23 @@ export default function App() {
             onAddGroup={addGroup}
           />
         )}
+        {editGroup && (
+          <GroupEditPage
+            group={editGroup}
+            groups={groups}
+            habits={habits}
+            onSave={(changes, habitIds) => {
+              dispatch({ type: "group/update", id: editGroup.id, changes });
+              dispatch({
+                type: "group/setMembers",
+                id: editGroup.id,
+                habitIds,
+              });
+            }}
+            onDelete={(id) => dispatch({ type: "group/delete", id })}
+            onClose={closePage}
+          />
+        )}
         {page?.kind === "editHabit" && (
           <EditHabitPage
             habit={page.habit}
@@ -409,20 +431,7 @@ export default function App() {
         )}
       </div>
 
-      {/* Modals */}
-      {editGroup && (
-        <GroupEditModal
-          group={editGroup}
-          groups={groups}
-          habits={habits}
-          onSave={(changes, habitIds) => {
-            dispatch({ type: "group/update", id: editGroup.id, changes });
-            dispatch({ type: "group/setMembers", id: editGroup.id, habitIds });
-          }}
-          onDelete={(id) => dispatch({ type: "group/delete", id })}
-          onClose={() => setEditGroupId(null)}
-        />
-      )}
+      {/* Settings: a dialog */}
       {showUnits && (
         <SettingsModal
           units={units}
