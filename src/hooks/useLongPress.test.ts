@@ -20,9 +20,17 @@ function setup(options?: Parameters<typeof useLongPress>[1]) {
   const hook = renderHook(({ cb, opts }) => useLongPress(cb, opts), {
     initialProps: { cb: onLongPress, opts: options },
   });
-  const fire = (name: keyof LongPressHandlers, event = touchAt(0, 0)) =>
-    act(() => hook.result.current.handlers[name](event));
-  return { onLongPress, hook, fire };
+  const fire = (
+    name: Exclude<keyof LongPressHandlers, "onClickCapture">,
+    event = touchAt(0, 0),
+  ) => act(() => hook.result.current.handlers[name](event));
+  /** Click the element, returning whether the click was stopped. */
+  const click = () => {
+    const event = { stopPropagation: vi.fn(), preventDefault: vi.fn() };
+    act(() => hook.result.current.handlers.onClickCapture(event));
+    return event.stopPropagation.mock.calls.length > 0;
+  };
+  return { onLongPress, hook, fire, click };
 }
 
 /** A touch event's parts the hook reads, with a finger at (x, y). */
@@ -113,6 +121,20 @@ describe("useLongPress", () => {
     const release = touchAt(0, 0);
     fire("onTouchEnd", release);
     expect(release.preventDefault).toHaveBeenCalled();
+  });
+
+  it("stops the click after a mouse hold, and only that click", () => {
+    const { fire, click } = setup();
+    fire("onMouseDown");
+    advance(500);
+    fire("onMouseUp");
+    expect(click()).toBe(true);
+    expect(click()).toBe(false);
+
+    fire("onMouseDown");
+    advance(200);
+    fire("onMouseUp");
+    expect(click()).toBe(false);
   });
 
   it("leaves the release of a short tap alone", () => {
