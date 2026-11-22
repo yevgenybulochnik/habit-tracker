@@ -185,15 +185,17 @@ to its section and the chip of the section under the bar is highlighted. Each li
 within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
 a header opens `GroupEditPage` (name, emoji, its habits as a checklist, delete).
 
-**Pages.** The forms and the Routines page are pages that slide in over the habits (`slide`, a
-view transition), not dialogs: `App` holds the open `page` (the Routines page, `NewHabitPage`,
-`EditHabitPage` held from a card, or `GroupEditPage` held from a chip or section header), and
+**Pages.** Every screen besides the habits is a page that slides in over them (`slide`, a view
+transition); the app has no dialogs. `App` holds the open `page` (the Routines page,
+`NewHabitPage`, `EditHabitPage` held from a card, `GroupEditPage` held from a chip or section
+header, or `SettingsPage` from the header's ⚙), and
 `openPage`/`closePage` do the slide and the scroll. The habits stay mounted underneath with the
 `.away` class (hidden and taking no height, not `display: none`, so cards keep their state) and
 get their scroll position back on the way back. A page is a `PageShell` (`PageHeader`, with the
 way back and the title as the page's `h1`, then a panel); a form closes through
-`ClosePage(then?)`, where `then` (the save or delete) runs as the page slides back, so the
-habits come back already showing it. Settings is the one dialog left (`ModalShell`).
+`ClosePage(then?)`, where `then` (the save, delete or import) runs as the page slides back, so
+the habits come back already showing it. A form's footer and its buttons come from
+`formActions.module.css`.
 
 **The Routines page.** The header's stopwatch opens the Routines page (`RoutinesView`: the
 list, and `RoutineEditor` as a page of its own). `Routines`, mounted for as long as
@@ -226,10 +228,7 @@ collapsed. Selection highlight and `pal` are kept out of the main build (separat
 anything in the build that depends on `today` or on the selection must be set on the merged
 (enter + update) selection, not only on enter.
 
-**Modals and forms.** A modal (Settings) renders through `ModalShell`, which passes its content a
-`requestClose(then?)`: it plays the close animation, then runs `then` and `onClose`. The
-duration is `CLOSE_MS`, handed to the CSS as `--modal-close-ms`, so don't add close timers in a
-modal. Units are added and edited through the shared `UnitForm` (Settings and the habit form's
+**Forms.** Units are added and edited through the shared `UnitForm` (Settings and the habit form's
 "+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
 habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
 Emojis are picked from a grid, the shared `EmojiPicker` (the habit form's icon, and a group's
