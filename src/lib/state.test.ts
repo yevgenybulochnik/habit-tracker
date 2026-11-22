@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { reduce, type Action, type AppState } from "./state";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
 import { SCHEMA_VERSION } from "./normalize";
-import type { Group, Habit, PersistedState, Unit } from "../types";
+import type { Group, Habit, PersistedState, Routine, Unit } from "../types";
 
 function habit(id: string, name = id): Habit {
   return {
@@ -22,6 +22,7 @@ function state(over: Partial<AppState> = {}): AppState {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [],
+    routines: [],
     timers: {},
     ...over,
   };
@@ -334,6 +335,109 @@ describe("reduce: groups", () => {
   });
 });
 
+describe("reduce: routines", () => {
+  const morning: Routine = {
+    id: "r1",
+    name: "Morning",
+    rounds: 2,
+    prep: 5,
+    steps: [
+      {
+        kind: "habit",
+        id: "s1",
+        habitId: "h1",
+        metricId: "m1",
+        by: "time",
+        seconds: 60,
+        count: 10,
+      },
+      { kind: "break", id: "s2", seconds: 30 },
+      {
+        kind: "habit",
+        id: "s3",
+        habitId: "h2",
+        metricId: "m1",
+        by: "time",
+        seconds: 60,
+        count: 10,
+      },
+    ],
+  };
+  const evening: Routine = { ...morning, id: "r2", name: "Evening" };
+  const withRoutines = (routines: Routine[]) =>
+    state({ habits: [habit("h1"), habit("h2")], routines });
+
+  it("adds a routine at the end", () => {
+    const out = run(withRoutines([morning]), {
+      type: "routine/add",
+      routine: evening,
+    });
+    expect(out.routines).toEqual([morning, evening]);
+  });
+
+  it("ignores a routine whose id is taken", () => {
+    const s = withRoutines([morning]);
+    expect(
+      run(s, { type: "routine/add", routine: { ...evening, id: "r1" } }),
+    ).toEqual(s);
+  });
+
+  it("replaces the routine with the same id and keeps the others", () => {
+    const renamed = { ...morning, name: "Early" };
+    const out = run(withRoutines([morning, evening]), {
+      type: "routine/update",
+      routine: renamed,
+    });
+    expect(out.routines).toEqual([renamed, evening]);
+  });
+
+  it("deletes a routine", () => {
+    const out = run(withRoutines([morning, evening]), {
+      type: "routine/delete",
+      id: "r1",
+    });
+    expect(out.routines).toEqual([evening]);
+  });
+
+  it("drops a deleted habit's steps from the routines", () => {
+    const out = run(withRoutines([morning]), {
+      type: "habit/delete",
+      id: "h2",
+    });
+    expect(out.routines[0].steps.map((s) => s.id)).toEqual(["s1", "s2"]);
+  });
+
+  it("keeps the routines in line with a habit's changed metrics", () => {
+    const counted = {
+      ...morning,
+      steps: morning.steps.map((s) =>
+        s.kind === "habit" ? { ...s, by: "count" as const } : s,
+      ),
+    };
+    const s = state({
+      habits: [
+        { ...habit("h1"), metrics: [{ id: "m1", name: "Reps", unit: "reps" }] },
+        habit("h2"),
+      ],
+      routines: [counted],
+    });
+    // h1's reps become minutes, which aren't counted; h2 loses its metric.
+    const out = run(s, {
+      type: "habit/update",
+      habit: {
+        ...habit("h1"),
+        metrics: [{ id: "m1", name: "Time", unit: "min" }],
+      },
+    });
+    expect(out.routines[0].steps[0]).toMatchObject({ id: "s1", by: "time" });
+    const out2 = run(s, {
+      type: "habit/update",
+      habit: { ...habit("h2"), metrics: [] },
+    });
+    expect(out2.routines[0].steps.map((x) => x.id)).toEqual(["s1", "s2"]);
+  });
+});
+
 describe("reduce: replacing everything", () => {
   const saved: PersistedState = {
     schemaVersion: SCHEMA_VERSION,
@@ -342,6 +446,7 @@ describe("reduce: replacing everything", () => {
     units: [],
     config: { ...DEFAULT_CONFIG, theme: "light" },
     groups: [{ id: "g1", name: "Music", emoji: "🎵", collapsed: false }],
+    routines: [{ id: "r9", name: "Practice", rounds: 1, prep: 0, steps: [] }],
     timers: { "h9:m1": 1000 },
   };
   const before = state({
@@ -358,6 +463,7 @@ describe("reduce: replacing everything", () => {
       units: saved.units,
       config: saved.config,
       groups: saved.groups,
+      routines: saved.routines,
       timers: saved.timers,
     });
   });
@@ -376,6 +482,7 @@ describe("reduce: replacing everything", () => {
       units: saved.units,
       config: saved.config,
       groups: saved.groups,
+      routines: saved.routines,
       timers: {},
     });
   });

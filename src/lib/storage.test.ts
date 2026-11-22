@@ -29,6 +29,7 @@ const sample: PersistedState = {
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
   groups: [],
+  routines: [],
 };
 
 // The same state as an older version stored it: no schema version, intensity

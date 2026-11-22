@@ -150,6 +150,7 @@ describe("App saves", () => {
     units: [...BUILTIN_UNITS, km],
     config: { ...DEFAULT_CONFIG, numMonths: 6, theme: "light" },
     groups: [],
+    routines: [],
     timers: { "gone:m1": 1_700_000_000_000 },
   };
 
@@ -194,6 +195,7 @@ describe("App changes to habits", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [],
+    routines: [],
   };
   const lastSaved = () => mockSave.mock.lastCall![0];
 
@@ -371,6 +373,7 @@ describe("App groups", () => {
       { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
       { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
     ],
+    routines: [],
   };
 
   beforeEach(() => {
@@ -503,6 +506,7 @@ describe("App at midnight", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [],
+    routines: [],
   };
 
   beforeEach(() => {
@@ -593,6 +597,7 @@ describe("App backup import", () => {
       units: BUILTIN_UNITS,
       config: DEFAULT_CONFIG,
       groups: [],
+      routines: [],
       timers: {},
     });
   });
@@ -637,5 +642,86 @@ describe("App save errors", () => {
     await changeTheme("Dark");
     await waitFor(() => expect(banner()).not.toBeInTheDocument());
     expect(mockSave).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("App routines", () => {
+  const plank: Habit = {
+    id: "h1",
+    name: "Plank",
+    emoji: "🧘",
+    color: "Green",
+    metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+    intensityMode: "total",
+  };
+  const loaded: PersistedState = {
+    schemaVersion: SCHEMA_VERSION,
+    habits: [plank],
+    logs: {},
+    units: BUILTIN_UNITS,
+    config: DEFAULT_CONFIG,
+    groups: [],
+    routines: [
+      {
+        id: "r1",
+        name: "Morning",
+        rounds: 1,
+        prep: 5,
+        steps: [
+          {
+            kind: "habit",
+            id: "s1",
+            habitId: "h1",
+            metricId: "m1",
+            by: "time",
+            seconds: 60,
+            count: 10,
+          },
+        ],
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the Routines page from the header, over the habits, and back", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+    await userEvent.click(await screen.findByTitle("Routines"));
+    expect(
+      screen.getByRole("heading", { name: "Routines" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Morning" })).toBeVisible();
+    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(screen.queryByRole("heading", { name: "Routines" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Plank", level: 3 }),
+    ).toBeInTheDocument();
+  });
+
+  it("saves a routine with the rest of the data", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+    await userEvent.click(await screen.findByTitle("Routines"));
+    await userEvent.click(screen.getByRole("button", { name: "Edit Morning" }));
+    await userEvent.click(screen.getByRole("button", { name: "More rounds" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(mockSave.mock.lastCall?.[0].routines[0].rounds).toBe(2),
+    );
   });
 });

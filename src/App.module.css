@@ -80,8 +80,36 @@
   line-height: 1;
 }
 
+/* With the Routines button too, the header is too wide for a phone: New
+   Habit shrinks to its "+" (the label stays for screen readers). */
+@media (max-width: 440px) {
+  .newBtn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+  .newBtnLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 .content {
   min-height: 200px;
+}
+
+/* The habits while the Routines page is over them. Out of sight and taking no
+   height, but still laid out at the same width (not display: none), so cards
+   don't rebuild and the header's entrance doesn't replay. */
+.away {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
 }
 .empty {
   background: var(--c-surface);

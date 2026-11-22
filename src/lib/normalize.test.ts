@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalizeState, SCHEMA_VERSION } from "./normalize";
+import { normalizeRun, normalizeState, SCHEMA_VERSION } from "./normalize";
+import type { Run } from "./routineRun";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
 import type { PersistedState } from "../types";
 
@@ -88,11 +89,12 @@ const v2Normalized: PersistedState = {
   units: BUILTIN_UNITS,
   config: DEFAULT_CONFIG,
   groups: [],
+  routines: [],
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 3", () => {
-    expect(SCHEMA_VERSION).toBe(3);
+  it("is at schema version 4", () => {
+    expect(SCHEMA_VERSION).toBe(4);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -561,5 +563,207 @@ describe("normalizeState — groups", () => {
       groups: [music, { id: "g2" }],
     });
     expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeState — routines", () => {
+  const pushUps = {
+    id: "push",
+    name: "Push-ups",
+    metrics: [{ id: "r", name: "Reps", unit: "reps" }],
+  };
+  const reading = {
+    id: "read",
+    name: "Reading",
+    metrics: [{ id: "m", name: "Time", unit: "min" }],
+  };
+  const pushStep = {
+    kind: "habit",
+    id: "s1",
+    habitId: "push",
+    metricId: "r",
+    by: "count",
+    seconds: 45,
+    count: 12,
+  };
+  const pause = { kind: "break", id: "s2", seconds: 20 };
+  const morning = {
+    id: "r1",
+    name: "Morning",
+    rounds: 3,
+    prep: 0,
+    steps: [pushStep, pause],
+  };
+  const routinesOf = (routines: unknown) =>
+    accept({ habits: [pushUps, reading], routines }).routines;
+
+  it("starts with no routines when there are none", () => {
+    expect(accept({ habits: [] }).routines).toEqual([]);
+  });
+
+  it("keeps routines in their stored order, as they are", () => {
+    const evening = { ...morning, id: "r2", name: "Evening" };
+    expect(routinesOf([evening, morning])).toEqual([evening, morning]);
+  });
+
+  it("fills in what a routine lacks", () => {
+    expect(routinesOf([{ id: "r1" }])).toEqual([
+      { id: "r1", name: "", rounds: 1, prep: 5, steps: [] },
+    ]);
+    expect(
+      routinesOf([{ ...morning, rounds: 0, prep: -1, name: 7 }])[0],
+    ).toMatchObject({ name: "", rounds: 1, prep: 5 });
+  });
+
+  it("fills in what a step lacks: timed, a minute, a count of 10", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [
+          { kind: "habit", id: "a", habitId: "push", metricId: "r" },
+          { kind: "break", id: "b" },
+        ],
+      },
+    ]);
+    expect(r.steps).toEqual([
+      {
+        kind: "habit",
+        id: "a",
+        habitId: "push",
+        metricId: "r",
+        by: "time",
+        seconds: 60,
+        count: 10,
+      },
+      { kind: "break", id: "b", seconds: 30 },
+    ]);
+  });
+
+  it("drops a step whose habit or metric is gone", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [
+          { ...pushStep, habitId: "gone" },
+          { ...pushStep, id: "s3", metricId: "gone" },
+          { ...pushStep, id: "s4", habitId: 7 },
+          pause,
+        ],
+      },
+    ]);
+    expect(r.steps).toEqual([pause]);
+  });
+
+  it("times a counted step on a metric that doesn't count", () => {
+    const [r] = routinesOf([
+      {
+        ...morning,
+        steps: [{ ...pushStep, habitId: "read", metricId: "m" }],
+      },
+    ]);
+    expect(r.steps[0]).toMatchObject({ by: "time", seconds: 45 });
+  });
+
+  it("rejects routines and steps that aren't lists of objects with ids", () => {
+    expect(reject({ habits: [], routines: {} })).toBe("routines is not a list");
+    expect(reject({ habits: [], routines: [{ name: "x" }] })).toBe(
+      "routines[0] has no id",
+    );
+    expect(reject({ habits: [], routines: [{ id: "r", steps: 1 }] })).toBe(
+      "routines[0].steps is not a list",
+    );
+    expect(
+      reject({
+        habits: [],
+        routines: [{ id: "r", steps: [{ kind: "break" }] }],
+      }),
+    ).toBe("routines[0].steps[0] has no id");
+  });
+
+  it("rejects a step that's neither a habit nor a break", () => {
+    expect(
+      reject({
+        habits: [],
+        routines: [{ id: "r", steps: [{ id: "s", kind: "rest" }] }],
+      }),
+    ).toBe("routines[0].steps[0] is neither a habit nor a break");
+  });
+
+  it("gives the same result when run twice", () => {
+    const once = accept({
+      habits: [pushUps, reading],
+      routines: [morning, { id: "r2" }],
+    });
+    expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeRun: a run in progress as stored", () => {
+  const run: Run = {
+    routine: {
+      id: "r1",
+      name: "Morning",
+      rounds: 2,
+      prep: 5,
+      steps: [
+        {
+          kind: "habit",
+          id: "s1",
+          habitId: "h1",
+          metricId: "m1",
+          by: "count",
+          seconds: 60,
+          count: 10,
+        },
+        { kind: "break", id: "s2", seconds: 30 },
+      ],
+    },
+    startedAt: 1_000_000,
+    pausedAt: 1_030_000,
+    pausedMs: 2_000,
+    shiftMs: -500,
+    ends: { "0:0": 41.5 },
+    results: {
+      "0:0": { status: "logged", amount: 10, text: "10 reps", set: { r: 10 } },
+      "1:0": { status: "skipped" },
+    },
+    finished: true,
+  };
+
+  it("reads a run back as it was", () => {
+    expect(normalizeRun(JSON.parse(JSON.stringify(run)))).toEqual(run);
+  });
+
+  it("keeps the routine as it was, though its habits are gone", () => {
+    expect(normalizeRun(run)?.routine.steps).toHaveLength(2);
+  });
+
+  it("gives up on anything that isn't a run", () => {
+    expect(normalizeRun(null)).toBeNull();
+    expect(normalizeRun("run")).toBeNull();
+    expect(normalizeRun({ ...run, routine: { name: "x" } })).toBeNull();
+    expect(normalizeRun({ ...run, startedAt: "soon" })).toBeNull();
+  });
+
+  it("drops what it can't read of its ends and results", () => {
+    const out = normalizeRun({
+      ...run,
+      pausedAt: "x",
+      pausedMs: undefined,
+      ends: { "0:0": 41.5, "1:0": "x" },
+      results: {
+        ...run.results,
+        "0:2": { status: "logged", amount: "ten" },
+        "1:2": "skipped",
+      },
+      finished: "yes",
+    });
+    expect(out).toEqual({
+      ...run,
+      pausedAt: undefined,
+      pausedMs: 0,
+      ends: { "0:0": 41.5 },
+      finished: false,
+    });
   });
 });

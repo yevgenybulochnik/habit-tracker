@@ -1,0 +1,44 @@
+.wrap {
+  position: relative;
+  /* Leaves room under it for the controls and the top of the log. */
+  width: min(360px, 80vw, 40vh);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  /* What's in the centre is sized to the ring (cqw). */
+  container-type: inline-size;
+}
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.track {
+  fill: none;
+  stroke-opacity: 0.16;
+}
+.fill {
+  fill: none;
+  stroke-linecap: round;
+}
+.butt {
+  stroke-linecap: butt;
+}
+.current {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+/* A counted step under way: lit, not yet filled. */
+.underWay {
+  stroke-opacity: 0.55;
+}
+
+/* The disc inside the inner ring: the current activity. */
+.centre {
+  position: absolute;
+  inset: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+}

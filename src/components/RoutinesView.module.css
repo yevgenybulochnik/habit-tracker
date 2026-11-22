@@ -1,0 +1,224 @@
+/* Header: laid out like the habits page's, with a way back at its start. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.back {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.back:hover,
+.back:focus-visible {
+  border-color: var(--c-muted);
+  color: var(--c-text);
+}
+.headText {
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--c-muted);
+}
+.newBtn {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.newBtn:hover:not(:disabled) {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  transform: translateY(-1px);
+}
+.newBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.newBtnPlus {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* The routines, one card each. */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  transition: border-color 0.2s;
+}
+.card:hover {
+  border-color: var(--c-borderLight);
+}
+.cardMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cardMain:focus-visible {
+  outline: 2px solid var(--c-accent);
+}
+.ring {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+}
+.ringArc {
+  fill: none;
+  stroke-width: 6;
+}
+.ringText {
+  fill: var(--c-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.cardText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cardName {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardMeta {
+  font-size: 11px;
+  color: var(--c-muted);
+}
+.cardSteps {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--c-dim);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.startBtn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 0 3px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.startBtn:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+.startBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.openBtn {
+  flex: 0 0 auto;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 1px solid var(--c-accent);
+  background: var(--c-accentDim);
+  color: var(--c-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 11px;
+  color: var(--c-dim);
+}
+
+/* No routines yet: like the habits page's empty state. */
+.empty {
+  background: var(--c-surface);
+  border-radius: 10px;
+  border: 1px dashed var(--c-border);
+  padding: 48px 20px;
+  text-align: center;
+}
+.emptyIcon {
+  color: var(--c-muted);
+  margin-bottom: 16px;
+}
+.emptyTitle {
+  font-size: 16px;
+  color: var(--c-muted);
+  margin-bottom: 8px;
+}
+.emptyHint {
+  max-width: 320px;
+  margin: 0 auto;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-dim);
+}
+
+/* The editor's page. */
+.panel {
+  padding: 18px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+}

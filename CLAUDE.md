@@ -81,8 +81,9 @@ current-format state), `state` (the app's reducer, below), `groups` (habits spli
 sections: `groupSections`, `ungroupedHabits`, and `setMembers` for a group's habits),
 `calendarNav` (a card's calendar
 navigation, `navigate` over `{ offset, zoomed, view }`), `units` (parsing and validating a
-unit form: `buildUnit`), `ids` (`newId`), and `defaults`
-(storage key, built-in units, default config, month/weekday labels). Prefer adding logic
+unit form: `buildUnit`), `ids` (`newId`), the routines' three (below: `routines`,
+`routineRun`, `routineLog`), and `defaults`
+(storage keys, built-in units, default config, month/weekday labels). Prefer adding logic
 here over inside components. `boundary.test.ts`
 enforces the purity: a lib module may import only other lib modules, `../types`, and
 `idb-keyval`.
@@ -90,7 +91,9 @@ enforces the purity: a lib module may import only other lib modules, `../types`,
 **Shared non-lib constants** live in two root modules: `src/theme.ts` (`THEMES`, the `C`
 CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
 `src/globalCss.ts` (`CSS`). `src/download.ts` (`downloadJson`) is the shared file-download
-helper; it needs the DOM, so it isn't in lib. Anything used by a single component sits with
+helper; it needs the DOM, so it isn't in lib, and so are `src/slide.ts` (`slide`, the
+sideways page change, a view transition whose keyframes are in `globalCss`) and `src/cues.ts`
+(a routine's sounds and buzzes). Anything used by a single component sits with
 it (the d3 easing `D3E` inside `CalendarPanel`). The emoji choices, `EMOJIS` for a habit and
 `GROUP_EMOJIS` for a group, are in `components/emojis.ts`.
 
@@ -113,11 +116,34 @@ in display order, and a habit names its group with an optional `groupId`: absent
 none, and a habit is in at most one. The habit list keeps a single order, so a section's
 habits are that list filtered, and reordering within a section is a `habit/reorder`.
 
+**Routines.** `PersistedState.routines` (schema v4) lists the `Routine`s: a name, `rounds`, a
+get-ready (`prep`, seconds) and `steps`, each a `HabitStep` (one `habitId` + `metricId`, done
+`by` `"time"` for `seconds` or by `"count"` for `count`, at your own pace; both values are
+kept) or a timed `BreakStep`. `lib/routines` holds what a routine is: `captureFor` (how a step
+logs: a count, minutes from its time, or a check-off), `routineProblems` (what the editor needs
+before saving), and `fitRoutine`, which keeps routines in line with the habits (a step whose
+habit or metric is gone is dropped, and a counted step whose metric no longer counts is
+timed); `normalizeState` runs it on load and the reducer on `habit/update` and `habit/delete`.
+It is also the **one place that knows about multi-metric habits** (`stepName`,
+`stepFullName`, `stepChoices`, `stepShade`): they are to be retired, so keep that rule there.
+`lib/routineRun` lays a routine out in `Slot`s (round by round, the last round's closing breaks
+dropped) and works out where a `Run` is from timestamps alone (`startedAt`, pauses, skips, and
+`ends`, when each counted step was said to be done), so a run survives a reload or the phone
+sleeping; a counted step is `open` (end Infinity) until then. `lib/routineLog` turns a slot into
+the reducer's log actions, and `relogActions` changes or takes back what it logged (its set
+replaced where it stands in the day). The run in progress is **not** in the saved state: it
+changes with every pause and skip and isn't backed up, so `useRoutineRun`
+(`src/hooks/useRoutineRun.ts`) keeps it in localStorage under `RUN_KEY`, read back through
+`normalizeRun` (which gives up on a run it can't read; the logs are saved already). A run keeps
+the routine as it was at Start. The hook ticks every frame while a run is going: it cues each
+change, logs the habits that log themselves as they end, and marks the run finished.
+
 **Data is normalized once, at the boundary (`src/lib/normalize.ts`).** Everything read from
 IndexedDB or a backup file passes through `normalizeState`, which fills in what older data
 lacks (a habit's `metrics`/`intensityMode`, a sets metric's `setFields`/`setValue`, config
-settings, built-in units, the groups and a group's fields; it drops a `groupId` whose group
-doesn't exist) and stamps `schemaVersion`. The types therefore mark those fields
+settings, built-in units, the groups and a group's fields, the routines and theirs; it drops a
+`groupId` whose group doesn't exist, and a routine's step whose habit doesn't) and stamps
+`schemaVersion`. The types therefore mark those fields
 required, and code that reads state must **not** add its own fallbacks for old data (no
 `habit.metrics || []`): a new default or a format migration goes in `normalizeState`, with
 a `SCHEMA_VERSION` bump for a migration (the versions are listed beside that constant; a
@@ -137,7 +163,7 @@ was asleep. Tests pass a fixed `today`; they never build keys from the real cloc
 
 **State & persistence (`src/App.tsx`, `src/lib/state.ts`).** `App` is the single stateful
 container: one `useReducer` over `reduce` from `lib/state` holds `habits`, `logs`, `units`,
-`config`, `groups` and `timers`, and every change is a dispatched `Action`. The reducer must stay pure
+`config`, `groups`, `routines` and `timers`, and every change is a dispatched `Action`. The reducer must stay pure
 (React calls it twice in dev), so anything else an action needs (a `newId`, `Date.now()` for
 a timer, the `today` key) is worked out by the caller and carried in the action. One effect in
 `App` saves each new state through `storage.saveState()`. It starts only after a load has
@@ -158,6 +184,17 @@ to its section and the chip of the section under the bar is highlighted. Each li
 (`renderList` in `App`) is its own `SortableHabits` drag context, so reorder mode moves a card
 within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
 a header opens `GroupEditModal` (name, emoji, its habits as a checklist, delete).
+
+**The Routines page.** The header's stopwatch slides the Routines page (`RoutinesView`: the
+list, and `RoutineEditor` as a page of its own) over the habits, which stay mounted underneath
+with the `.away` class (hidden and taking no height, not `display: none`, so cards keep their
+state) and get their scroll position back on the way back. `Routines`, mounted for as long as
+`App` is, holds the engine (`useRoutineRun`) and shows the page while it's open and a run over
+everything: `RoutineRunner` full screen (the `RoutineRing` timeline ring, the controls, and the
+log, a section per habit as the run reaches it: a counted one asks for its count, the others
+show what they logged, to change or take back; at the end a Done button closes the run), or
+minimised to `RoutinePill` in the corner. Under 440px New Habit shrinks to its "+" to make room
+in the header.
 
 **The habit card (`HabitCard`).** Each habit is a `HabitCard`: a header (hold-to-edit via
 `useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
@@ -234,4 +271,7 @@ Three layers. Unit/component tests are colocated as `*.test.ts(x)` next to their
 so the real service worker is active (see the red–green workflow above for how tests drive
 development). Date-dependent E2E specs set the time with Playwright's `page.clock`, and read
 how a day is drawn with the `dayCell` and `dayFill` helpers (cells are found through their d3
-datum).
+datum). The routines spec moves the clock with `page.clock.fastForward`: a run works from
+timestamps, and `runFor` replays every animation frame, which is slow over minutes.
+Vitest doesn't build CSS Modules, so a broken `composes:` path only shows in `npm run build`
+(which the E2E run does first).

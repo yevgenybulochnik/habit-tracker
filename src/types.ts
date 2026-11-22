@@ -64,6 +64,34 @@ export type Group = {
   collapsed: boolean;
 };
 
+/**
+ * A routine's step for a habit: one of its metrics, done for a time (an
+ * interval of `seconds`) or for a count (`count` of it, as long as that
+ * takes). Both are kept, so switching between them loses neither.
+ */
+export type HabitStep = {
+  kind: "habit";
+  id: string;
+  habitId: string;
+  metricId: string;
+  by: "time" | "count";
+  seconds: number;
+  count: number;
+};
+/** A timed break between a routine's habits. */
+export type BreakStep = { kind: "break"; id: string; seconds: number };
+export type RoutineStep = HabitStep | BreakStep;
+/** Habits done one after another, with breaks between, for some rounds. */
+export type Routine = {
+  id: string;
+  name: string;
+  /** At least 1. */
+  rounds: number;
+  /** Seconds to get ready between Start and the first step; 0 for none. */
+  prep: number;
+  steps: RoutineStep[];
+};
+
 /** A named color palette (5 shades from empty → max intensity). */
 export type Palette = { name: string; shades: string[] };
 
@@ -109,6 +137,8 @@ export type PersistedState = {
   config: AppConfig;
   /** In display order. */
   groups: Group[];
+  /** In display order. */
+  routines: Routine[];
   /** Running timers (absolute start timestamps) so they survive a reload. */
   timers?: Timers;
 };

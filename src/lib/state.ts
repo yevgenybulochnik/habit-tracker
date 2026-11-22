@@ -1,6 +1,7 @@
 import { setMembers } from "./groups";
 import { setDayLog } from "./logs";
 import { reorderById } from "./reorder";
+import { fitRoutines } from "./routines";
 import type {
   AppConfig,
   DayLog,
@@ -8,6 +9,7 @@ import type {
   Habit,
   Logs,
   PersistedState,
+  Routine,
   SetEntry,
   Timers,
   Unit,
@@ -20,6 +22,7 @@ export type AppState = {
   units: Unit[];
   config: AppConfig;
   groups: Group[];
+  routines: Routine[];
   timers: Timers;
 };
 
@@ -50,6 +53,10 @@ export type Action =
   /** Remove a group; its habits stay, in no group. */
   | { type: "group/delete"; id: string }
   | { type: "group/reorder"; activeId: string; overId: string }
+  | { type: "routine/add"; routine: Routine }
+  /** Replace the routine with the same id. */
+  | { type: "routine/update"; routine: Routine }
+  | { type: "routine/delete"; id: string }
   /** State read from storage, running timers included. */
   | { type: "state/load"; state: PersistedState }
   /** A backup replacing everything; its timers are long stale. */
@@ -70,19 +77,25 @@ export function reduce(state: AppState, action: Action): AppState {
         habits: [...state.habits, { id: action.id, ...action.habit }],
         logs: { ...state.logs, [action.id]: {} },
       };
-    case "habit/update":
+    case "habit/update": {
+      const habits = state.habits.map((h) =>
+        h.id === action.habit.id ? action.habit : h,
+      );
+      // Its metrics may have changed under the routines' steps.
       return {
         ...state,
-        habits: state.habits.map((h) =>
-          h.id === action.habit.id ? action.habit : h,
-        ),
+        habits,
+        routines: fitRoutines(state.routines, habits),
       };
+    }
     case "habit/delete": {
       const { [action.id]: _, ...logs } = state.logs;
+      const habits = state.habits.filter((h) => h.id !== action.id);
       return {
         ...state,
-        habits: state.habits.filter((h) => h.id !== action.id),
+        habits,
         logs,
+        routines: fitRoutines(state.routines, habits),
         timers: Object.fromEntries(
           Object.entries(state.timers).filter(
             ([key]) => !key.startsWith(`${action.id}:`),
@@ -176,15 +189,33 @@ export function reduce(state: AppState, action: Action): AppState {
         groups: reorderById(state.groups, action.activeId, action.overId),
       };
 
+    case "routine/add":
+      if (state.routines.some((r) => r.id === action.routine.id)) return state;
+      return { ...state, routines: [...state.routines, action.routine] };
+    case "routine/update":
+      return {
+        ...state,
+        routines: state.routines.map((r) =>
+          r.id === action.routine.id ? action.routine : r,
+        ),
+      };
+    case "routine/delete":
+      return {
+        ...state,
+        routines: state.routines.filter((r) => r.id !== action.id),
+      };
+
     case "state/load":
     case "state/import": {
-      const { habits, logs, units, config, groups, timers = {} } = action.state;
+      const { habits, logs, units, config, groups, routines } = action.state;
+      const { timers = {} } = action.state;
       return {
         habits,
         logs,
         units,
         config,
         groups,
+        routines,
         timers: action.type === "state/load" ? timers : {},
       };
     }

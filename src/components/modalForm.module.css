@@ -30,8 +30,10 @@
   font-weight: 600;
   transition: all 0.2s;
 }
+/* Greyed out, its label still readable (dim on borderLight is the same grey in
+   the dark theme). */
 .primaryBtn:disabled {
-  background: var(--c-borderLight);
-  color: var(--c-dim);
+  background: var(--c-border);
+  color: var(--c-muted);
   cursor: not-allowed;
 }

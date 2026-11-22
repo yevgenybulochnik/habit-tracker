@@ -12,6 +12,7 @@ import type {
   Habit,
   Logs,
   PersistedState,
+  Routine,
   Unit,
 } from "../types";
 import modal from "./modalForm.module.css";
@@ -22,6 +23,7 @@ type Props = {
   habits: Habit[];
   logs: Logs;
   groups: Group[];
+  routines: Routine[];
   onUpdateUnit: (id: string, updates: Partial<Unit>) => void;
   onDeleteUnit: (id: string) => void;
   onAddUnit: (u: Unit) => void;
@@ -36,6 +38,7 @@ export default function SettingsModal({
   habits,
   logs,
   groups,
+  routines,
   onUpdateUnit,
   onDeleteUnit,
   onAddUnit,
@@ -65,6 +68,7 @@ export default function SettingsModal({
       units,
       config: cfg,
       groups,
+      routines,
     };
     downloadJson(`habit-tracker-backup-${todayK()}.json`, state);
   };
