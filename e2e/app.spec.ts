@@ -106,6 +106,19 @@ test("persistence: a logged habit survives a reload", async ({ page }) => {
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(page.getByText("10 reps").first()).toBeVisible();
 
+  // The log is saved asynchronously, and a reload aborts a write still in
+  // flight, so wait for it to land before reloading.
+  await expect
+    .poll(async () => {
+      const stored = (await readStored(page, "habit-tracker-v3")) as
+        | { logs: Record<string, Record<string, Record<string, unknown>>> }
+        | undefined;
+      return Object.values(stored?.logs ?? {})
+        .flatMap((days) => Object.values(days))
+        .flatMap((day) => Object.values(day));
+    })
+    .toContain(10);
+
   await page.reload();
   // Value was persisted to IndexedDB and rehydrates
   await expect(
