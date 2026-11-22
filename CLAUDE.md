@@ -176,8 +176,11 @@ forward to `habit-tracker-v3` and returns normalized state. If the stored data c
 normalized, `loadState` copies it to the `habit-tracker-recovery` key and rejects with an
 `InvalidDataError`; `App` then shows its load-error screen (where saving is blocked) with a
 "Download raw data" button. There is no external state library and no backend. The dashboard
-is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`quick` |
-`calendar`) toggle. With no groups it's one list of cards. Once there are groups it's
+is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`compact` |
+`calendar`) toggle. Compact (the default; it replaced a Quick view, and a stored `quick` reads
+as it) shows each card down to its header, as reordering does: tapping a card opens its
+quick-log, and `App` keeps one open at a time (`openLog`, shut again for reordering or a change
+of view). With no groups it's one list of cards. Once there are groups it's
 `GroupSections`: a pinned `GroupBar` (a scroll-to-top button and a chip per group, with its
 count done today), the habits in no group, then a collapsible section per group; a chip jumps
 to its section and the chip of the section under the bar is highlighted. Each list of cards
@@ -208,8 +211,12 @@ in the header.
 
 **The habit card (`HabitCard`).** Each habit is a `HabitCard`: a header (hold-to-edit via
 `useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
-`CalendarPanel`, an inline `DayEditor` and the quick-log. A card collapses (Quick) or expands
-to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-rows`. The card
+`CalendarPanel`, an inline `DayEditor` and the quick-log. A card collapses (Compact) or expands
+to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-rows`. Collapsed,
+its quick-log shows only while `logOpen`, and a tap anywhere on the card outside it calls
+`onToggleLog`; the name is then a button inside the `h3` (the accordion pattern, so the card
+stays a heading), and a shut quick-log is `inert` and `aria-hidden`. A collapsed card logged
+today (`data-done`) is shaded in its colour. The card
 owns the calendar's navigation (`useReducer` over `navigate` from `lib/calendarNav`) rather than
 the panel, because logging from quick-log zooms the calendar in to this month as well as the
 arrows. It also owns the selected day: tapping a calendar day opens the inline `DayEditor` for
@@ -234,8 +241,9 @@ habit form's Group menu (`GroupField`) makes a group the same way, with "+ New g
 Emojis are picked from a grid, the shared `EmojiPicker` (the habit form's icon, and a group's
 in `GroupField` and `GroupEditPage`), never typed: a text box is no way to choose one on a phone.
 Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
-finger moving more than 10px, and after a hold fires it prevents the release's click: the
-editor it opened is under the finger. While a slide runs, a touch or click lands on the page as a
+finger moving more than 10px, and after a hold fires it prevents the release's click (a touch's,
+and a mouse's, which would also open a Compact card's quick-log): the editor it opened is under
+the finger. While a slide runs, a touch or click lands on the page as a
 whole, so E2E specs wait for it with `slideDone` (`createHabit` does).
 Components send edits up from their **event handlers, not from effects** watching local state:
 `DayEditor` writes each edit as it's made (mounting writes nothing, even under StrictMode's
