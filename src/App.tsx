@@ -25,6 +25,9 @@ import AddHabitModal from "./components/AddHabitModal";
 import EditHabitModal from "./components/EditHabitModal";
 import SettingsModal from "./components/SettingsModal";
 import BrandMark from "./components/BrandMark";
+import Icon from "./components/Icon";
+import Routines from "./components/Routines";
+import { slide } from "./slide";
 import type { Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
 
@@ -67,6 +70,25 @@ export default function App() {
   const [saveFailed, setSaveFailed] = useState(false); // last save threw
   // The state as last loaded or saved. It stays null until a load succeeds.
   const savedRef = useRef<AppState | null>(null);
+  // The header's stopwatch slides the Routines page over the habits, which
+  // stay mounted underneath (cards keep their state) and get their scroll
+  // position back on the way back.
+  const [routinesOpen, setRoutinesOpen] = useState(false);
+  const habitsScroll = useRef(0);
+  const openRoutines = () => {
+    habitsScroll.current = window.scrollY;
+    slide(
+      "forward",
+      () => setRoutinesOpen(true),
+      () => window.scrollTo(0, 0),
+    );
+  };
+  const closeRoutines = () =>
+    slide(
+      "back",
+      () => setRoutinesOpen(false),
+      () => window.scrollTo(0, habitsScroll.current),
+    );
 
   // Keep the page background and iOS status-bar color in sync with the theme
   // (body and the <meta> tag live outside the themed root element).
@@ -222,111 +244,137 @@ export default function App() {
           </div>
         )}
 
-        {/* Header */}
-        <div className={`stagger-child ${styles.header}`}>
-          <div>
-            <h1 className={styles.title}>
-              <BrandMark />
-              Habits
-            </h1>
-            <p className={styles.subtitle}>
-              {habits.length > 0
-                ? `${completed}/${habits.length} completed today`
-                : "Start tracking"}
-            </p>
-          </div>
-          <div className={styles.headerActions}>
-            <button
-              onClick={() => setShowUnits(true)}
-              title="Settings"
-              className={styles.iconBtn}
-            >
-              ⚙
-            </button>
-            <button onClick={() => setShowAdd(true)} className={styles.newBtn}>
-              <span className={styles.newBtnPlus}>+</span> New Habit
-            </button>
-          </div>
-        </div>
-
-        {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
-        <div className={styles.content}>
-          {habits.length === 0 ? (
-            <div className={styles.empty}>
-              <div className={styles.emptyIcon}>📊</div>
-              <div className={styles.emptyTitle}>No habits yet</div>
-              <div className={styles.emptyHint}>Click "New Habit" to start</div>
+        <div className={routinesOpen ? styles.away : undefined}>
+          {/* Header */}
+          <div className={`stagger-child ${styles.header}`}>
+            <div>
+              <h1 className={styles.title}>
+                <BrandMark />
+                Habits
+              </h1>
+              <p className={styles.subtitle}>
+                {habits.length > 0
+                  ? `${completed}/${habits.length} completed today`
+                  : "Start tracking"}
+              </p>
             </div>
-          ) : (
-            <>
-              <div className={styles.controls}>
-                {reorder ? (
-                  <span key="hint" className={styles.reorderHint}>
-                    Drag the ⠿ handles to reorder
-                  </span>
-                ) : (
-                  <div key="views" className={styles.viewSeg}>
-                    {(
-                      [
-                        { id: "quick", label: "Quick" },
-                        { id: "calendar", label: "Calendar" },
-                      ] as const
-                    ).map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() =>
-                          dispatch({
-                            type: "config/update",
-                            changes: { dashView: v.id },
-                          })
-                        }
-                        className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
-                      >
-                        {v.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {(habits.length > 1 || groups.length > 1) && (
-                  <button
-                    onClick={() => setReorder((r) => !r)}
-                    className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
-                  >
-                    {reorder ? "Done" : "⠿ Reorder"}
-                  </button>
-                )}
+            <div className={styles.headerActions}>
+              <button
+                onClick={openRoutines}
+                title="Routines"
+                className={styles.iconBtn}
+              >
+                <Icon name="stopwatch" size={18} />
+              </button>
+              <button
+                onClick={() => setShowUnits(true)}
+                title="Settings"
+                className={styles.iconBtn}
+              >
+                ⚙
+              </button>
+              <button
+                onClick={() => setShowAdd(true)}
+                className={styles.newBtn}
+              >
+                <span className={styles.newBtnPlus}>+</span>
+                <span className={styles.newBtnLabel}>New Habit</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
+          <div className={styles.content}>
+            {habits.length === 0 ? (
+              <div className={styles.empty}>
+                <div className={styles.emptyIcon}>📊</div>
+                <div className={styles.emptyTitle}>No habits yet</div>
+                <div className={styles.emptyHint}>
+                  Click "New Habit" to start
+                </div>
               </div>
-              <DispatchContext.Provider value={dispatch}>
-                {groups.length > 0 ? (
-                  <GroupSections
-                    sections={groupSections(habits, groups)}
-                    ungrouped={ungroupedHabits(habits, groups)}
-                    renderList={renderList}
-                    isDone={(h) => logActive(h, logs[h.id]?.[today], units)}
-                    onToggle={(id, collapsed) =>
-                      dispatch({
-                        type: "group/update",
-                        id,
-                        changes: { collapsed },
-                      })
-                    }
-                    reorder={reorder}
-                    onReorderGroups={(activeId, overId) =>
-                      dispatch({ type: "group/reorder", activeId, overId })
-                    }
-                    onEditGroup={setEditGroupId}
-                  />
-                ) : (
-                  renderList(habits)
-                )}
-              </DispatchContext.Provider>
-            </>
-          )}
+            ) : (
+              <>
+                <div className={styles.controls}>
+                  {reorder ? (
+                    <span key="hint" className={styles.reorderHint}>
+                      Drag the ⠿ handles to reorder
+                    </span>
+                  ) : (
+                    <div key="views" className={styles.viewSeg}>
+                      {(
+                        [
+                          { id: "quick", label: "Quick" },
+                          { id: "calendar", label: "Calendar" },
+                        ] as const
+                      ).map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() =>
+                            dispatch({
+                              type: "config/update",
+                              changes: { dashView: v.id },
+                            })
+                          }
+                          className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {(habits.length > 1 || groups.length > 1) && (
+                    <button
+                      onClick={() => setReorder((r) => !r)}
+                      className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
+                    >
+                      {reorder ? "Done" : "⠿ Reorder"}
+                    </button>
+                  )}
+                </div>
+                <DispatchContext.Provider value={dispatch}>
+                  {groups.length > 0 ? (
+                    <GroupSections
+                      sections={groupSections(habits, groups)}
+                      ungrouped={ungroupedHabits(habits, groups)}
+                      renderList={renderList}
+                      isDone={(h) => logActive(h, logs[h.id]?.[today], units)}
+                      onToggle={(id, collapsed) =>
+                        dispatch({
+                          type: "group/update",
+                          id,
+                          changes: { collapsed },
+                        })
+                      }
+                      reorder={reorder}
+                      onReorderGroups={(activeId, overId) =>
+                        dispatch({ type: "group/reorder", activeId, overId })
+                      }
+                      onEditGroup={setEditGroupId}
+                    />
+                  ) : (
+                    renderList(habits)
+                  )}
+                </DispatchContext.Provider>
+              </>
+            )}
+          </div>
+
+          <div className={`stagger-child ${styles.footer}`}>
+            tap a day to log it · long-press a habit to edit · ‹› to navigate
+          </div>
         </div>
 
-        <div className={`stagger-child ${styles.footer}`}>
-          tap a day to log it · long-press a habit to edit · ‹› to navigate
-        </div>
+        <Routines
+          habits={habits}
+          logs={logs}
+          routines={routines}
+          theme={theme}
+          today={today}
+          dispatch={dispatch}
+          open={routinesOpen}
+          onBack={closeRoutines}
+        />
       </div>
 
       {/* Modals */}

@@ -22,6 +22,19 @@ input,select,textarea{font-size:16px !important}
    touch panning, or a drag started on the icon/name is stolen by page scroll
    (touch-action isn't inherited, so cover descendants explicitly). */
 .reorder-drag,.reorder-drag *{touch-action:none}
+/* The slide between pages (see slide.ts), only while data-slide is set: the
+   page on top covers the one beneath (no cross-fade's blend), which moves a
+   third as far and dims, as on iOS. */
+:root[data-slide]::view-transition-old(root),:root[data-slide]::view-transition-new(root){animation-duration:.38s;animation-timing-function:cubic-bezier(.2,.8,.2,1);animation-fill-mode:both;mix-blend-mode:normal}
+:root[data-slide=forward]::view-transition-old(root){animation-name:slide-out-left}
+:root[data-slide=forward]::view-transition-new(root){animation-name:slide-in-right}
+:root[data-slide=back]::view-transition-old(root){animation-name:slide-out-right}
+:root[data-slide=back]::view-transition-new(root){animation-name:slide-in-left}
+:root[data-slide=forward]::view-transition-new(root),:root[data-slide=back]::view-transition-old(root){z-index:1;box-shadow:-12px 0 32px rgba(0,0,0,.35)}
+@keyframes slide-out-left{to{transform:translateX(-30%);filter:brightness(.6)}}
+@keyframes slide-in-left{from{transform:translateX(-30%);filter:brightness(.6)}}
+@keyframes slide-in-right{from{transform:translateX(100%)}}
+@keyframes slide-out-right{to{transform:translateX(100%)}}
 `;
 
 // (Form input/label styles now live in src/styles/shared.module.css.)
