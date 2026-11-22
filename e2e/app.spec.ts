@@ -44,6 +44,39 @@ test("switching to the light theme updates the appearance", async ({
   );
 });
 
+test("a form's disabled button stays readable in both themes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const theme of ["dark", "light"] as const) {
+    await setTheme(page, theme);
+    await page.getByRole("button", { name: /New Habit/i }).click();
+    // Nothing named yet, so Create can't be pressed.
+    const create = page.getByRole("button", { name: /^Create$/ });
+    await expect(create).toBeDisabled();
+    const ratio = await create.evaluate((el) => {
+      const style = getComputedStyle(el);
+      const lum = (rgb: string) => {
+        const [r, g, b] = rgb
+          .match(/\d+/g)!
+          .slice(0, 3)
+          .map((v) => {
+            const c = Number(v) / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const [hi, lo] = [lum(style.color), lum(style.backgroundColor)].sort(
+        (a, b) => b - a,
+      );
+      return (hi + 0.05) / (lo + 0.05);
+    });
+    expect(ratio, `${theme} theme`).toBeGreaterThanOrEqual(3);
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(create).toHaveCount(0);
+  }
+});
+
 test("smoke: app shell and PWA assets load", async ({ page }) => {
   await page.goto("/");
   await expect(
