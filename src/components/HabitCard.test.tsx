@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import HabitCard from "./HabitCard";
 import { DispatchContext } from "../hooks/useHabitActions";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
@@ -29,9 +30,14 @@ const today = "2026-05-24";
 const ALL_MONTHS = "Feb – May 2026"; // the default 4 months
 const THIS_MONTH = "May 2026"; // zoomed in
 
-function renderCard(habit: Habit, expanded: boolean, logs: HabitLogs = {}) {
+function renderCard(
+  habit: Habit,
+  expanded: boolean,
+  logs: HabitLogs = {},
+  props: Partial<ComponentProps<typeof HabitCard>> = {},
+) {
   const dispatch = vi.fn();
-  render(
+  const view = render(
     <DispatchContext.Provider value={dispatch}>
       <HabitCard
         habit={habit}
@@ -41,11 +47,14 @@ function renderCard(habit: Habit, expanded: boolean, logs: HabitLogs = {}) {
         appConfig={DEFAULT_CONFIG}
         today={today}
         expanded={expanded}
+        {...props}
       />
     </DispatchContext.Provider>,
   );
-  return { dispatch };
+  return { dispatch, container: view.container };
 }
+
+const quickAdd = () => screen.queryByRole("button", { name: "+5" });
 
 beforeEach(() => {
   // The calendar measures its width, which jsdom can't do
@@ -88,8 +97,8 @@ describe("HabitCard", () => {
       );
     });
 
-    it("leaves the calendar alone in Quick view", async () => {
-      const { dispatch } = renderCard(repsHabit, false);
+    it("leaves the calendar alone in Compact view", async () => {
+      const { dispatch } = renderCard(repsHabit, false, {}, { logOpen: true });
       await userEvent.click(screen.getByRole("button", { name: "+5" }));
 
       expect(screen.getByText(ALL_MONTHS)).toBeInTheDocument();
@@ -104,6 +113,75 @@ describe("HabitCard", () => {
       expect(dispatch).toHaveBeenCalledWith(
         expect.objectContaining({ type: "log/reset" }),
       );
+    });
+  });
+
+  describe("in Compact view", () => {
+    it("keeps its quick-log shut until it's opened", () => {
+      renderCard(repsHabit, false);
+      expect(quickAdd()).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reading" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      // Its name is still the card's heading
+      expect(
+        screen.getByRole("heading", { name: "Reading", level: 3 }),
+      ).toBeInTheDocument();
+    });
+
+    it("asks for its quick-log when tapped, anywhere on the card", async () => {
+      const onToggleLog = vi.fn();
+      renderCard(repsHabit, false, {}, { onToggleLog });
+      await userEvent.click(screen.getByRole("button", { name: "Reading" }));
+      await userEvent.click(screen.getByText("Streak"));
+      expect(onToggleLog).toHaveBeenCalledTimes(2);
+    });
+
+    it("shows its quick-log while open, and logging there keeps it open", async () => {
+      const onToggleLog = vi.fn();
+      const { dispatch } = renderCard(
+        repsHabit,
+        false,
+        {},
+        { logOpen: true, onToggleLog },
+      );
+      expect(screen.getByRole("button", { name: "Reading" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      await userEvent.click(quickAdd()!);
+      expect(dispatch).toHaveBeenCalledOnce();
+      expect(onToggleLog).not.toHaveBeenCalled();
+    });
+
+    it("isn't opened by a tap while reordering", async () => {
+      const onToggleLog = vi.fn();
+      renderCard(
+        repsHabit,
+        false,
+        {},
+        { logOpen: true, onToggleLog, reorderMode: true },
+      );
+      expect(quickAdd()).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Reading" }),
+      ).not.toBeInTheDocument();
+      await userEvent.click(screen.getByText("Streak"));
+      expect(onToggleLog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("in Calendar view", () => {
+    it("always shows its quick-log, and a tap on the card does nothing", async () => {
+      const onToggleLog = vi.fn();
+      renderCard(repsHabit, true, {}, { onToggleLog });
+      expect(quickAdd()).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Reading" }),
+      ).not.toBeInTheDocument();
+      await userEvent.click(screen.getByText("Streak"));
+      expect(onToggleLog).not.toHaveBeenCalled();
     });
   });
 });

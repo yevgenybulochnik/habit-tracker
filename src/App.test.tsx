@@ -384,7 +384,8 @@ describe("App changes to habits", () => {
     render(<App />);
     const start = Date.now();
 
-    await userEvent.click(await screen.findByRole("button", { name: /Timer/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Run" }));
+    await userEvent.click(screen.getByRole("button", { name: /Timer/ }));
     await waitFor(() => expect(mockSave).toHaveBeenCalled());
     expect(lastSaved().timers).toEqual({ "h1:m1": start });
 
@@ -458,6 +459,39 @@ describe("App groups", () => {
     expect(
       screen.getByRole("navigation", { name: "Groups" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows one habit's quick-log at a time, in a group or not", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+    const piano = await screen.findByRole("button", { name: "Piano" });
+    const water = screen.getByRole("button", { name: "Water" });
+    const quickLogs = () => screen.queryAllByRole("button", { name: "+15" });
+    expect(quickLogs()).toHaveLength(0);
+
+    await userEvent.click(piano);
+    expect(piano).toHaveAttribute("aria-expanded", "true");
+    expect(quickLogs()).toHaveLength(1);
+
+    await userEvent.click(water);
+    expect(water).toHaveAttribute("aria-expanded", "true");
+    expect(piano).toHaveAttribute("aria-expanded", "false");
+    expect(quickLogs()).toHaveLength(1);
+
+    await userEvent.click(water);
+    expect(quickLogs()).toHaveLength(0);
+  });
+
+  it("shuts the open quick-log for reordering", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Piano" }));
+    await userEvent.click(screen.getByRole("button", { name: "⠿ Reorder" }));
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByRole("button", { name: "Piano" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
   it("shows the plain list, with no group bar, while there are no groups", async () => {
@@ -587,6 +621,12 @@ describe("App at midnight", () => {
   // Shown by the quick-log section only when today has a value
   const resetButton = () => screen.queryByRole("button", { name: "↺" });
 
+  /** Open the habit's quick-log, as Compact view shows each card shut. */
+  async function openRun() {
+    expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Run" }));
+  }
+
   /** Advance the clock past midnight; the app follows on its next frame. */
   async function passMidnight() {
     act(() => {
@@ -599,7 +639,7 @@ describe("App at midnight", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
+    await openRun();
     expect(resetButton()).toBeInTheDocument();
 
     await passMidnight();
@@ -610,7 +650,7 @@ describe("App at midnight", () => {
   it("logs to the new day after midnight", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
-    await screen.findByText("1/1 completed today");
+    await openRun();
 
     await passMidnight();
     fireEvent.click(screen.getByRole("button", { name: "+15" }));
