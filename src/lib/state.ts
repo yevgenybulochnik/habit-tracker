@@ -226,6 +226,10 @@ export function reduce(state: AppState, action: Action): AppState {
 export const timerKey = (habitId: string, metricId: string) =>
   `${habitId}:${metricId}`;
 
+/** Whether any of the habit's metrics has a timer running. */
+export const isTiming = (habit: Habit, timers: Timers): boolean =>
+  habit.metrics.some((m) => timers[timerKey(habit.id, m.id)] !== undefined);
+
 type MetricValue = DayLog[string] | undefined;
 
 const numberOf = (v: MetricValue) => (typeof v === "number" ? v : 0);

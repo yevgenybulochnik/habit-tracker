@@ -4,6 +4,7 @@ import { resolvePalette } from "../theme";
 import { getUnit } from "../lib/metrics";
 import { habitStats, logActive } from "../lib/stats";
 import { INITIAL_NAV, navigate } from "../lib/calendarNav";
+import { isTiming } from "../lib/state";
 import CalendarPanel from "./CalendarPanel";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
@@ -31,7 +32,7 @@ type Props = {
   /** Drag wiring (from the sortable wrapper); present only in reorder mode. */
   dragActivator?: DragActivator;
   /** Compact view (not expanded): whether its quick-log shows. App keeps
-   *  one card's open at a time. */
+   *  one card's open at a time; one with a timer running stays open too. */
   logOpen?: boolean;
   /** Compact view: the card was tapped, to show or hide its quick-log. */
   onToggleLog?: () => void;
@@ -65,11 +66,13 @@ export default function HabitCard({
   const [editorDate, setEditorDate] = useState<string | null>(null); // kept mounted through the close animation
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const quicklogRef = useRef<HTMLDivElement>(null);
-  // In Compact view a tap on the card shows or hides its quick-log. The
-  // quick-log is shut while reordering, while a day is being edited, and in
-  // Compact view until the card is tapped.
+  // In Compact view a tap on the card shows or hides its quick-log, and it
+  // stays open while a timer runs, so the timer stays in sight. The quick-log
+  // is shut while reordering, while a day is being edited, and in Compact
+  // view otherwise.
   const tappable = !expanded && !reorderMode;
-  const logShut = reorderMode || !!selectedDate || (!expanded && !logOpen);
+  const logShown = logOpen || isTiming(habit, timers);
+  const logShut = reorderMode || !!selectedDate || (!expanded && !logShown);
 
   const closeEditor = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -153,7 +156,7 @@ export default function HabitCard({
           {tappable ? (
             <button
               type="button"
-              aria-expanded={logOpen}
+              aria-expanded={logShown}
               className={styles.nameBtn}
             >
               {habit.name}

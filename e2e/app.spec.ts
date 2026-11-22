@@ -27,9 +27,12 @@ test("a running timer survives a page reload", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
   await page.waitForTimeout(300); // let the IndexedDB write flush
 
-  // Reload → the timer is still running (rehydrated from persisted start timestamp)
+  // Reload → the timer is still running (rehydrated from persisted start
+  // timestamp), and its card is open, untapped, to show it
   await page.reload();
-  await openQuickLog(page, "Meditate");
+  await expect(
+    page.getByRole("button", { name: "Meditate", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
 });
 

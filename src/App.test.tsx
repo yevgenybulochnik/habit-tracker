@@ -482,6 +482,25 @@ describe("App groups", () => {
     expect(quickLogs()).toHaveLength(0);
   });
 
+  it("keeps a card open while its timer runs, beside the one opened", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+    const piano = await screen.findByRole("button", { name: "Piano" });
+    const water = screen.getByRole("button", { name: "Water" });
+    await userEvent.click(piano);
+    await userEvent.click(screen.getByRole("button", { name: /Timer/ }));
+
+    await userEvent.click(water);
+    expect(water).toHaveAttribute("aria-expanded", "true");
+    expect(piano).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Stop/ })).toBeInTheDocument();
+
+    // Stopped, it shuts: it isn't the one opened
+    await userEvent.click(screen.getByRole("button", { name: /Stop/ }));
+    expect(piano).toHaveAttribute("aria-expanded", "false");
+    expect(water).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("shuts the open quick-log for reordering", async () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);

@@ -26,6 +26,14 @@ const setsHabit: Habit = {
   ],
   intensityMode: "total",
 };
+const minHabit: Habit = {
+  id: "h3",
+  name: "Walk",
+  emoji: "🚶",
+  color: "Green",
+  metrics: [{ id: "m3", name: "Minutes", unit: "min" }],
+  intensityMode: "total",
+};
 const today = "2026-05-24";
 const ALL_MONTHS = "Feb – May 2026"; // the default 4 months
 const THIS_MONTH = "May 2026"; // zoomed in
@@ -153,6 +161,27 @@ describe("HabitCard", () => {
       await userEvent.click(quickAdd()!);
       expect(dispatch).toHaveBeenCalledOnce();
       expect(onToggleLog).not.toHaveBeenCalled();
+    });
+
+    it("stays open while its timer runs, though not the one opened", () => {
+      renderCard(minHabit, false, {}, { timers: { "h3:m3": Date.now() } });
+      expect(screen.getByRole("button", { name: /Stop/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Walk" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
+
+    it("shuts while reordering, even with its timer running", () => {
+      renderCard(
+        minHabit,
+        false,
+        {},
+        { timers: { "h3:m3": Date.now() }, reorderMode: true },
+      );
+      expect(
+        screen.queryByRole("button", { name: /Stop/ }),
+      ).not.toBeInTheDocument();
     });
 
     it("isn't opened by a tap while reordering", async () => {

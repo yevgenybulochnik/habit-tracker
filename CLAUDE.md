@@ -213,7 +213,8 @@ in the header.
 `useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
 `CalendarPanel`, an inline `DayEditor` and the quick-log. A card collapses (Compact) or expands
 to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-rows`. Collapsed,
-its quick-log shows only while `logOpen`, and a tap anywhere on the card outside it calls
+its quick-log shows only while `logOpen` or a timer of its runs (`isTiming`, so a running timer
+stays in sight), and a tap anywhere on the card outside it calls
 `onToggleLog`; the name is then a button inside the `h3` (the accordion pattern, so the card
 stays a heading), and a shut quick-log is `inert` and `aria-hidden`. A collapsed card logged
 today (`data-done`) is shaded in its colour. The card
