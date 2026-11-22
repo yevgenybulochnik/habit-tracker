@@ -28,7 +28,7 @@ describe("default config", () => {
     expect(DEFAULT_CONFIG.theme).toBe("dark");
   });
 
-  it("defaults the dashboard view to quick", () => {
-    expect(DEFAULT_CONFIG.dashView).toBe("quick");
+  it("defaults the dashboard view to compact", () => {
+    expect(DEFAULT_CONFIG.dashView).toBe("compact");
   });
 });

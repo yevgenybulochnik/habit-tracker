@@ -160,7 +160,7 @@ export default function App() {
   const addUnit = (unit: Unit) => dispatch({ type: "unit/add", unit });
   const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
-  const dashView = appConfig.dashView; // persisted Quick/Calendar choice
+  const dashView = appConfig.dashView; // persisted Compact/Calendar choice
   const editGroup =
     page?.kind === "editGroup"
       ? groups.find((g) => g.id === page.id)
@@ -296,7 +296,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
+          {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}
           <div className={styles.content}>
             {habits.length === 0 ? (
               <div className={styles.empty}>
@@ -317,7 +317,7 @@ export default function App() {
                     <div key="views" className={styles.viewSeg}>
                       {(
                         [
-                          { id: "quick", label: "Quick" },
+                          { id: "compact", label: "Compact" },
                           { id: "calendar", label: "Calendar" },
                         ] as const
                       ).map((v) => (

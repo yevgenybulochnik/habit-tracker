@@ -425,6 +425,11 @@ describe("normalizeState — config", () => {
     });
   });
 
+  it("opens a Quick view saved before as Compact, which replaced it", () => {
+    expect(config({ dashView: "quick" }).dashView).toBe("compact");
+    expect(config({ dashView: "compact" }).dashView).toBe("compact");
+  });
+
   it("keeps a month gap of zero", () => {
     expect(config({ monthGap: 0 }).monthGap).toBe(0);
   });

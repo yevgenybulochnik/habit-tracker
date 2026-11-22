@@ -225,8 +225,9 @@ function normalizeConfig(raw: unknown): AppConfig {
     numMonths: isCount(numMonths, 1) ? numMonths : DEFAULT_CONFIG.numMonths,
     monthGap: isCount(monthGap, 0) ? monthGap : DEFAULT_CONFIG.monthGap,
     theme: theme === "dark" || theme === "light" ? theme : DEFAULT_CONFIG.theme,
+    // A Quick view saved before Compact replaced it is the default, Compact.
     dashView:
-      dashView === "quick" || dashView === "calendar"
+      dashView === "compact" || dashView === "calendar"
         ? dashView
         : DEFAULT_CONFIG.dashView,
   };

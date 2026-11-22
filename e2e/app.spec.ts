@@ -705,7 +705,7 @@ test("data stored by an older version loads, works, and is saved in the current 
     "count",
     "volume",
   ]);
-  expect(stored.config).toMatchObject({ theme: "dark", dashView: "quick" });
+  expect(stored.config).toMatchObject({ theme: "dark", dashView: "compact" });
 });
 
 test("an app left open past midnight moves on to the new day", async ({

@@ -70,10 +70,10 @@ export async function openSettings(page: Page) {
   await page.getByTitle("Settings").click();
 }
 
-/** Switch the dashboard view via the Quick/Calendar toggle. */
-export async function setDashView(page: Page, view: "quick" | "calendar") {
+/** Switch the dashboard view via the Compact/Calendar toggle. */
+export async function setDashView(page: Page, view: "compact" | "calendar") {
   await page
-    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Quick" })
+    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Compact" })
     .click();
 }
 
