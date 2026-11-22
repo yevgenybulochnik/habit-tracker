@@ -38,6 +38,16 @@ export async function slideDone(page: Page) {
   await page.waitForFunction(() => !document.documentElement.dataset.slide);
 }
 
+/**
+ * Open a habit's quick-log by tapping its card: Compact view, the default,
+ * shows each card shut until it's tapped, and one open at a time.
+ */
+export async function openQuickLog(page: Page, name: string) {
+  const card = page.getByRole("button", { name, exact: true });
+  await card.click();
+  await expect(card).toHaveAttribute("aria-expanded", "true");
+}
+
 /** In an open habit form, choose the group named `name`, making it if new. */
 async function chooseGroup(page: Page, name: string) {
   const menu = page.getByRole("combobox", { name: "Group" });
@@ -70,10 +80,10 @@ export async function openSettings(page: Page) {
   await page.getByTitle("Settings").click();
 }
 
-/** Switch the dashboard view via the Quick/Calendar toggle. */
-export async function setDashView(page: Page, view: "quick" | "calendar") {
+/** Switch the dashboard view via the Compact/Calendar toggle. */
+export async function setDashView(page: Page, view: "compact" | "calendar") {
   await page
-    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Quick" })
+    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Compact" })
     .click();
 }
 

@@ -114,7 +114,9 @@ export type Logs = Record<string, HabitLogs>;
 
 export type ThemeName = "dark" | "light";
 
-export type DashView = "quick" | "calendar";
+/** The dashboard's view: each card down to its header, its quick-log a tap
+ *  away (compact), or each with its calendar (calendar). */
+export type DashView = "compact" | "calendar";
 
 export type AppConfig = {
   numMonths: number;

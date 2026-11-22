@@ -12,23 +12,27 @@ import {
   dayCell,
   dayFill,
   cardStat,
+  openQuickLog,
+  slideDone,
 } from "./helpers";
 
 test("a running timer survives a page reload", async ({ page }) => {
   await page.goto("/");
   // Timers only show for "min"-unit metrics
   await createHabit(page, "Meditate", { metricName: "Minutes", unit: "min" });
+  await openQuickLog(page, "Meditate");
 
   // Start the timer → it shows "Stop"
   await page.getByRole("button", { name: /Timer/ }).click();
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
   await page.waitForTimeout(300); // let the IndexedDB write flush
 
-  // Reload → the timer is still running (rehydrated from persisted start timestamp)
+  // Reload → the timer is still running (rehydrated from persisted start
+  // timestamp), and its card is open, untapped, to show it
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Meditate", level: 3 }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Meditate", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
 });
 
@@ -101,6 +105,7 @@ test("smoke: app shell and PWA assets load", async ({ page }) => {
 test("persistence: a logged habit survives a reload", async ({ page }) => {
   await page.goto("/");
   await createHabit(page, "Pushups");
+  await openQuickLog(page, "Pushups");
 
   // Quick-log +10 reps on the dashboard card
   await page.getByRole("button", { name: "+10" }).first().click();
@@ -121,18 +126,16 @@ test("persistence: a logged habit survives a reload", async ({ page }) => {
 
   await page.reload();
   // Value was persisted to IndexedDB and rehydrates
-  await expect(
-    page.getByRole("heading", { name: "Pushups", level: 3 }),
-  ).toBeVisible();
+  await openQuickLog(page, "Pushups");
   await expect(page.getByText("10 reps").first()).toBeVisible();
 });
 
-test("Quick/Calendar toggle shows the heatmap and is remembered across reloads", async ({
+test("Compact/Calendar toggle shows the heatmap and is remembered across reloads", async ({
   page,
 }) => {
   await page.goto("/");
   await createHabit(page, "Reading");
-  // Default Quick view: no calendar cells drawn (d3 gated off while collapsed)
+  // Default Compact view: no calendar cells drawn (d3 gated off while collapsed)
   await expect(page.locator("svg rect.dc")).toHaveCount(0);
   // Switch to Calendar → cells appear
   await setDashView(page, "calendar");
@@ -153,6 +156,44 @@ test("Quick/Calendar toggle shows the heatmap and is remembered across reloads",
     page.getByRole("heading", { name: "Reading", level: 3 }),
   ).toBeVisible();
   await expect(page.locator("svg rect.dc").first()).toBeVisible();
+});
+
+test("Compact view: a tapped card opens its quick-log, one at a time, and is shaded once logged", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  await createHabit(page, "Pushups");
+  const reading = page.getByRole("button", { name: "Reading", exact: true });
+  const pushups = page.getByRole("button", { name: "Pushups", exact: true });
+  const quickAdds = page.getByRole("button", { name: "+10" });
+  await expect(quickAdds).toHaveCount(0);
+
+  await reading.click();
+  await expect(reading).toHaveAttribute("aria-expanded", "true");
+  await expect(quickAdds).toHaveCount(1);
+  // Opening another shuts the first
+  await pushups.click();
+  await expect(pushups).toHaveAttribute("aria-expanded", "true");
+  await expect(reading).toHaveAttribute("aria-expanded", "false");
+  await expect(quickAdds).toHaveCount(1);
+
+  // Logging today shades the card in its colour; the other stays plain
+  const card = (name: string) =>
+    page
+      .getByRole("heading", { name, level: 3 })
+      .locator("xpath=ancestor::div[contains(@style, '--p4')][1]");
+  const background = (name: string) =>
+    card(name).evaluate((el) => getComputedStyle(el).backgroundColor);
+  const plain = await background("Pushups");
+  await quickAdds.click();
+  await expect(card("Pushups")).toHaveAttribute("data-done", "true");
+  await expect.poll(() => background("Pushups")).not.toBe(plain);
+  expect(await background("Reading")).toBe(plain);
+
+  // Tapping the open card again shuts it
+  await pushups.click();
+  await expect(quickAdds).toHaveCount(0);
 });
 
 test("tapping a calendar day opens the editor; the entered value persists live", async ({
@@ -314,12 +355,15 @@ test("a habit created without a metric is a daily check-off that persists", asyn
   ).toBeVisible();
 
   // Day-counter card: a single mark button, no quick-add (+N) buttons.
+  await slideDone(page);
+  await openQuickLog(page, "Meditate");
   await expect(page.getByRole("button", { name: "+10" })).toHaveCount(0);
   await page.getByRole("button", { name: /Mark today/i }).click();
   await expect(page.getByRole("button", { name: /Done today/i })).toBeVisible();
   await page.waitForTimeout(300); // let the IndexedDB write flush
 
   await page.reload();
+  await openQuickLog(page, "Meditate");
   await expect(page.getByRole("button", { name: /Done today/i })).toBeVisible();
 });
 
@@ -358,6 +402,7 @@ test("switching theme recolors the heatmap cells (cheap fill effect)", async ({
   // and a stale-fill regression would be invisible to the page-bg theme test.
   await page.goto("/");
   await createHabit(page, "Reading");
+  await openQuickLog(page, "Reading");
   await page.getByRole("button", { name: "+10" }).first().click(); // give today a level>0
   await setDashView(page, "calendar");
   const today = page.locator("svg rect.dc[stroke-width='1.5']");
@@ -432,6 +477,8 @@ test("sets-mode habit: create, log a set, persists across reload", async ({
   ).toBeVisible();
 
   // Add a set 135×5 via the SetInput on the dashboard card.
+  await slideDone(page);
+  await openQuickLog(page, "Bench");
   await page.getByPlaceholder("Weight").fill("135");
   await page.getByPlaceholder("Reps").fill("5");
   await page.getByRole("button", { name: /\+ Set/ }).click();
@@ -441,9 +488,7 @@ test("sets-mode habit: create, log a set, persists across reload", async ({
   // Persisted across reload (sets stored as { w, r } per set in IndexedDB).
   await page.waitForTimeout(300);
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Bench", level: 3 }),
-  ).toBeVisible();
+  await openQuickLog(page, "Bench");
   await expect(page.getByText("135 lbs").first()).toBeVisible();
 });
 
@@ -548,6 +593,8 @@ test("custom unit in Settings is usable by a new habit", async ({ page }) => {
     page.getByRole("heading", { name: "Weighty", level: 3 }),
   ).toBeVisible();
   // Custom unit's default quickAdd is [1, 5, 10] → its quick-add buttons appear.
+  await slideDone(page);
+  await openQuickLog(page, "Weighty");
   await expect(page.getByRole("button", { name: "+5" })).toBeVisible();
   await expect(page.getByRole("button", { name: "+10" })).toBeVisible();
 });
@@ -557,6 +604,7 @@ test("quick-reset (↺) clears today's value and persists the reset", async ({
 }) => {
   await page.goto("/");
   await createHabit(page, "Pushups");
+  await openQuickLog(page, "Pushups");
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(page.getByText("10 reps").first()).toBeVisible();
 
@@ -577,6 +625,7 @@ test("stopping a timer logs the elapsed minutes (≥ 1) and they persist", async
 }) => {
   await page.goto("/");
   await createHabit(page, "Meditate", { metricName: "Minutes", unit: "min" });
+  await openQuickLog(page, "Meditate");
   await page.getByRole("button", { name: /Timer/ }).click();
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
 
@@ -589,9 +638,7 @@ test("stopping a timer logs the elapsed minutes (≥ 1) and they persist", async
 
   await page.waitForTimeout(300);
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Meditate", level: 3 }),
-  ).toBeVisible();
+  await openQuickLog(page, "Meditate");
   await expect(page.getByText("1m").first()).toBeVisible();
 });
 
@@ -664,6 +711,7 @@ test("data stored by an older version loads, works, and is saved in the current 
   await expect(
     page.getByRole("heading", { name: "Read", level: 3 }),
   ).toBeVisible();
+  await openQuickLog(page, "Lift");
   await expect(page.getByText("SETS · kg")).toBeVisible();
   await expect(page.getByText("1 set · 480 kg vol").first()).toBeVisible();
   // ...and is totalled as volume, where it used to be called reps
@@ -705,7 +753,7 @@ test("data stored by an older version loads, works, and is saved in the current 
     "count",
     "volume",
   ]);
-  expect(stored.config).toMatchObject({ theme: "dark", dashView: "quick" });
+  expect(stored.config).toMatchObject({ theme: "dark", dashView: "compact" });
 });
 
 test("an app left open past midnight moves on to the new day", async ({
@@ -716,6 +764,7 @@ test("an app left open past midnight moves on to the new day", async ({
   await page.clock.install({ time: new Date(2026, 4, 24, 23, 59) });
   await page.goto("/");
   await createHabit(page, "Reading");
+  await openQuickLog(page, "Reading");
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(page.getByText("1/1 completed today")).toBeVisible();
   await setDashView(page, "calendar");
@@ -748,6 +797,7 @@ test("a streak lasts through the next day and ends once that day is missed", asy
   await createHabit(page, "Reading");
   const streak = cardStat(page, "Streak");
   await expect(streak).toHaveText("0d");
+  await openQuickLog(page, "Reading");
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(streak).toHaveText("1d");
 
@@ -777,6 +827,7 @@ test("coming back to the app on a later day shows that day without a reload", as
   await page.clock.install({ time: new Date(2026, 4, 30, 21, 0) });
   await page.goto("/");
   await createHabit(page, "Reading");
+  await openQuickLog(page, "Reading");
   await page.getByRole("button", { name: "+10" }).first().click();
   await expect(page.getByText("1/1 completed today")).toBeVisible();
   await setDashView(page, "calendar");

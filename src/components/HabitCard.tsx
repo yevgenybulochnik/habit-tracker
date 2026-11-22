@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useReducer, useRef } from "react";
 import type { CSSProperties } from "react";
 import { resolvePalette } from "../theme";
 import { getUnit } from "../lib/metrics";
-import { habitStats } from "../lib/stats";
+import { habitStats, logActive } from "../lib/stats";
 import { INITIAL_NAV, navigate } from "../lib/calendarNav";
+import { isTiming } from "../lib/state";
 import CalendarPanel from "./CalendarPanel";
 import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
@@ -30,6 +31,11 @@ type Props = {
   reorderMode?: boolean;
   /** Drag wiring (from the sortable wrapper); present only in reorder mode. */
   dragActivator?: DragActivator;
+  /** Compact view (not expanded): whether its quick-log shows. App keeps
+   *  one card's open at a time; one with a timer running stays open too. */
+  logOpen?: boolean;
+  /** Compact view: the card was tapped, to show or hide its quick-log. */
+  onToggleLog?: () => void;
 };
 
 export default function HabitCard({
@@ -43,6 +49,8 @@ export default function HabitCard({
   expanded = true,
   reorderMode = false,
   dragActivator,
+  logOpen = false,
+  onToggleLog,
 }: Props) {
   const actions = useHabitActions(habit.id, today);
   // In reorder mode the card shows its header only — collapse the heatmap body
@@ -57,6 +65,14 @@ export default function HabitCard({
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // drives open/close animation
   const [editorDate, setEditorDate] = useState<string | null>(null); // kept mounted through the close animation
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quicklogRef = useRef<HTMLDivElement>(null);
+  // In Compact view a tap on the card shows or hides its quick-log, and it
+  // stays open while a timer runs, so the timer stays in sight. The quick-log
+  // is shut while reordering, while a day is being edited, and in Compact
+  // view otherwise.
+  const tappable = !expanded && !reorderMode;
+  const logShown = logOpen || isTiming(habit, timers);
+  const logShut = reorderMode || !!selectedDate || (!expanded && !logShown);
 
   const closeEditor = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -115,6 +131,8 @@ export default function HabitCard({
     () => habitStats(habit, logs, units, today),
     [habit, logs, units, today],
   );
+  // Logged today: a card down to its header is shaded in its colour.
+  const done = logActive(habit, logs[today], units);
   const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
   const sVal =
@@ -131,7 +149,22 @@ export default function HabitCard({
     <>
       <span className={styles.emoji}>{habit.emoji}</span>
       <div>
-        <h3 className={styles.name}>{habit.name}</h3>
+        {/* A tappable card's name is its button, inside the heading: the
+            accordion pattern, so it's reachable by keyboard and the card
+            stays a heading. Its click is the card's (below). */}
+        <h3 className={styles.name}>
+          {tappable ? (
+            <button
+              type="button"
+              aria-expanded={logShown}
+              className={styles.nameBtn}
+            >
+              {habit.name}
+            </button>
+          ) : (
+            habit.name
+          )}
+        </h3>
         {habit.description && (
           <p className={styles.desc}>{habit.description}</p>
         )}
@@ -145,8 +178,18 @@ export default function HabitCard({
 
   return (
     <div
-      className={`${styles.card}${effExpanded ? "" : ` ${styles.compact}`}${dragging ? ` ${styles.dragging}` : ""}`}
+      className={`${styles.card}${effExpanded ? "" : ` ${styles.compact}`}${tappable ? ` ${styles.tappable}` : ""}${dragging ? ` ${styles.dragging}` : ""}`}
       style={palVars}
+      data-done={done || undefined}
+      onClick={
+        tappable
+          ? (e) => {
+              // Logging in the quick-log isn't a tap on the card.
+              if (!quicklogRef.current?.contains(e.target as Node))
+                onToggleLog?.();
+            }
+          : undefined
+      }
     >
       {/* Header: name + stats */}
       <div
@@ -258,9 +301,14 @@ export default function HabitCard({
         </div>
       </div>
 
-      {/* Quick-log for today — stays mounted; collapses while editing a day */}
+      {/* Quick-log for today — stays mounted, so it opens and shuts
+          smoothly. Shut, it's inert: no tabbing into what can't be seen.
+          (React 18 knows no inert prop, hence the spread.) */}
       <div
-        className={`${styles.quicklog}${reorderMode || selectedDate ? ` ${styles.closed}` : ""}`}
+        ref={quicklogRef}
+        className={`${styles.quicklog}${logShut ? ` ${styles.closed}` : ""}`}
+        aria-hidden={logShut || undefined}
+        {...(logShut ? { inert: "" } : {})}
       >
         <div className={styles.inner}>
           <QuickLogSection

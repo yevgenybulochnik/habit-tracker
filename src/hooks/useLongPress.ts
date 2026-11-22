@@ -6,6 +6,9 @@ type TouchLike = {
   preventDefault: () => void;
 };
 
+/** The parts of a click event the hook reads. */
+type ClickLike = { stopPropagation: () => void; preventDefault: () => void };
+
 /** Spread onto the element to press. Touch and mouse both count. */
 export type LongPressHandlers = {
   onMouseDown: () => void;
@@ -15,6 +18,7 @@ export type LongPressHandlers = {
   onTouchMove: (e: TouchLike) => void;
   onTouchEnd: (e: TouchLike) => void;
   onTouchCancel: () => void;
+  onClickCapture: (e: ClickLike) => void;
 };
 
 /** How far a finger may drift during a hold before it's a swipe, in px. */
@@ -34,6 +38,8 @@ type Options = {
  * A finger that moves more than `SLOP` px is scrolling or swiping, so the hold
  * is cancelled. Lifting the finger after a hold has fired doesn't tap: what
  * the hold opened (an editor) is now under it, and the tap would land there.
+ * Nor does releasing the mouse after a hold click the element (or a card
+ * around it that a click opens).
  */
 export function useLongPress(
   onLongPress: () => void,
@@ -95,6 +101,12 @@ export function useLongPress(
         cancel();
       },
       onTouchCancel: cancel,
+      onClickCapture: (e: ClickLike) => {
+        if (!firedRef.current) return;
+        firedRef.current = false;
+        e.stopPropagation();
+        e.preventDefault();
+      },
     };
   }, [delay, disabled]);
 

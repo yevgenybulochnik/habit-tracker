@@ -33,7 +33,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   numMonths: 4,
   monthGap: 5,
   theme: "dark",
-  dashView: "quick",
+  dashView: "compact",
 };
 
 /** A group's emoji until one is chosen. */

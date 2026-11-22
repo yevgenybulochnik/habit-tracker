@@ -66,6 +66,9 @@ export default function App() {
     timers,
   } = state;
   const [reorder, setReorder] = useState(false); // transient: condense cards + enable drag
+  // The habit whose quick-log is open in Compact view: one at a time, so
+  // opening one shuts the last.
+  const [openLog, setOpenLog] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   // The stored data, when it was read but isn't in a usable format: offered
@@ -160,7 +163,7 @@ export default function App() {
   const addUnit = (unit: Unit) => dispatch({ type: "unit/add", unit });
   const addGroup = (group: Group) => dispatch({ type: "group/add", group });
 
-  const dashView = appConfig.dashView; // persisted Quick/Calendar choice
+  const dashView = appConfig.dashView; // persisted Compact/Calendar choice
   const editGroup =
     page?.kind === "editGroup"
       ? groups.find((g) => g.id === page.id)
@@ -231,6 +234,10 @@ export default function App() {
                 reorderMode={reorder}
                 dragActivator={reorder ? drag : undefined}
                 expanded={dashView === "calendar"}
+                logOpen={openLog === h.id}
+                onToggleLog={() =>
+                  setOpenLog((open) => (open === h.id ? null : h.id))
+                }
                 habit={h}
                 logs={logs[h.id] || {}}
                 units={units}
@@ -296,7 +303,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Content — single view; Quick (collapsed) ⟷ Calendar (expanded heatmaps) */}
+          {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}
           <div className={styles.content}>
             {habits.length === 0 ? (
               <div className={styles.empty}>
@@ -317,18 +324,19 @@ export default function App() {
                     <div key="views" className={styles.viewSeg}>
                       {(
                         [
-                          { id: "quick", label: "Quick" },
+                          { id: "compact", label: "Compact" },
                           { id: "calendar", label: "Calendar" },
                         ] as const
                       ).map((v) => (
                         <button
                           key={v.id}
-                          onClick={() =>
+                          onClick={() => {
+                            setOpenLog(null);
                             dispatch({
                               type: "config/update",
                               changes: { dashView: v.id },
-                            })
-                          }
+                            });
+                          }}
                           className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
                         >
                           {v.label}
@@ -338,7 +346,10 @@ export default function App() {
                   )}
                   {(habits.length > 1 || groups.length > 1) && (
                     <button
-                      onClick={() => setReorder((r) => !r)}
+                      onClick={() => {
+                        setOpenLog(null);
+                        setReorder((r) => !r);
+                      }}
                       className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
                     >
                       {reorder ? "Done" : "⠿ Reorder"}
@@ -374,7 +385,9 @@ export default function App() {
           </div>
 
           <div className={`stagger-child ${styles.footer}`}>
-            tap a day to log it · long-press a habit to edit · ‹› to navigate
+            {dashView === "compact"
+              ? "tap a habit to log it · long-press a habit to edit"
+              : "tap a day to log it · long-press a habit to edit · ‹› to navigate"}
           </div>
         </div>
 

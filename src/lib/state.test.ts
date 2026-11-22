@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reduce, type Action, type AppState } from "./state";
+import { isTiming, reduce, type Action, type AppState } from "./state";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
 import { SCHEMA_VERSION } from "./normalize";
 import type { Group, Habit, PersistedState, Routine, Unit } from "../types";
@@ -141,6 +141,25 @@ describe("reduce: logs", () => {
     const s = state({ logs: { h1: { [day]: { m1: sets } } } });
     const out = run(s, { type: "log/removeSet", ...where, index: 1 });
     expect(out.logs.h1[day].m1).toEqual([{ r: 1 }, { r: 3 }]);
+  });
+});
+
+describe("isTiming", () => {
+  const twoMetrics: Habit = {
+    ...habit("h1"),
+    metrics: [
+      { id: "m1", name: "Time", unit: "min" },
+      { id: "m2", name: "Rest", unit: "min" },
+    ],
+  };
+
+  it("is true while any of the habit's metrics has a timer running", () => {
+    expect(isTiming(twoMetrics, { "h1:m2": 1000 })).toBe(true);
+  });
+
+  it("is false with no timer running, or only another habit's", () => {
+    expect(isTiming(twoMetrics, {})).toBe(false);
+    expect(isTiming(twoMetrics, { "h2:m1": 1000 })).toBe(false);
   });
 });
 
