@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useReducer, useRef } from "react";
 import type { CSSProperties } from "react";
 import { resolvePalette } from "../theme";
 import { getUnit } from "../lib/metrics";
-import { habitStats } from "../lib/stats";
+import { habitStats, logActive } from "../lib/stats";
 import { INITIAL_NAV, navigate } from "../lib/calendarNav";
 import CalendarPanel from "./CalendarPanel";
 import QuickLogSection from "./QuickLogSection";
@@ -128,6 +128,8 @@ export default function HabitCard({
     () => habitStats(habit, logs, units, today),
     [habit, logs, units, today],
   );
+  // Logged today: a card down to its header is shaded in its colour.
+  const done = logActive(habit, logs[today], units);
   const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
   const sVal =
@@ -175,6 +177,7 @@ export default function HabitCard({
     <div
       className={`${styles.card}${effExpanded ? "" : ` ${styles.compact}`}${tappable ? ` ${styles.tappable}` : ""}${dragging ? ` ${styles.dragging}` : ""}`}
       style={palVars}
+      data-done={done || undefined}
       onClick={
         tappable
           ? (e) => {

@@ -8,6 +8,7 @@
   transition:
     padding 0.45s cubic-bezier(0.22, 1, 0.36, 1),
     margin-bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.3s,
     border-color 0.3s;
 }
 .card.compact {
@@ -18,7 +19,14 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.card.dragging {
+/* Logged today: a card down to its header (Compact view, reordering) is
+   shaded in its colour, in place of the calendar that would show it. */
+.card.compact[data-done] {
+  background-color: color-mix(in srgb, var(--p4) 14%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--p4) 45%, var(--c-border));
+}
+.card.dragging,
+.card.dragging[data-done] {
   border-color: var(--c-accent);
 }
 

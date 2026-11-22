@@ -172,6 +172,22 @@ describe("HabitCard", () => {
     });
   });
 
+  describe("done today", () => {
+    it("is marked, to be shaded in its colour, once today is logged", () => {
+      const { container } = renderCard(repsHabit, false, {
+        [today]: { m1: 5 },
+      });
+      expect(container.firstChild).toHaveAttribute("data-done");
+    });
+
+    it("isn't marked before today is logged, whatever came before", () => {
+      const { container } = renderCard(repsHabit, false, {
+        "2026-05-23": { m1: 5 },
+      });
+      expect(container.firstChild).not.toHaveAttribute("data-done");
+    });
+  });
+
   describe("in Calendar view", () => {
     it("always shows its quick-log, and a tap on the card does nothing", async () => {
       const onToggleLog = vi.fn();
