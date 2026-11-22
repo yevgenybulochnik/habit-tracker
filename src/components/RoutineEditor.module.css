@@ -36,10 +36,10 @@
   margin-bottom: 14px;
 }
 .lblText {
-  composes: lbl from "../../styles/shared.module.css";
+  composes: lbl from "../styles/shared.module.css";
 }
 .inp {
-  composes: inp from "../../styles/shared.module.css";
+  composes: inp from "../styles/shared.module.css";
   text-transform: none;
   letter-spacing: normal;
 }
