@@ -34,32 +34,32 @@
 
 /* The delete zone, as in the habit editor. */
 .danger {
-  composes: danger from "./EditHabitModal.module.css";
+  composes: danger from "./EditHabitPage.module.css";
 }
 .dangerActive {
-  composes: dangerActive from "./EditHabitModal.module.css";
+  composes: dangerActive from "./EditHabitPage.module.css";
 }
 .delTitle {
-  composes: delTitle from "./EditHabitModal.module.css";
+  composes: delTitle from "./EditHabitPage.module.css";
 }
 .delDesc {
-  composes: delDesc from "./EditHabitModal.module.css";
+  composes: delDesc from "./EditHabitPage.module.css";
 }
 .dzRow {
-  composes: dzRow from "./EditHabitModal.module.css";
+  composes: dzRow from "./EditHabitPage.module.css";
 }
 .keepBtn {
-  composes: keepBtn from "./EditHabitModal.module.css";
+  composes: keepBtn from "./EditHabitPage.module.css";
 }
 .deleteBtn {
-  composes: deleteBtn from "./EditHabitModal.module.css";
+  composes: deleteBtn from "./EditHabitPage.module.css";
 }
 .idle {
-  composes: idle from "./EditHabitModal.module.css";
+  composes: idle from "./EditHabitPage.module.css";
 }
 .hint {
-  composes: hint from "./EditHabitModal.module.css";
+  composes: hint from "./EditHabitPage.module.css";
 }
 .delTrigger {
-  composes: delTrigger from "./EditHabitModal.module.css";
+  composes: delTrigger from "./EditHabitPage.module.css";
 }

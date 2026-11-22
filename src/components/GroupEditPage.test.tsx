@@ -63,7 +63,7 @@ const picked = () =>
     .getAllByRole("button", { pressed: true })
     .map((b) => b.textContent);
 
-describe("GroupEditModal", () => {
+describe("GroupEditPage", () => {
   it("is a page headed Edit Group, with the way back", async () => {
     const { onClose, onSave } = renderPage();
     expect(
