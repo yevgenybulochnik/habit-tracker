@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalizeState, SCHEMA_VERSION } from "./normalize";
+import { normalizeRun, normalizeState, SCHEMA_VERSION } from "./normalize";
+import type { Run } from "./routineRun";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
 import type { PersistedState } from "../types";
 
@@ -694,5 +695,75 @@ describe("normalizeState — routines", () => {
       routines: [morning, { id: "r2" }],
     });
     expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeRun: a run in progress as stored", () => {
+  const run: Run = {
+    routine: {
+      id: "r1",
+      name: "Morning",
+      rounds: 2,
+      prep: 5,
+      steps: [
+        {
+          kind: "habit",
+          id: "s1",
+          habitId: "h1",
+          metricId: "m1",
+          by: "count",
+          seconds: 60,
+          count: 10,
+        },
+        { kind: "break", id: "s2", seconds: 30 },
+      ],
+    },
+    startedAt: 1_000_000,
+    pausedAt: 1_030_000,
+    pausedMs: 2_000,
+    shiftMs: -500,
+    ends: { "0:0": 41.5 },
+    results: {
+      "0:0": { status: "logged", amount: 10, text: "10 reps", set: { r: 10 } },
+      "1:0": { status: "skipped" },
+    },
+    finished: true,
+  };
+
+  it("reads a run back as it was", () => {
+    expect(normalizeRun(JSON.parse(JSON.stringify(run)))).toEqual(run);
+  });
+
+  it("keeps the routine as it was, though its habits are gone", () => {
+    expect(normalizeRun(run)?.routine.steps).toHaveLength(2);
+  });
+
+  it("gives up on anything that isn't a run", () => {
+    expect(normalizeRun(null)).toBeNull();
+    expect(normalizeRun("run")).toBeNull();
+    expect(normalizeRun({ ...run, routine: { name: "x" } })).toBeNull();
+    expect(normalizeRun({ ...run, startedAt: "soon" })).toBeNull();
+  });
+
+  it("drops what it can't read of its ends and results", () => {
+    const out = normalizeRun({
+      ...run,
+      pausedAt: "x",
+      pausedMs: undefined,
+      ends: { "0:0": 41.5, "1:0": "x" },
+      results: {
+        ...run.results,
+        "0:2": { status: "logged", amount: "ten" },
+        "1:2": "skipped",
+      },
+      finished: "yes",
+    });
+    expect(out).toEqual({
+      ...run,
+      pausedAt: undefined,
+      pausedMs: 0,
+      ends: { "0:0": 41.5 },
+      finished: false,
+    });
   });
 });

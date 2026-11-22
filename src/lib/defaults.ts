@@ -2,6 +2,10 @@ import type { AppConfig, Unit } from "../types";
 
 export const STORAGE_KEY = "habit-tracker-v3";
 
+/** Where a routine's run in progress is kept (localStorage): apart from the
+ *  saved state, as it changes with every pause and skip and isn't backed up. */
+export const RUN_KEY = "habit-tracker-routine-run";
+
 export const BUILTIN_UNITS: Unit[] = [
   {
     id: "min",

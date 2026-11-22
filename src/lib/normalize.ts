@@ -1,6 +1,7 @@
 import { BUILTIN_UNITS, DEFAULT_CONFIG, DEFAULT_GROUP_EMOJI } from "./defaults";
 import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
 import { DEFAULT_COUNT, fitRoutine, PREP_SECONDS } from "./routines";
+import type { Result, Run } from "./routineRun";
 import type {
   AppConfig,
   Group,
@@ -170,24 +171,25 @@ function normalizeStep(raw: unknown, path: string): RoutineStep {
 /** Routines in their stored order, each with what it lacks filled in and only
  *  the steps that still stand (see `fitRoutine`). */
 function normalizeRoutines(raw: unknown, habits: Habit[]): Routine[] {
-  return list(raw, "routines").map((r, i) => {
-    const path = `routines[${i}]`;
-    const routine = withId(r, path);
-    const steps = list(routine.steps, `${path}.steps`).map((s, j) =>
-      normalizeStep(s, `${path}.steps[${j}]`),
-    );
-    const rounds = numberAbove(routine.rounds, 0, 1);
-    return fitRoutine(
-      {
-        id: routine.id,
-        name: typeof routine.name === "string" ? routine.name : "",
-        rounds: Number.isInteger(rounds) ? rounds : 1,
-        prep: numberAbove(routine.prep, 0, PREP_SECONDS, true),
-        steps,
-      },
-      habits,
-    );
-  });
+  return list(raw, "routines").map((r, i) =>
+    fitRoutine(normalizeRoutine(r, `routines[${i}]`), habits),
+  );
+}
+
+/** A routine with what it lacks filled in, its steps as they are. */
+function normalizeRoutine(raw: unknown, path: string): Routine {
+  const routine = withId(raw, path);
+  const steps = list(routine.steps, `${path}.steps`).map((s, j) =>
+    normalizeStep(s, `${path}.steps[${j}]`),
+  );
+  const rounds = numberAbove(routine.rounds, 0, 1);
+  return {
+    id: routine.id,
+    name: typeof routine.name === "string" ? routine.name : "",
+    rounds: Number.isInteger(rounds) ? rounds : 1,
+    prep: numberAbove(routine.prep, 0, PREP_SECONDS, true),
+    steps,
+  };
 }
 
 function normalizeLogs(raw: unknown): Logs {
@@ -290,4 +292,66 @@ export function normalizeState(raw: unknown): NormalizeResult {
     if (e instanceof Rejected) return { ok: false, reason: e.message };
     throw e;
   }
+}
+
+const isNumber = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v);
+
+/** Only the entries of `raw` that `read` makes something of. */
+function entriesOf<T>(raw: unknown, read: (v: unknown) => T | undefined) {
+  const out: Record<string, T> = {};
+  if (isObj(raw))
+    for (const [k, v] of Object.entries(raw)) {
+      const t = read(v);
+      if (t !== undefined) out[k] = t;
+    }
+  return out;
+}
+
+function readResult(v: unknown): Result | undefined {
+  if (!isObj(v)) return undefined;
+  if (v.status === "skipped") return { status: "skipped" };
+  if (
+    v.status !== "logged" ||
+    !isNumber(v.amount) ||
+    typeof v.text !== "string"
+  )
+    return undefined;
+  const set = isObj(v.set)
+    ? entriesOf(v.set, (n) => (isNumber(n) ? n : undefined))
+    : undefined;
+  return {
+    status: "logged",
+    amount: v.amount,
+    text: v.text,
+    ...(set && { set }),
+  };
+}
+
+/**
+ * A run in progress as stored (see `Run`), or null when it can't be read.
+ * Losing a run loses no logs, so this gives up rather than rejecting: a run
+ * without its routine or start, or that isn't an object. Its routine is kept
+ * as it was, even if some of its habits are gone; the ends and results it
+ * can't read are dropped.
+ */
+export function normalizeRun(raw: unknown): Run | null {
+  if (!isObj(raw) || !isNumber(raw.startedAt)) return null;
+  let routine: Routine;
+  try {
+    routine = normalizeRoutine(raw.routine, "run.routine");
+  } catch (e) {
+    if (e instanceof Rejected) return null;
+    throw e;
+  }
+  return {
+    routine,
+    startedAt: raw.startedAt,
+    ...(isNumber(raw.pausedAt) && { pausedAt: raw.pausedAt }),
+    pausedMs: isNumber(raw.pausedMs) ? raw.pausedMs : 0,
+    shiftMs: isNumber(raw.shiftMs) ? raw.shiftMs : 0,
+    ends: entriesOf(raw.ends, (v) => (isNumber(v) ? v : undefined)),
+    results: entriesOf(raw.results, readResult),
+    finished: raw.finished === true,
+  };
 }
