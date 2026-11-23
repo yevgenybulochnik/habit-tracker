@@ -14,7 +14,7 @@ const sample: PersistedState = {
     {
       id: "h1",
       name: "Run",
-      emoji: "🏃",
+      icon: "run",
       color: "Green",
       metrics: [{ id: "m1", name: "Min", unit: "min" }],
       intensityMode: "total",
@@ -108,7 +108,9 @@ describe("SettingsPage — Data backup", () => {
     const grouped: PersistedState = {
       ...sample,
       habits: [{ ...sample.habits[0], groupId: "g1" }],
-      groups: [{ id: "g1", name: "Fitness", emoji: "🏋️", collapsed: true }],
+      groups: [
+        { id: "g1", name: "Fitness", icon: "weightlifter", collapsed: true },
+      ],
     };
     renderPage(vi.fn(), grouped);
     await userEvent.click(screen.getByRole("button", { name: "Export" }));

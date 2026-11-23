@@ -12,6 +12,7 @@ import { useHabitActions } from "../hooks/useHabitActions";
 import { useLongPress } from "../hooks/useLongPress";
 import type { DragActivator } from "./SortableHabitCard";
 import styles from "./HabitCard.module.css";
+import HabitIcon from "./HabitIcon";
 import type { AppConfig, Habit, HabitLogs, Timers, Unit } from "../types";
 
 // Changes to the habit's logs and timers go through useHabitActions.
@@ -142,12 +143,14 @@ export default function HabitCard({
         : `${stats.totalVal}m`
       : stats.totalVal;
 
-  // Emoji + name + hint, shared between the normal (hold-to-edit) header and the
+  // Icon + name + hint, shared between the normal (hold-to-edit) header and the
   // reorder-mode draggable region. The `pressing` state is applied as a class on
-  // the drag-region container so CSS drives the emoji/name/hint transitions.
+  // the drag-region container so CSS drives the icon/name/hint transitions.
   const nameBlock = (
     <>
-      <span className={styles.emoji}>{habit.emoji}</span>
+      <span className={styles.icon}>
+        <HabitIcon icon={habit.icon} />
+      </span>
       <div>
         {/* A tappable card's name is its button, inside the heading: the
             accordion pattern, so it's reachable by keyboard and the card

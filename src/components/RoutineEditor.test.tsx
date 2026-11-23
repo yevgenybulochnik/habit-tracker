@@ -8,7 +8,7 @@ import type { Habit, Routine } from "../types";
 const pushUps: Habit = {
   id: "push",
   name: "Push-ups",
-  emoji: "💪",
+  icon: "flex",
   color: "Orange",
   metrics: [{ id: "r", name: "Reps", mode: "sets", ...setsPreset("reps") }],
   intensityMode: "total",
@@ -16,7 +16,7 @@ const pushUps: Habit = {
 const reading: Habit = {
   id: "read",
   name: "Reading",
-  emoji: "📚",
+  icon: "book",
   color: "Purple",
   metrics: [{ id: "p", name: "Pages", unit: "pages" }],
   intensityMode: "total",
@@ -24,7 +24,7 @@ const reading: Habit = {
 const plank: Habit = {
   id: "plank",
   name: "Plank",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Green",
   metrics: [{ id: "m", name: "Time", unit: "min" }],
   intensityMode: "total",
@@ -103,7 +103,7 @@ describe("RoutineEditor", () => {
     expect(
       screen.getByText("To save it, choose each step's habit."),
     ).toBeInTheDocument();
-    await userEvent.selectOptions(habitMenus()[0], "📚 Reading");
+    await userEvent.selectOptions(habitMenus()[0], "Reading");
     expect(save()).toBeEnabled();
   });
 
@@ -111,7 +111,7 @@ describe("RoutineEditor", () => {
     const { onSave } = edit();
     await userEvent.type(screen.getByLabelText("Name"), "  Evening ");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    await userEvent.selectOptions(habitMenus()[0], "📚 Reading");
+    await userEvent.selectOptions(habitMenus()[0], "Reading");
     await userEvent.click(screen.getByRole("button", { name: "+ Break" }));
     await userEvent.click(screen.getByRole("button", { name: "More rounds" }));
     await userEvent.selectOptions(screen.getByLabelText("Get ready"), "0:10");
@@ -164,7 +164,7 @@ describe("RoutineEditor", () => {
       steps: [{ ...morning.steps[0], by: "count" as const }],
     };
     const { onSave } = edit(counted, false);
-    await userEvent.selectOptions(habitMenus()[0], "🧘 Plank");
+    await userEvent.selectOptions(habitMenus()[0], "Plank");
     await userEvent.click(save());
     expect(onSave.mock.calls[0][0].steps[0]).toMatchObject({
       habitId: "plank",

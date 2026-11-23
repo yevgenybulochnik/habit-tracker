@@ -54,7 +54,7 @@ const v2Normalized: PersistedState = {
     {
       id: "h1",
       name: "Read",
-      emoji: "📚",
+      icon: "book",
       color: "Blue",
       metrics: [],
       intensityMode: "total",
@@ -62,7 +62,7 @@ const v2Normalized: PersistedState = {
     {
       id: "h2",
       name: "Lift",
-      emoji: "🏋️",
+      icon: "weightlifter",
       description: "Push day",
       color: "Red",
       metrics: [
@@ -93,8 +93,8 @@ const v2Normalized: PersistedState = {
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 4", () => {
-    expect(SCHEMA_VERSION).toBe(4);
+  it("is at schema version 5", () => {
+    expect(SCHEMA_VERSION).toBe(5);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -512,8 +512,8 @@ describe("normalizeState — logs and timers", () => {
 });
 
 describe("normalizeState — groups", () => {
-  const music = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
-  const fitness = { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: true };
+  const music = { id: "g1", name: "Music", icon: "music", collapsed: false };
+  const fitness = { id: "g2", name: "Fitness", icon: "flex", collapsed: true };
   const groupOf = (groupId: unknown, groups: unknown = [music]) =>
     accept({ habits: [{ id: "h1", name: "Piano", groupId }], groups })
       .habits[0];
@@ -523,15 +523,18 @@ describe("normalizeState — groups", () => {
   });
 
   it("keeps groups in their stored order", () => {
-    expect(accept({ habits: [], groups: [fitness, music] }).groups).toEqual([
-      fitness,
-      music,
-    ]);
+    expect(
+      accept({
+        schemaVersion: SCHEMA_VERSION,
+        habits: [],
+        groups: [fitness, music],
+      }).groups,
+    ).toEqual([fitness, music]);
   });
 
-  it("fills in what a group lacks: open, with a name and an emoji", () => {
+  it("fills in what a group lacks: open, with a name and an icon", () => {
     expect(accept({ habits: [], groups: [{ id: "g1" }] }).groups).toEqual([
-      { id: "g1", name: "", emoji: "📁", collapsed: false },
+      { id: "g1", name: "", icon: "folder", collapsed: false },
     ]);
   });
 
@@ -567,6 +570,74 @@ describe("normalizeState — groups", () => {
       ],
       groups: [music, { id: "g2" }],
     });
+    expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeState — icons in place of emojis (version 5)", () => {
+  const before = {
+    schemaVersion: 4,
+    habits: [
+      { id: "h1", name: "Guitar", emoji: "🎸" },
+      { id: "h2", name: "Lift", emoji: "🏋️‍♀️" },
+      { id: "h3", name: "Unicorns", emoji: "🦄" },
+      { id: "h4", name: "Blank" },
+    ],
+    groups: [
+      { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
+      { id: "g2", name: "Odd", emoji: "🦄", collapsed: false },
+    ],
+  };
+
+  it("gives a habit and a group from before icons the icon for its emoji", () => {
+    const state = accept(before);
+    expect(state.habits.slice(0, 2).map((h) => h.icon)).toEqual([
+      "guitar",
+      "weightlifter",
+    ]);
+    expect(state.groups[0].icon).toBe("music");
+  });
+
+  it("gives the default to one whose emoji has no icon, or that has none", () => {
+    const state = accept(before);
+    expect(state.habits.slice(2).map((h) => h.icon)).toEqual([
+      "target",
+      "target",
+    ]);
+    expect(state.groups[1].icon).toBe("folder");
+  });
+
+  it("keeps no emoji", () => {
+    const state = accept(before);
+    for (const h of state.habits) expect(h).not.toHaveProperty("emoji");
+    for (const g of state.groups) expect(g).not.toHaveProperty("emoji");
+  });
+
+  it("keeps a current habit's and group's icon", () => {
+    const state = accept({
+      schemaVersion: SCHEMA_VERSION,
+      habits: [{ id: "h1", name: "Guitar", icon: "guitar" }],
+      groups: [{ id: "g1", name: "Music", icon: "music", collapsed: false }],
+    });
+    expect(state.habits[0].icon).toBe("guitar");
+    expect(state.groups[0].icon).toBe("music");
+  });
+
+  it("gives the default for an icon it doesn't know", () => {
+    const state = accept({
+      schemaVersion: SCHEMA_VERSION,
+      habits: [
+        { id: "h1", name: "Space", icon: "rocket" },
+        { id: "h2", name: "Odd", icon: 3 },
+      ],
+      groups: [{ id: "g1", name: "Space", icon: "rocket", collapsed: false }],
+    });
+    expect(state.habits.map((h) => h.icon)).toEqual(["target", "target"]);
+    expect(state.groups[0].icon).toBe("folder");
+  });
+
+  it("gives the same result when run twice", () => {
+    const once = accept(before);
     expect(accept(once)).toEqual(once);
   });
 });

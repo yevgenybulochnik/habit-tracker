@@ -183,7 +183,7 @@ describe("App changes to habits", () => {
   const run: Habit = {
     id: "h1",
     name: "Run",
-    emoji: "🏃",
+    icon: "run",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",
@@ -319,7 +319,7 @@ describe("App changes to habits", () => {
       {
         id: expect.any(String),
         name: "Languages",
-        emoji: "📁",
+        icon: "folder",
         collapsed: false,
       },
     ]);
@@ -350,8 +350,8 @@ describe("App changes to habits", () => {
       ...loaded,
       habits: [{ ...run, groupId: "g2" }],
       groups: [
-        { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
-        { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+        { id: "g1", name: "Music", icon: "music", collapsed: false },
+        { id: "g2", name: "Fitness", icon: "weightlifter", collapsed: false },
       ],
     });
     render(<App />);
@@ -363,7 +363,7 @@ describe("App changes to habits", () => {
     await editRun();
     const menu = screen.getByRole("combobox", { name: "Group" });
     expect(menu).toHaveValue("g2");
-    await userEvent.selectOptions(menu, "🎵 Music");
+    await userEvent.selectOptions(menu, "Music");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(lastSaved().habits[0].groupId).toBe("g1"));
 
@@ -404,7 +404,7 @@ describe("App groups", () => {
   const habit = (id: string, name: string, groupId?: string): Habit => ({
     id,
     name,
-    emoji: "🎯",
+    icon: "target",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",
@@ -421,8 +421,8 @@ describe("App groups", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [
-      { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
-      { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+      { id: "g1", name: "Music", icon: "music", collapsed: false },
+      { id: "g2", name: "Fitness", icon: "weightlifter", collapsed: false },
     ],
     routines: [],
   };
@@ -599,7 +599,7 @@ describe("App at midnight", () => {
       {
         id: "h1",
         name: "Run",
-        emoji: "🏃",
+        icon: "run",
         color: "Green",
         metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
         intensityMode: "total",
@@ -758,7 +758,7 @@ describe("App routines", () => {
   const plank: Habit = {
     id: "h1",
     name: "Plank",
-    emoji: "🧘",
+    icon: "meditation",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",

@@ -36,9 +36,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   dashView: "compact",
 };
 
-/** A group's emoji until one is chosen. */
-export const DEFAULT_GROUP_EMOJI = "📁";
-
 export const MONTHS = [
   "Jan",
   "Feb",

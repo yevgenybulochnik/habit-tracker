@@ -2,14 +2,14 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import GroupEditPage from "./GroupEditPage";
-import { GROUP_EMOJIS } from "./emojis";
+import { ICON_IDS, ICON_NAMES } from "../lib/icons";
 import type { Group, Habit } from "../types";
 
 function habit(id: string, groupId?: string): Habit {
   return {
     id,
     name: id,
-    emoji: "🎯",
+    icon: "target",
     color: "Blue",
     metrics: [],
     intensityMode: "total",
@@ -17,11 +17,16 @@ function habit(id: string, groupId?: string): Habit {
   };
 }
 
-const music: Group = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
+const music: Group = {
+  id: "g1",
+  name: "Music",
+  icon: "music",
+  collapsed: false,
+};
 const fitness: Group = {
   id: "g2",
   name: "Fitness",
-  emoji: "🏋️",
+  icon: "weightlifter",
   collapsed: false,
 };
 const habits = [
@@ -52,16 +57,16 @@ function renderPage(group = music) {
 const box = (name: string) =>
   screen.getByRole("checkbox", { name: new RegExp(name) });
 
-const picker = () => screen.getByRole("group", { name: "Group emoji" });
-/** The emojis the picker offers, and the one it has chosen. */
+const picker = () => screen.getByRole("group", { name: "Group icon" });
+/** The icons the picker offers, and the one it has chosen, by name. */
 const offered = () =>
   within(picker())
     .getAllByRole("button")
-    .map((b) => b.textContent);
+    .map((b) => b.getAttribute("aria-label"));
 const picked = () =>
   within(picker())
     .getAllByRole("button", { pressed: true })
-    .map((b) => b.textContent);
+    .map((b) => b.getAttribute("aria-label"));
 
 describe("GroupEditPage", () => {
   it("is a page headed Edit Group, with the way back", async () => {
@@ -74,12 +79,12 @@ describe("GroupEditPage", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("shows the group's name and emoji, and its habits checked", () => {
+  it("shows the group's name and icon, and its habits checked", () => {
     renderPage();
     expect(screen.getByRole("textbox", { name: "Group name" })).toHaveValue(
       "Music",
     );
-    expect(picked()).toEqual(["🎵"]);
+    expect(picked()).toEqual(["Music"]);
     expect(
       screen
         .getAllByRole("checkbox")
@@ -92,42 +97,40 @@ describe("GroupEditPage", () => {
     expect(box("Run")).toHaveAccessibleName(/Run.*Fitness/);
     expect(box("Water")).not.toHaveAccessibleName(/in /);
     await userEvent.click(box("Run"));
-    expect(screen.getByText(/moves from 🏋️ Fitness/)).toBeInTheDocument();
+    expect(screen.getByText(/moves from Fitness/)).toBeInTheDocument();
   });
 
-  it("saves the name, emoji and checked habits, then closes", async () => {
+  it("shows each habit with its icon", () => {
+    renderPage();
+    for (const name of ["Piano", "Guitar", "Run", "Water"])
+      expect(box(name).closest("label")!.querySelector("svg"), name).not.toBe(
+        null,
+      );
+  });
+
+  it("saves the name, icon and checked habits, then closes", async () => {
     const { onSave, onClose } = renderPage();
     const name = screen.getByRole("textbox", { name: "Group name" });
     await userEvent.clear(name);
     await userEvent.type(name, " Practice ");
-    await userEvent.click(within(picker()).getByRole("button", { name: "🏠" }));
-    expect(picked()).toEqual(["🏠"]);
+    await userEvent.click(
+      within(picker()).getByRole("button", { name: "Home" }),
+    );
+    expect(picked()).toEqual(["Home"]);
     await userEvent.click(box("Piano"));
     await userEvent.click(box("Run"));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(onSave).toHaveBeenCalledWith({ name: "Practice", emoji: "🏠" }, [
+    expect(onSave).toHaveBeenCalledWith({ name: "Practice", icon: "home" }, [
       "Guitar",
       "Run",
     ]);
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 
-  it("offers the group emojis to pick from", () => {
+  it("offers every icon to pick from", () => {
     renderPage();
-    expect(offered()).toEqual(GROUP_EMOJIS);
-  });
-
-  it("keeps offering an emoji the group has that isn't among them", async () => {
-    const { onSave } = renderPage({ ...music, emoji: "🗣️" });
-    expect(offered()).toEqual(["🗣️", ...GROUP_EMOJIS]);
-    expect(picked()).toEqual(["🗣️"]);
-    // Still there to go back to after picking another
-    await userEvent.click(within(picker()).getByRole("button", { name: "📁" }));
-    expect(offered()[0]).toBe("🗣️");
-    await userEvent.click(within(picker()).getByRole("button", { name: "🗣️" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave.mock.calls[0][0].emoji).toBe("🗣️");
+    expect(offered()).toEqual(ICON_IDS.map((id) => ICON_NAMES[id]));
   });
 
   it("won't save without a name", async () => {

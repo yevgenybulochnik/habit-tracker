@@ -17,7 +17,7 @@ const TODAY = "2026-11-22";
 const pushUps: Habit = {
   id: "push",
   name: "Push-ups",
-  emoji: "💪",
+  icon: "flex",
   color: "Orange",
   metrics: [{ id: "r", name: "Reps", mode: "sets", ...setsPreset("reps") }],
   intensityMode: "total",
@@ -25,7 +25,7 @@ const pushUps: Habit = {
 const plank: Habit = {
   id: "plank",
   name: "Plank",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Green",
   metrics: [{ id: "m", name: "Time", unit: "min" }],
   intensityMode: "total",

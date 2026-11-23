@@ -11,7 +11,7 @@ import type { Habit, HabitLogs } from "../types";
 const habit: Habit = {
   id: "h1",
   name: "Reading",
-  emoji: "📚",
+  icon: "book",
   color: "Green",
   metrics: [{ id: "m1", name: "Pages", unit: "count" }],
   intensityMode: "total",
@@ -19,7 +19,7 @@ const habit: Habit = {
 const setHabit: Habit = {
   id: "h2",
   name: "Bench",
-  emoji: "🏋️",
+  icon: "weightlifter",
   color: "Blue",
   metrics: [
     { id: "m2", name: "Reps", mode: "sets", ...setsPreset("weighted", "lbs") },

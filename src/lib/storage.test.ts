@@ -19,7 +19,7 @@ const sample: PersistedState = {
     {
       id: "h1",
       name: "Run",
-      emoji: "🏃",
+      icon: "run",
       color: "Green",
       metrics: [{ id: "m1", name: "Min", unit: "min" }],
       intensityMode: "total",

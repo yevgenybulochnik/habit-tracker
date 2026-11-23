@@ -1,5 +1,7 @@
 // Shared domain types for the habit tracker.
 
+import type { IconId } from "./lib/icons";
+
 /** How a per-set field rolls up across a day's sets. */
 export type SetAgg = "sum" | "max" | "last" | "avg";
 
@@ -45,7 +47,7 @@ export type Metric = ValueMetric | SetsMetric;
 export type Habit = {
   id: string;
   name: string;
-  emoji: string;
+  icon: IconId;
   description?: string;
   color: string;
   metrics: Metric[];
@@ -59,7 +61,7 @@ export type Habit = {
 export type Group = {
   id: string;
   name: string;
-  emoji: string;
+  icon: IconId;
   /** Its section is folded shut. */
   collapsed: boolean;
 };

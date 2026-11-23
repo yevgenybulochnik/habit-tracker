@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { DEFAULT_GROUP_EMOJI } from "../lib/defaults";
+import { DEFAULT_GROUP_ICON } from "../lib/icons";
+import type { IconId } from "../lib/icons";
 import { newId } from "../lib/ids";
 import type { Group } from "../types";
-import EmojiPicker from "./EmojiPicker";
-import { GROUP_EMOJIS } from "./emojis";
+import IconPicker from "./IconPicker";
 import form from "./HabitFormFields.module.css";
 import styles from "./GroupField.module.css";
 
@@ -32,7 +32,7 @@ export default function GroupField({
   onAddGroup,
 }: Props) {
   const [adding, setAdding] = useState(false);
-  const [emoji, setEmoji] = useState(DEFAULT_GROUP_EMOJI);
+  const [icon, setIcon] = useState<IconId>(DEFAULT_GROUP_ICON);
   const [name, setName] = useState("");
 
   const add = () => {
@@ -40,14 +40,14 @@ export default function GroupField({
     const group: Group = {
       id: newId("g"),
       name: name.trim(),
-      emoji,
+      icon,
       collapsed: false,
     };
     onAddGroup(group);
     onChange(group.id);
     setAdding(false);
     setName("");
-    setEmoji(DEFAULT_GROUP_EMOJI);
+    setIcon(DEFAULT_GROUP_ICON);
   };
 
   return (
@@ -70,7 +70,7 @@ export default function GroupField({
         <option value="">None</option>
         {groups.map((g) => (
           <option key={g.id} value={g.id}>
-            {g.emoji} {g.name}
+            {g.name}
           </option>
         ))}
         <option value={NEW}>+ New group…</option>
@@ -78,12 +78,7 @@ export default function GroupField({
       {adding && (
         <div className={styles.panel}>
           <div className={styles.panelTitle}>New Group</div>
-          <EmojiPicker
-            options={GROUP_EMOJIS}
-            value={emoji}
-            onChange={setEmoji}
-            label="Group emoji"
-          />
+          <IconPicker value={icon} onChange={setIcon} label="Group icon" />
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

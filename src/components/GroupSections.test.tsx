@@ -9,7 +9,7 @@ function habit(id: string, groupId?: string): Habit {
   return {
     id,
     name: id,
-    emoji: "📚",
+    icon: "book",
     color: "Blue",
     metrics: [],
     intensityMode: "total",
@@ -17,11 +17,16 @@ function habit(id: string, groupId?: string): Habit {
   };
 }
 
-const music: Group = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
+const music: Group = {
+  id: "g1",
+  name: "Music",
+  icon: "music",
+  collapsed: false,
+};
 const fitness: Group = {
   id: "g2",
   name: "Fitness",
-  emoji: "🏋️",
+  icon: "weightlifter",
   collapsed: false,
 };
 const habits = [

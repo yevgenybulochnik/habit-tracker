@@ -8,7 +8,7 @@ import type { Habit, Routine } from "../types";
 const plank: Habit = {
   id: "plank",
   name: "Plank",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Green",
   metrics: [{ id: "m", name: "Time", unit: "min" }],
   intensityMode: "total",
@@ -97,7 +97,7 @@ describe("Routines", () => {
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Habit" }),
-      "🧘 Plank",
+      "Plank",
     );
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(dispatch.mock.lastCall![0]).toMatchObject({

@@ -82,13 +82,14 @@
   align-items: center;
 }
 
-/* Name block */
-.emoji {
-  font-size: 18px;
+/* Name block: the icon in the habit's colour */
+.icon {
+  display: flex;
   margin-right: 8px;
+  color: var(--p4);
   transition: transform 0.2s;
 }
-.pressing .emoji {
+.pressing .icon {
   transform: scale(0.9);
 }
 .name {

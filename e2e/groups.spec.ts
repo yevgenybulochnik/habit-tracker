@@ -159,24 +159,17 @@ test("releasing a touch hold doesn't tap the editor it opened", async ({
   await ctx.close();
 });
 
-test("the emoji grids fit their form on an iPhone 13's screen", async ({
+test("the icon grids fit their form on an iPhone 13's screen", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  // This browser has no emoji font: its glyphs are narrow boxes. Widen each
-  // to an iPhone emoji's ~23px at 18px, which used to stretch the columns.
-  await page.addStyleTag({
-    content: `[role="group"] button::before {
-      content: ""; display: inline-block; width: 10px;
-    }`,
-  });
   await page.getByRole("button", { name: /New Habit/i }).click();
   await page
     .getByRole("combobox", { name: "Group" })
     .selectOption({ label: "+ New group…" });
 
-  for (const label of ["Icon", "Group emoji"]) {
+  for (const label of ["Icon", "Group icon"]) {
     const grid = page.getByRole("group", { name: label });
     const { scrollWidth, clientWidth } = await grid.evaluate((g) => ({
       scrollWidth: g.scrollWidth,

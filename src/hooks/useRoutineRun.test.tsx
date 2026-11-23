@@ -12,7 +12,7 @@ const T0 = new Date(`${TODAY}T09:00:00`).getTime();
 const habit = (id: string, metric: Habit["metrics"][number]): Habit => ({
   id,
   name: id,
-  emoji: "⭐",
+  icon: "star",
   color: "Blue",
   metrics: [metric],
   intensityMode: "total",

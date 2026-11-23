@@ -1,7 +1,8 @@
 import { useState } from "react";
-import EmojiPicker from "./EmojiPicker";
+import HabitIcon from "./HabitIcon";
+import IconPicker from "./IconPicker";
 import PageShell, { type ClosePage } from "./PageShell";
-import { GROUP_EMOJIS } from "./emojis";
+import type { IconId } from "../lib/icons";
 import type { Group, Habit } from "../types";
 import actions from "./formActions.module.css";
 import form from "./HabitFormFields.module.css";
@@ -12,9 +13,9 @@ type Props = {
   /** Every group, to name the one a habit is in now. */
   groups: Group[];
   habits: Habit[];
-  /** The edited name and emoji, and the habits to be in the group. */
+  /** The edited name and icon, and the habits to be in the group. */
   onSave: (
-    changes: { name: string; emoji: string },
+    changes: { name: string; icon: IconId },
     memberIds: string[],
   ) => void;
   onDelete: (id: string) => void;
@@ -24,7 +25,7 @@ type Props = {
 /**
  * Edit a group, on a page slid over the habits, opened by holding its chip or
  * section header: its name and
- * emoji (picked from a grid), which habits are in it (checking a habit from another group moves
+ * icon (picked from a grid), which habits are in it (checking a habit from another group moves
  * it here), or delete it, leaving its habits in no group. Like the habit
  * editor, nothing changes until Save.
  */
@@ -37,11 +38,7 @@ export default function GroupEditPage({
   onClose,
 }: Props) {
   const [name, setName] = useState(group.name);
-  const [emoji, setEmoji] = useState(group.emoji);
-  // An emoji the group has from before the picker stays one to pick
-  const emojis = GROUP_EMOJIS.includes(group.emoji)
-    ? GROUP_EMOJIS
-    : [group.emoji, ...GROUP_EMOJIS];
+  const [icon, setIcon] = useState(group.icon);
   const [members, setMembers] = useState(
     () =>
       new Set(habits.filter((h) => h.groupId === group.id).map((h) => h.id)),
@@ -64,12 +61,7 @@ export default function GroupEditPage({
     <PageShell title="Edit Group" onBack={() => onClose()}>
       <div className={form.field}>
         <div className={form.label}>Icon</div>
-        <EmojiPicker
-          options={emojis}
-          value={emoji}
-          onChange={setEmoji}
-          label="Group emoji"
-        />
+        <IconPicker value={icon} onChange={setIcon} label="Group icon" />
       </div>
 
       <div className={form.field}>
@@ -99,15 +91,15 @@ export default function GroupEditPage({
                 onChange={() => toggle(h.id)}
                 className={styles.check}
               />
-              <span className={styles.habitName}>
-                {h.emoji} {h.name}
-              </span>
+              <HabitIcon icon={h.icon} />
+              <span className={styles.habitName}>{h.name}</span>
               {other && (
                 <span
                   className={`${styles.other}${on ? ` ${styles.moving}` : ""}`}
                 >
                   {on ? "moves from " : ""}
-                  {other.emoji} {other.name}
+                  <HabitIcon icon={other.icon} size={13} />
+                  {other.name}
                 </span>
               )}
             </label>
@@ -165,7 +157,7 @@ export default function GroupEditPage({
           onClick={() =>
             onClose(() =>
               onSave(
-                { name: name.trim(), emoji },
+                { name: name.trim(), icon },
                 habits.filter((h) => members.has(h.id)).map((h) => h.id),
               ),
             )

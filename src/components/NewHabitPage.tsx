@@ -1,6 +1,8 @@
 // A new habit's form, on a page slid over the habits.
 import { useState } from "react";
 import { doneMetric } from "../lib/metrics";
+import { DEFAULT_HABIT_ICON } from "../lib/icons";
+import type { IconId } from "../lib/icons";
 import HabitFormFields from "./HabitFormFields";
 import PageShell, { type ClosePage } from "./PageShell";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
@@ -8,7 +10,7 @@ import actions from "./formActions.module.css";
 
 export type NewHabit = {
   name: string;
-  emoji: string;
+  icon: IconId;
   description: string;
   color: string;
   metrics: Metric[];
@@ -34,7 +36,7 @@ export default function NewHabitPage({
   onAddGroup,
 }: Props) {
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🎯");
+  const [icon, setIcon] = useState<IconId>(DEFAULT_HABIT_ICON);
   const [desc, setDesc] = useState("");
   const [color, setColor] = useState("Green");
   const [metrics, setMetrics] = useState<Metric[]>([]);
@@ -49,8 +51,8 @@ export default function NewHabitPage({
       <HabitFormFields
         name={name}
         setName={setName}
-        emoji={emoji}
-        setEmoji={setEmoji}
+        icon={icon}
+        setIcon={setIcon}
         description={desc}
         setDescription={setDesc}
         color={color}
@@ -77,7 +79,7 @@ export default function NewHabitPage({
             onClose(() =>
               onAdd({
                 name: name.trim(),
-                emoji,
+                icon,
                 description: desc.trim(),
                 color,
                 metrics: metrics.length === 0 ? [doneMetric()] : metrics,

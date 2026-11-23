@@ -3,15 +3,21 @@ import { useState } from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HabitFormFields from "./HabitFormFields";
-import { GROUP_EMOJIS } from "./emojis";
+import { ICON_IDS, ICON_NAMES } from "../lib/icons";
+import type { IconId } from "../lib/icons";
 import { BUILTIN_UNITS } from "../lib/defaults";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
 
-const MUSIC: Group = { id: "g1", name: "Music", emoji: "🎵", collapsed: false };
+const MUSIC: Group = {
+  id: "g1",
+  name: "Music",
+  icon: "music",
+  collapsed: false,
+};
 const FITNESS: Group = {
   id: "g2",
   name: "Fitness",
-  emoji: "🏋️",
+  icon: "weightlifter",
   collapsed: false,
 };
 
@@ -26,7 +32,7 @@ function Harness({
   initialGroups?: Group[];
 }) {
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🎯");
+  const [icon, setIcon] = useState<IconId>("target");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("Green");
   const [metrics, setMetrics] = useState<Metric[]>([]);
@@ -38,8 +44,8 @@ function Harness({
     <HabitFormFields
       name={name}
       setName={setName}
-      emoji={emoji}
-      setEmoji={setEmoji}
+      icon={icon}
+      setIcon={setIcon}
       description={description}
       setDescription={setDescription}
       color={color}
@@ -235,8 +241,8 @@ describe("HabitFormFields", () => {
       const options = Array.from(groupMenu().querySelectorAll("option"));
       expect(options.map((o) => o.textContent)).toEqual([
         "None",
-        "🎵 Music",
-        "🏋️ Fitness",
+        "Music",
+        "Fitness",
         "+ New group…",
       ]);
     });
@@ -244,7 +250,7 @@ describe("HabitFormFields", () => {
     it("puts the habit in the chosen group, or in none", async () => {
       const user = userEvent.setup();
       render(<Harness />);
-      await user.selectOptions(groupMenu(), "🏋️ Fitness");
+      await user.selectOptions(groupMenu(), "Fitness");
       expect(chosen()).toBe("g2");
       await user.selectOptions(groupMenu(), "None");
       expect(chosen()).toBe("");
@@ -264,7 +270,7 @@ describe("HabitFormFields", () => {
       expect(onAddGroup).toHaveBeenCalledWith({
         id: expect.any(String),
         name: "Languages",
-        emoji: "📁",
+        icon: "folder",
         collapsed: false,
       });
       const { id } = onAddGroup.mock.calls[0][0];
@@ -273,36 +279,36 @@ describe("HabitFormFields", () => {
       expect(screen.queryByRole("textbox", { name: "Group name" })).toBeNull();
     });
 
-    it("gives a new group the emoji picked for it", async () => {
+    it("gives a new group the icon picked for it", async () => {
       const user = userEvent.setup();
       const onAddGroup = vi.fn();
       render(<Harness onAddGroup={onAddGroup} />);
       await openNewGroup(user);
-      const picker = screen.getByRole("group", { name: "Group emoji" });
+      const picker = screen.getByRole("group", { name: "Group icon" });
       expect(
         within(picker)
           .getAllByRole("button")
-          .map((b) => b.textContent),
-      ).toEqual(GROUP_EMOJIS);
+          .map((b) => b.getAttribute("aria-label")),
+      ).toEqual(ICON_IDS.map((id) => ICON_NAMES[id]));
       expect(
         within(picker).getByRole("button", { pressed: true }),
-      ).toHaveTextContent("📁");
-      await user.click(within(picker).getByRole("button", { name: "💼" }));
+      ).toHaveAccessibleName("Folder");
+      await user.click(within(picker).getByRole("button", { name: "Work" }));
       await user.type(
         screen.getByRole("textbox", { name: "Group name" }),
         "Work",
       );
       await user.click(screen.getByRole("button", { name: "Add Group" }));
-      expect(onAddGroup.mock.calls[0][0].emoji).toBe("💼");
+      expect(onAddGroup.mock.calls[0][0].icon).toBe("work");
     });
 
-    it("starts the next new group from the default emoji", async () => {
+    it("starts the next new group from the default icon", async () => {
       const user = userEvent.setup();
       const onAddGroup = vi.fn();
       render(<Harness onAddGroup={onAddGroup} />);
       await openNewGroup(user);
-      const picker = () => screen.getByRole("group", { name: "Group emoji" });
-      await user.click(within(picker()).getByRole("button", { name: "💼" }));
+      const picker = () => screen.getByRole("group", { name: "Group icon" });
+      await user.click(within(picker()).getByRole("button", { name: "Work" }));
       await user.type(
         screen.getByRole("textbox", { name: "Group name" }),
         "Work",
@@ -311,7 +317,7 @@ describe("HabitFormFields", () => {
       await openNewGroup(user);
       expect(
         within(picker()).getByRole("button", { pressed: true }),
-      ).toHaveTextContent("📁");
+      ).toHaveAccessibleName("Folder");
     });
 
     it("won't add a group without a name", async () => {
@@ -331,7 +337,7 @@ describe("HabitFormFields", () => {
       const user = userEvent.setup();
       const onAddGroup = vi.fn();
       render(<Harness onAddGroup={onAddGroup} />);
-      await user.selectOptions(groupMenu(), "🎵 Music");
+      await user.selectOptions(groupMenu(), "Music");
       await openNewGroup(user);
       await user.click(screen.getByRole("button", { name: "Cancel" }));
       expect(onAddGroup).not.toHaveBeenCalled();

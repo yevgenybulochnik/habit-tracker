@@ -28,7 +28,7 @@ export default function EditHabitPage({
   onAddGroup,
 }: Props) {
   const [name, setName] = useState(habit.name);
-  const [emoji, setEmoji] = useState(habit.emoji);
+  const [icon, setIcon] = useState(habit.icon);
   const [desc, setDesc] = useState(habit.description || "");
   const [color, setColor] = useState(habit.color);
   const [metrics, setMetrics] = useState<Metric[]>([...habit.metrics]);
@@ -41,8 +41,8 @@ export default function EditHabitPage({
       <HabitFormFields
         name={name}
         setName={setName}
-        emoji={emoji}
-        setEmoji={setEmoji}
+        icon={icon}
+        setIcon={setIcon}
         description={desc}
         setDescription={setDesc}
         color={color}
@@ -112,7 +112,7 @@ export default function EditHabitPage({
               onSave({
                 ...rest,
                 name: name.trim(),
-                emoji,
+                icon,
                 description: desc.trim(),
                 color,
                 metrics,

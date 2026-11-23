@@ -10,7 +10,7 @@ import type { Habit, HabitLogs } from "../types";
 const habit: Habit = {
   id: "h1",
   name: "Reading",
-  emoji: "📚",
+  icon: "book",
   color: "Green",
   metrics: [{ id: "m1", name: "Reps", unit: "reps" }],
   intensityMode: "total",

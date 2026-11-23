@@ -112,9 +112,6 @@
   color: var(--c-dim);
   font-size: 12px;
 }
-.emoji {
-  font-size: 13px;
-}
 .count {
   font-size: 10px;
   color: var(--c-dim);

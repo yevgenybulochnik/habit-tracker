@@ -23,8 +23,9 @@ import {
   type Slot,
 } from "../lib/routineRun";
 import type { RoutineEngine } from "../hooks/useRoutineRun";
-import type { Habit, Logs, SetEntry, ThemeName } from "../types";
-import Icon from "./Icon";
+import type { Habit, Logs, Metric, SetEntry, ThemeName } from "../types";
+import HabitIcon from "./HabitIcon";
+import Icon, { type IconName } from "./Icon";
 import RoutineRing from "./RoutineRing";
 import { colorOf, stepColor } from "./routineColors";
 import styles from "./RoutineRunner.module.css";
@@ -72,11 +73,33 @@ export default function RoutineRunner({
   // counting down to pause.
   const countUnderWay = phase.kind === "slot" && phase.slot.open && !paused;
 
+  // The ring's picture: a habit's icon in its colour, or the run's own.
+  const glyph = (
+    found: { habit: Habit; metric: Metric } | undefined,
+    otherwise: IconName,
+    dim = false,
+  ) => (
+    <span
+      className={`${styles.glyph}${dim ? ` ${styles.dim}` : ""}`}
+      style={
+        found
+          ? ({ "--glyph-c": stepColor(found, theme) } as CSSProperties)
+          : undefined
+      }
+    >
+      {found ? (
+        <HabitIcon icon={found.habit.icon} />
+      ) : (
+        <Icon name={otherwise} />
+      )}
+    </span>
+  );
+
   const centre = (() => {
     if (phase.kind === "done" || !slot)
       return (
         <>
-          <span className={styles.emoji}>🎉</span>
+          {glyph(undefined, "party")}
           <span className={styles.clock}>{fmtElapsed(runLength(slots))}</span>
           <span className={styles.label}>Done</span>
         </>
@@ -84,7 +107,7 @@ export default function RoutineRunner({
     if (phase.kind === "prep")
       return (
         <>
-          <span className={styles.emoji}>{found?.habit.emoji ?? "⏱️"}</span>
+          {glyph(found, "stopwatch")}
           <span className={styles.clock}>{fmtCountdown(phase.remaining)}</span>
           <span className={styles.label}>Get ready</span>
         </>
@@ -92,9 +115,7 @@ export default function RoutineRunner({
     if (slot.step.kind === "break")
       return (
         <>
-          <span className={`${styles.emoji} ${styles.dim}`}>
-            {nextFound?.habit.emoji ?? "😮‍💨"}
-          </span>
+          {glyph(nextFound, "hourglass", true)}
           <span className={styles.clock}>{fmtCountdown(phase.remaining)}</span>
           <span className={styles.label}>Break</span>
         </>
@@ -102,7 +123,7 @@ export default function RoutineRunner({
     const name = found ? stepName(found.habit, found.metric) : "Habit gone";
     return (
       <>
-        <span className={styles.emoji}>{found?.habit.emoji ?? "❔"}</span>
+        {glyph(found, "unknown")}
         <span className={styles.clock}>
           {slot.open ? slot.step.count : fmtCountdown(phase.remaining)}
         </span>
@@ -295,7 +316,7 @@ function LogSection(props: SectionProps) {
       <li>
         <LoggedEntry
           {...props}
-          title={`${found.habit.emoji} ${name}`}
+          title={name}
           round={round}
           onDone={() => setEditing(false)}
         />
@@ -309,7 +330,9 @@ function LogSection(props: SectionProps) {
         className={styles.logRow}
         style={color}
       >
-        <span>{found.habit.emoji}</span>
+        <span className={styles.logIcon}>
+          <HabitIcon icon={found.habit.icon} />
+        </span>
         <span className={styles.logName}>
           {name}
           <span className={styles.entryRound}>{round}</span>
@@ -360,7 +383,8 @@ function LoggedEntry({
       style={{ "--entry-c": stepColor(found, theme) } as CSSProperties}
     >
       <span className={styles.entryHead}>
-        <span>
+        <span className={styles.entryTitle}>
+          <HabitIcon icon={found.habit.icon} size={16} />
           {title}
           <span className={styles.entryRound}>{round}</span>
         </span>
@@ -451,8 +475,9 @@ function CountEntry({
       style={{ "--entry-c": stepColor(found, theme) } as CSSProperties}
     >
       <div className={styles.entryHead}>
-        <span>
-          {habit.emoji} How many {name.toLowerCase()}?
+        <span className={styles.entryTitle}>
+          <HabitIcon icon={habit.icon} size={16} />
+          How many {name.toLowerCase()}?
           {engine.routine && engine.routine.rounds > 1 && (
             <span className={styles.entryRound}> R{slot.round + 1}</span>
           )}
