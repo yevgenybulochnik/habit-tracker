@@ -142,10 +142,8 @@ describe("RoutinesView", () => {
     ).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Name"), "Lunch");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Habit" }),
-      "Plank",
-    );
+    await userEvent.click(screen.getByRole("button", { name: /^Habit:/ }));
+    await userEvent.click(screen.getByRole("option", { name: "Plank" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave.mock.calls[0][0]).toMatchObject({ name: "Lunch", rounds: 1 });
   });

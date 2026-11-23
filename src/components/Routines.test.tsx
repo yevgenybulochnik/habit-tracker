@@ -95,10 +95,8 @@ describe("Routines", () => {
     await userEvent.click(screen.getByRole("button", { name: /New Routine/ }));
     await userEvent.type(screen.getByLabelText("Name"), "Lunch");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Habit" }),
-      "Plank",
-    );
+    await userEvent.click(screen.getByRole("button", { name: /^Habit:/ }));
+    await userEvent.click(screen.getByRole("option", { name: "Plank" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(dispatch.mock.lastCall![0]).toMatchObject({
       type: "routine/add",

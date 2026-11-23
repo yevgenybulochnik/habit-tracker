@@ -39,7 +39,7 @@ export function captureFor(m: Metric): Capture {
 /** A step's habit and metric, if both still exist. */
 export function findStep(
   habits: Habit[],
-  step: HabitStep,
+  step: Pick<HabitStep, "habitId" | "metricId">,
 ): { habit: Habit; metric: Metric } | undefined {
   const habit = habits.find((h) => h.id === step.habitId);
   const metric = habit?.metrics.find((m) => m.id === step.metricId);

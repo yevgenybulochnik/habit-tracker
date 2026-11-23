@@ -62,6 +62,7 @@ export default function RoutinesView({
           routine={editing}
           isNew={isNew}
           habits={habits}
+          theme={theme}
           onCancel={doneEditing}
           onSave={(r) => {
             onSave(r);

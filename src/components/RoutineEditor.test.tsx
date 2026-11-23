@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RoutineEditor, { newRoutine } from "./RoutineEditor";
 import { setsPreset } from "../lib/metrics";
+import { resolvePalette } from "../theme";
 import type { Habit, Routine } from "../types";
 
 const pushUps: Habit = {
@@ -68,6 +69,7 @@ function edit(routine: Routine = newRoutine(), isNew = true) {
       routine={routine}
       isNew={isNew}
       habits={habits}
+      theme="dark"
       onSave={onSave}
       onDelete={onDelete}
       onCancel={onCancel}
@@ -78,7 +80,12 @@ function edit(routine: Routine = newRoutine(), isNew = true) {
 
 const save = () => screen.getByRole("button", { name: "Save" });
 const steps = () => within(screen.getByRole("list", { name: "Steps" }));
-const habitMenus = () => screen.getAllByRole("combobox", { name: "Habit" });
+const habitMenus = () => screen.getAllByRole("button", { name: /^Habit:/ });
+/** Choose the habit named `name` from a step's menu. */
+async function chooseHabit(menu: HTMLElement, name: string) {
+  await userEvent.click(menu);
+  await userEvent.click(screen.getByRole("option", { name }));
+}
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -99,19 +106,45 @@ describe("RoutineEditor", () => {
     edit();
     await userEvent.type(screen.getByLabelText("Name"), "Evening");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    expect(habitMenus()[0]).toHaveDisplayValue("Choose a habit");
+    expect(habitMenus()[0]).toHaveAccessibleName("Habit: Choose a habit");
     expect(
       screen.getByText("To save it, choose each step's habit."),
     ).toBeInTheDocument();
-    await userEvent.selectOptions(habitMenus()[0], "Reading");
+    await chooseHabit(habitMenus()[0], "Reading");
     expect(save()).toBeEnabled();
+  });
+
+  it("lists each habit in a step's menu with its icon, in its colour", async () => {
+    edit(morning, false);
+    expect(habitMenus()[0]).toHaveAccessibleName("Habit: Push-ups");
+    expect(habitMenus()[0].querySelector("svg path")).not.toBeNull();
+    await userEvent.click(habitMenus()[0]);
+    const options = within(
+      screen.getByRole("listbox", { name: "Habit" }),
+    ).getAllByRole("option");
+    expect(options.map((o) => o.textContent)).toEqual([
+      "Push-ups",
+      "Reading",
+      "Plank",
+    ]);
+    expect(
+      screen.getByRole("option", { name: "Push-ups", selected: true }),
+    ).toBeInTheDocument();
+    const shade = (o: HTMLElement) =>
+      (o.firstElementChild as HTMLElement).style.getPropertyValue("--ic");
+    expect(options.map(shade)).toEqual(
+      ["Orange", "Purple", "Green"].map(
+        (c) => resolvePalette(c, "dark").shades[4],
+      ),
+    );
+    for (const o of options) expect(o.querySelector("svg path")).not.toBeNull();
   });
 
   it("saves what was made, its name trimmed", async () => {
     const { onSave } = edit();
     await userEvent.type(screen.getByLabelText("Name"), "  Evening ");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    await userEvent.selectOptions(habitMenus()[0], "Reading");
+    await chooseHabit(habitMenus()[0], "Reading");
     await userEvent.click(screen.getByRole("button", { name: "+ Break" }));
     await userEvent.click(screen.getByRole("button", { name: "More rounds" }));
     await userEvent.selectOptions(screen.getByLabelText("Get ready"), "0:10");
@@ -164,7 +197,7 @@ describe("RoutineEditor", () => {
       steps: [{ ...morning.steps[0], by: "count" as const }],
     };
     const { onSave } = edit(counted, false);
-    await userEvent.selectOptions(habitMenus()[0], "Plank");
+    await chooseHabit(habitMenus()[0], "Plank");
     await userEvent.click(save());
     expect(onSave.mock.calls[0][0].steps[0]).toMatchObject({
       habitId: "plank",
