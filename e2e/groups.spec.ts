@@ -169,7 +169,7 @@ test("the icon grids fit their form on an iPhone 13's screen", async ({
   await page.getByRole("option", { name: "+ New group…" }).click();
 
   for (const label of ["Icon", "Group icon"]) {
-    const grid = page.getByRole("group", { name: label });
+    const grid = page.getByRole("group", { name: label, exact: true });
     const { scrollWidth, clientWidth } = await grid.evaluate((g) => ({
       scrollWidth: g.scrollWidth,
       clientWidth: g.clientWidth,
