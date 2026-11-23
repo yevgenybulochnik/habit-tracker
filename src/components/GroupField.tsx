@@ -4,6 +4,7 @@ import type { IconId } from "../lib/icons";
 import { newId } from "../lib/ids";
 import type { Group } from "../types";
 import IconPicker from "./IconPicker";
+import IconSelect from "./IconSelect";
 import form from "./HabitFormFields.module.css";
 import styles from "./GroupField.module.css";
 
@@ -20,7 +21,8 @@ type Props = {
 const NEW = "__new__";
 
 /**
- * The habit form's group menu: none, each group, or "+ New group…", which
+ * The habit form's group menu: none, each group with its icon, or
+ * "+ New group…", which
  * opens a small form the way the unit menu's "+ Custom..." does. Like a custom
  * unit, the new group is added as soon as it's made, even if the habit form is
  * then cancelled.
@@ -55,26 +57,23 @@ export default function GroupField({
       <label className={form.label} htmlFor="habit-group">
         Group
       </label>
-      <select
+      <IconSelect
         id="habit-group"
+        label="Group"
         value={adding ? NEW : value}
-        onChange={(e) => {
-          if (e.target.value === NEW) setAdding(true);
+        options={[
+          { value: "", label: "None" },
+          ...groups.map((g) => ({ value: g.id, label: g.name, icon: g.icon })),
+          { value: NEW, label: "+ New group…" },
+        ]}
+        onChange={(v) => {
+          if (v === NEW) setAdding(true);
           else {
             setAdding(false);
-            onChange(e.target.value);
+            onChange(v);
           }
         }}
-        className={styles.select}
-      >
-        <option value="">None</option>
-        {groups.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.name}
-          </option>
-        ))}
-        <option value={NEW}>+ New group…</option>
-      </select>
+      />
       {adding && (
         <div className={styles.panel}>
           <div className={styles.panelTitle}>New Group</div>

@@ -27,6 +27,12 @@ vi.mock("./lib/storage", async (importOriginal) => ({
 const mockLoad = vi.mocked(loadState);
 const mockSave = vi.mocked(saveState);
 
+/** In the open habit form, choose the group menu's option named `name`. */
+async function chooseGroup(name: string) {
+  await userEvent.click(screen.getByRole("button", { name: /^Group:/ }));
+  await userEvent.click(screen.getByRole("option", { name }));
+}
+
 beforeEach(() => {
   mockLoad.mockReset();
   mockSave.mockReset();
@@ -302,10 +308,7 @@ describe("App changes to habits", () => {
       screen.getByPlaceholderText(/Morning Workout/i),
       "Spanish",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Group" }),
-      "+ New group…",
-    );
+    await chooseGroup("+ New group…");
     await userEvent.type(
       screen.getByRole("textbox", { name: "Group name" }),
       "Languages",
@@ -361,18 +364,16 @@ describe("App changes to habits", () => {
     };
 
     await editRun();
-    const menu = screen.getByRole("combobox", { name: "Group" });
-    expect(menu).toHaveValue("g2");
-    await userEvent.selectOptions(menu, "Music");
+    expect(
+      screen.getByRole("button", { name: /^Group:/ }),
+    ).toHaveAccessibleName("Group: Fitness");
+    await chooseGroup("Music");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(lastSaved().habits[0].groupId).toBe("g1"));
 
     await waitFor(() => expect(screen.queryByText("Edit Habit")).toBeNull());
     await editRun();
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Group" }),
-      "None",
-    );
+    await chooseGroup("None");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(lastSaved().habits[0]).not.toHaveProperty("groupId"),

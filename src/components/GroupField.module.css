@@ -1,7 +1,3 @@
-.select {
-  composes: inp from "../styles/shared.module.css";
-  cursor: pointer;
-}
 /* The same panel as the unit menu's "+ Custom..." form. */
 .panel {
   composes: cu from "./HabitFormFields.module.css";
