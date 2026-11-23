@@ -4,6 +4,7 @@ import { todayK } from "../lib/dates";
 import { normalizeState, SCHEMA_VERSION } from "../lib/normalize";
 import { unitFields } from "../lib/units";
 import { downloadJson } from "../download";
+import Icon from "./Icon";
 import PageShell, { type ClosePage } from "./PageShell";
 import UnitForm from "./UnitForm";
 import type {
@@ -230,7 +231,7 @@ export default function SettingsPage({
                       title="Edit"
                       aria-label={`Edit ${u.label}`}
                     >
-                      ✎
+                      <Icon name="edit" size={13} />
                     </button>
                     {!isBuiltin && !inUse && (
                       <button

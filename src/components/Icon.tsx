@@ -25,6 +25,12 @@ const PATHS = {
   check: <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" />,
   pause: <path d="M7 5h3v14H7zM14 5h3v14h-3z" />,
   skip: <path d="M6 6l8 6-8 6zM17 6v12" />,
+  stop: <path stroke="none" d="M6 6h12v12H6z" />,
+  edit: (
+    <path d="M4 20l1.2-4.6L15.5 5.1a2.1 2.1 0 0 1 3 3L8.2 18.4z" fill="none" />
+  ),
+  dot: <circle cx="12" cy="12" r="6" stroke="none" />,
+  ring: <circle cx="12" cy="12" r="5.5" fill="none" />,
   // Filled, from Material Design Icons (Pictogrammers, Apache License 2.0)
   settings: (
     <path

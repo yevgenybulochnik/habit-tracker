@@ -82,6 +82,16 @@ afterEach(() => {
 });
 
 describe("HabitFormFields", () => {
+  it("draws the sets mode toggle's mark, off and on", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const off = screen.getByRole("button", { name: "Enable sets mode" });
+    expect(off.querySelector("svg")).not.toBeNull();
+    await user.click(off);
+    const on = screen.getByRole("button", { name: "Sets mode ON" });
+    expect(on.querySelector("svg")).not.toBeNull();
+  });
+
   /** Add a sets metric with the given preset through the form. */
   async function addSetsMetric(
     user: ReturnType<typeof userEvent.setup>,

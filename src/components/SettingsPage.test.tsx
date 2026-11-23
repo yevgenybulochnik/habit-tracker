@@ -259,6 +259,13 @@ describe("SettingsPage — units", () => {
     expect(onAddUnit).not.toHaveBeenCalled();
   });
 
+  it("draws a unit's Edit icon", () => {
+    renderUnits();
+    const edit = screen.getByRole("button", { name: "Edit Reps" });
+    expect(edit.textContent).toBe("");
+    expect(edit.querySelector("svg path")).not.toBeNull();
+  });
+
   it("edits a unit's thresholds", async () => {
     const { onUpdateUnit } = renderUnits();
     const reps = BUILTIN_UNITS.find((u) => u.id === "reps")!;

@@ -184,6 +184,14 @@ describe("RoutineEditor", () => {
     });
   });
 
+  it("shows a break as one, with its icon drawn", () => {
+    edit(morning, false);
+    const pause = steps().getAllByRole("listitem")[1];
+    const label = within(pause).getByText("Break");
+    expect(label.textContent).toBe("Break");
+    expect(label.parentElement!.querySelector("svg path")).not.toBeNull();
+  });
+
   it("gives only a counted habit the choice", () => {
     edit(morning, false);
     // Push-ups count; the plank logs minutes.

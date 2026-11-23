@@ -260,7 +260,7 @@ export default function App() {
         {/* Stays up until a later save succeeds */}
         {saveFailed && (
           <div role="alert" className={styles.saveError}>
-            Changes aren't being saved — export a backup from Settings ⚙
+            Changes aren't being saved — export a backup from Settings
           </div>
         )}
 
@@ -291,7 +291,7 @@ export default function App() {
                 title="Settings"
                 className={styles.iconBtn}
               >
-                ⚙
+                <Icon name="settings" size={18} />
               </button>
               <button
                 onClick={() => openPage({ kind: "newHabit" })}
@@ -307,7 +307,9 @@ export default function App() {
           <div className={styles.content}>
             {habits.length === 0 ? (
               <div className={styles.empty}>
-                <div className={styles.emptyIcon}>📊</div>
+                <div className={styles.emptyIcon}>
+                  <Icon name="chart" size={40} />
+                </div>
                 <div className={styles.emptyTitle}>No habits yet</div>
                 <div className={styles.emptyHint}>
                   Click "New Habit" to start

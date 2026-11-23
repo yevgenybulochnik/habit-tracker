@@ -119,7 +119,7 @@
   text-align: center;
 }
 .emptyIcon {
-  font-size: 40px;
+  color: var(--c-dim);
   margin-bottom: 16px;
 }
 .emptyTitle {

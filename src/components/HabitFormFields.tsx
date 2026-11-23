@@ -13,6 +13,7 @@ import type { IconId } from "../lib/icons";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
 import UnitForm from "./UnitForm";
 import GroupField from "./GroupField";
+import Icon from "./Icon";
 import IconPicker from "./IconPicker";
 import styles from "./HabitFormFields.module.css";
 
@@ -200,7 +201,10 @@ export default function HabitFormFields({
             }
             className={`${styles.toggleBtn}${newMode === "sets" ? ` ${styles.on}` : ""}`}
           >
-            {newMode === "sets" ? "◼ Sets mode ON" : "○ Enable sets mode"}
+            <span>
+              <Icon name={newMode === "sets" ? "dot" : "ring"} size={10} />
+            </span>
+            {newMode === "sets" ? "Sets mode ON" : "Enable sets mode"}
           </button>
           {newMode === "sets" && (
             <div className={styles.presetWrap}>

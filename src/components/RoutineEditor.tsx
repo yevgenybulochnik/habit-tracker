@@ -351,7 +351,10 @@ function StepRow({
       <li ref={setNodeRef} style={style} className={className}>
         {grip}
         <div className={styles.stepSub}>
-          <span className={styles.breakLabel}>😮‍💨 Break</span>
+          <span className={styles.breakIcon}>
+            <Icon name="hourglass" size={16} />
+          </span>
+          <span className={styles.breakLabel}>Break</span>
           {time}
         </div>
         {remove}

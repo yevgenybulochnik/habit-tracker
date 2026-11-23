@@ -713,6 +713,26 @@ describe("App backup import", () => {
   });
 });
 
+// Its own icons are drawn: an emoji, or a symbol the font lacks, comes out
+// as the phone's emoji.
+describe("App icons", () => {
+  it("names the Settings button, with its icon drawn", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    const settings = await screen.findByRole("button", { name: "Settings" });
+    expect(settings.textContent).toBe("");
+    expect(settings.querySelector("svg path")).not.toBeNull();
+  });
+
+  it("draws the picture over an empty list", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    const empty = (await screen.findByText(/No habits yet/i)).parentElement!;
+    expect(empty.querySelector("svg path")).not.toBeNull();
+    expect(empty.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+});
+
 describe("App save errors", () => {
   // Changing the theme in Settings is a save that needs no habit cards (and so
   // no ResizeObserver stub in jsdom).
@@ -734,7 +754,9 @@ describe("App save errors", () => {
     expect(
       await screen.findByText(/Changes aren't being saved/i),
     ).toBeInTheDocument();
-    expect(banner()).toHaveTextContent(/export a backup/i);
+    expect(banner()).toHaveTextContent(
+      /^Changes aren't being saved — export a backup from Settings$/,
+    );
     expect(mockSave).toHaveBeenCalled();
   });
 

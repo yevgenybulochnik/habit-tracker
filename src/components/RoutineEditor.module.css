@@ -141,6 +141,10 @@
   flex: 0 0 auto;
   width: 78px;
 }
+.breakIcon {
+  flex: none;
+  color: var(--c-muted);
+}
 .breakLabel {
   flex: 1;
   font-size: 13px;
