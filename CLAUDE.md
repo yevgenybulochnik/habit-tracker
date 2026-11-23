@@ -81,7 +81,8 @@ current-format state), `state` (the app's reducer, below), `groups` (habits spli
 sections: `groupSections`, `ungroupedHabits`, and `setMembers` for a group's habits),
 `calendarNav` (a card's calendar
 navigation, `navigate` over `{ offset, zoomed, view }`), `units` (parsing and validating a
-unit form: `buildUnit`), `ids` (`newId`), the routines' three (below: `routines`,
+unit form: `buildUnit`), `ids` (`newId`), `icons` (the icons a habit or group can have, by
+id, in the pickers' sections, and `iconForEmoji` for data from before them), the routines' three (below: `routines`,
 `routineRun`, `routineLog`), and `defaults`
 (storage keys, built-in units, default config, month/weekday labels). Prefer adding logic
 here over inside components. `boundary.test.ts`
@@ -94,8 +95,14 @@ CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`)
 helper; it needs the DOM, so it isn't in lib, and so are `src/slide.ts` (`slide`, the
 sideways page change, a view transition whose keyframes are in `globalCss`) and `src/cues.ts`
 (a routine's sounds and buzzes). Anything used by a single component sits with
-it (the d3 easing `D3E` inside `CalendarPanel`). The emoji choices, `EMOJIS` for a habit and
-`GROUP_EMOJIS` for a group, are in `components/emojis.ts`.
+it (the d3 easing `D3E` inside `CalendarPanel`).
+
+**Icons are drawn, not emoji:** an emoji, or a symbol the font may lack (⚙ ▶ ✎), comes out
+as the phone's own emoji. A habit's or group's `icon` is an id from `lib/icons`, drawn by `HabitIcon` from
+`components/iconDrawings` (Material Design Icons, Apache 2.0, one path each; push-up, crunch
+and bench press were drawn for the app). On a card, in a step menu and in a routine's run, it's
+in the habit's colour (a group's, which has none, in the text colour). The app's own icons
+(the gear, play and stop, a break's hourglass…) are `Icon`'s.
 
 **The data model is nested and worth internalizing** (`src/types.ts`):
 `Logs = habitId → dateKey → DayLog`, where `DayLog = metricId → (number | SetEntry[])`.
@@ -111,7 +118,7 @@ sense within one unit: the habit form switches a habit to `coverage` when `hasMi
 its metrics differ. The current streak in `habitStats` counts back from today, or from
 yesterday while today has nothing logged, so an unfinished day doesn't break it.
 
-**Groups.** `PersistedState.groups` lists the `Group`s (`id`, `name`, `emoji`, `collapsed`)
+**Groups.** `PersistedState.groups` lists the `Group`s (`id`, `name`, `icon`, `collapsed`)
 in display order, and a habit names its group with an optional `groupId`: absent means it's in
 none, and a habit is in at most one. The habit list keeps a single order, so a section's
 habits are that list filtered, and reordering within a section is a `habit/reorder`.
@@ -141,7 +148,8 @@ change, logs the habits that log themselves as they end, and marks the run finis
 **Data is normalized once, at the boundary (`src/lib/normalize.ts`).** Everything read from
 IndexedDB or a backup file passes through `normalizeState`, which fills in what older data
 lacks (a habit's `metrics`/`intensityMode`, a sets metric's `setFields`/`setValue`, config
-settings, built-in units, the groups and a group's fields, the routines and theirs; it drops a
+settings, built-in units, the groups and a group's fields, the routines and theirs; a habit's
+and a group's `icon`, from its emoji before v5; it drops a
 `groupId` whose group doesn't exist, and a routine's step whose habit doesn't) and stamps
 `schemaVersion`. The types therefore mark those fields
 required, and code that reads state must **not** add its own fallbacks for old data (no
@@ -186,7 +194,7 @@ count done today), the habits in no group, then a collapsible section per group;
 to its section and the chip of the section under the bar is highlighted. Each list of cards
 (`renderList` in `App`) is its own `SortableHabits` drag context, so reorder mode moves a card
 within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
-a header opens `GroupEditPage` (name, emoji, its habits as a checklist, delete).
+a header opens `GroupEditPage` (name, icon, its habits as a checklist, delete).
 
 **Pages.** Every screen besides the habits is a page that slides in over them (`slide`, a view
 transition); the app has no dialogs. `App` holds the open `page` (the Routines page,
@@ -239,8 +247,11 @@ anything in the build that depends on `today` or on the selection must be set on
 **Forms.** Units are added and edited through the shared `UnitForm` (Settings and the habit form's
 "+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
 habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
-Emojis are picked from a grid, the shared `EmojiPicker` (the habit form's icon, and a group's
-in `GroupField` and `GroupEditPage`), never typed: a text box is no way to choose one on a phone.
+Icons are picked from a grid, the shared `IconPicker` (the habit form's, and a group's in
+`GroupField` and `GroupEditPage`). A menu of habits or groups (a routine step's habit, the
+habit form's Group) is an `IconSelect`, not a `<select>`, whose menu can only be text: a field
+that opens its list in place under it (the listbox pattern), each option with its icon. The
+other menus (units, times) stay native.
 Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
 finger moving more than 10px, and after a hold fires it prevents the release's click (a touch's,
 and a mouse's, which would also open a Compact card's quick-log): the editor it opened is under
@@ -253,7 +264,7 @@ copying it into state.
 
 **Styling — CSS Modules.** Each component has a colocated `Component.module.css`; the
 component imports `styles` and sets `className={styles.x}` (Vite types `*.module.css` via
-`vite/client`; no config). Equal-width / wrapping layouts use **CSS grid** (e.g. the emoji
+`vite/client`; no config). Equal-width / wrapping layouts use **CSS grid** (e.g. the icon
 picker and intensity selector in `HabitFormFields`, the fields of `UnitForm`). State
 is expressed as **modifier classes** (`className={`${styles.btn}${on ? " "+styles.on : ""}`}`)
 and hover/focus via **`:hover`/`:focus-visible`** (not `onMouseEnter` handlers). Shared form
