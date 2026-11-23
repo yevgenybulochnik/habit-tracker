@@ -56,6 +56,7 @@
 /* The list, in place under the field: it scrolls itself past six options,
    showing half of the next so it's plain there are more. */
 .list {
+  box-sizing: border-box;
   list-style: none;
   margin: 0;
   padding: 4px;
@@ -77,6 +78,7 @@
   }
 }
 .option {
+  box-sizing: border-box;
   flex: none;
   display: flex;
   align-items: center;
