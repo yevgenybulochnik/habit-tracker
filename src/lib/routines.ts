@@ -3,6 +3,7 @@
 // what a routine is and how its steps stand to the habits; running one is in
 // `routineRun`, and what a step logs is in `routineLog`.
 import { isDoneMetric, isSetMetric, primaryField } from "./metrics";
+import type { IconId } from "./icons";
 import type { Habit, HabitStep, Metric, Routine, RoutineStep } from "../types";
 
 /** The get-ready a new routine has, in seconds. */
@@ -38,7 +39,7 @@ export function captureFor(m: Metric): Capture {
 /** A step's habit and metric, if both still exist. */
 export function findStep(
   habits: Habit[],
-  step: HabitStep,
+  step: Pick<HabitStep, "habitId" | "metricId">,
 ): { habit: Habit; metric: Metric } | undefined {
   const habit = habits.find((h) => h.id === step.habitId);
   const metric = habit?.metrics.find((m) => m.id === step.metricId);
@@ -63,15 +64,16 @@ export const stepFullName = (habit: Habit, metric: Metric) =>
   byMetric(habit) ? `${habit.name} · ${metric.name}` : habit.name;
 
 /** What a step can be, for the editor's menu: each habit, or each metric of
- *  a habit with several. */
+ *  a habit with several, with the habit's icon. */
 export function stepChoices(
   habits: Habit[],
-): { habitId: string; metricId: string; label: string }[] {
+): { habitId: string; metricId: string; label: string; icon: IconId }[] {
   return habits.flatMap((h) =>
     h.metrics.map((m) => ({
       habitId: h.id,
       metricId: m.id,
-      label: `${h.emoji} ${stepFullName(h, m)}`,
+      label: stepFullName(h, m),
+      icon: h.icon,
     })),
   );
 }

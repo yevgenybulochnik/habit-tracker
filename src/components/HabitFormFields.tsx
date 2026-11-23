@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { PALETTES } from "../theme";
-import { EMOJIS } from "./emojis";
 import {
   getUnit,
   hasMixedUnits,
@@ -10,17 +9,19 @@ import {
 } from "../lib/metrics";
 import { newId } from "../lib/ids";
 import type { SetPreset } from "../lib/metrics";
+import type { IconId } from "../lib/icons";
 import type { Group, IntensityMode, Metric, Unit } from "../types";
 import UnitForm from "./UnitForm";
 import GroupField from "./GroupField";
-import EmojiPicker from "./EmojiPicker";
+import Icon from "./Icon";
+import IconPicker from "./IconPicker";
 import styles from "./HabitFormFields.module.css";
 
 type Props = {
   name: string;
   setName: Dispatch<SetStateAction<string>>;
-  emoji: string;
-  setEmoji: Dispatch<SetStateAction<string>>;
+  icon: IconId;
+  setIcon: Dispatch<SetStateAction<IconId>>;
   description: string;
   setDescription: Dispatch<SetStateAction<string>>;
   color: string;
@@ -41,8 +42,8 @@ type Props = {
 export default function HabitFormFields({
   name,
   setName,
-  emoji,
-  setEmoji,
+  icon,
+  setIcon,
   description,
   setDescription,
   color,
@@ -99,12 +100,7 @@ export default function HabitFormFields({
     <>
       <div className={styles.field}>
         <label className={styles.label}>Icon</label>
-        <EmojiPicker
-          options={EMOJIS}
-          value={emoji}
-          onChange={setEmoji}
-          label="Icon"
-        />
+        <IconPicker value={icon} onChange={setIcon} label="Icon" />
       </div>
       <div className={styles.field}>
         <label className={styles.label}>Name</label>
@@ -205,7 +201,10 @@ export default function HabitFormFields({
             }
             className={`${styles.toggleBtn}${newMode === "sets" ? ` ${styles.on}` : ""}`}
           >
-            {newMode === "sets" ? "◼ Sets mode ON" : "○ Enable sets mode"}
+            <span>
+              <Icon name={newMode === "sets" ? "dot" : "ring"} size={10} />
+            </span>
+            {newMode === "sets" ? "Sets mode ON" : "Enable sets mode"}
           </button>
           {newMode === "sets" && (
             <div className={styles.presetWrap}>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { Palette } from "../types";
 import { fmtClock, fmtVal } from "../lib/format";
+import Icon from "./Icon";
 import styles from "./TimerButton.module.css";
 
 type Props = {
@@ -59,7 +60,9 @@ export default function TimerButton({
           onClick={toggle}
           className={`${styles.btn} ${styles.compact}${running ? ` ${styles.running}` : ""}`}
         >
-          <span className={styles.icon}>{running ? "■" : "▶"}</span>
+          <span className={styles.icon}>
+            <Icon name={running ? "stop" : "play"} size={12} />
+          </span>
           {running ? "Stop" : "Timer"}
         </button>
         {running && <span className={styles.time}>{clock}</span>}
@@ -79,7 +82,9 @@ export default function TimerButton({
       style={palVars}
       className={`${styles.btn} ${styles.inline}${running ? ` ${styles.running}` : ""}`}
     >
-      <span className={styles.icon}>{running ? "■" : "▶"}</span>
+      <span className={styles.icon}>
+        <Icon name={running ? "stop" : "play"} size={8} />
+      </span>
       {running ? clock : ""}
     </button>
   );

@@ -8,7 +8,7 @@ import type { Habit, Routine } from "../types";
 const pushUps: Habit = {
   id: "push",
   name: "Push-ups",
-  emoji: "💪",
+  icon: "flex",
   color: "Orange",
   metrics: [{ id: "r", name: "Reps", mode: "sets", ...setsPreset("reps") }],
   intensityMode: "total",
@@ -16,7 +16,7 @@ const pushUps: Habit = {
 const plank: Habit = {
   id: "plank",
   name: "Plank",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Green",
   metrics: [{ id: "m", name: "Time", unit: "min" }],
   intensityMode: "total",
@@ -85,7 +85,7 @@ describe("RoutinesView", () => {
       within(card("Morning")).getByText("2 rounds · at your pace"),
     ).toBeInTheDocument();
     expect(
-      within(card("Morning")).getByText("15 💪 Push-ups → 🧘 Plank"),
+      within(card("Morning")).getByText("15 Push-ups → Plank"),
     ).toBeInTheDocument();
     expect(
       within(card("Evening")).getByText("1 round · 1:00"),
@@ -142,10 +142,8 @@ describe("RoutinesView", () => {
     ).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Name"), "Lunch");
     await userEvent.click(screen.getByRole("button", { name: "+ Habit" }));
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Habit" }),
-      "🧘 Plank",
-    );
+    await userEvent.click(screen.getByRole("button", { name: /^Habit:/ }));
+    await userEvent.click(screen.getByRole("option", { name: "Plank" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave.mock.calls[0][0]).toMatchObject({ name: "Lunch", rounds: 1 });
   });

@@ -8,7 +8,7 @@ function habit(id: string, name = id): Habit {
   return {
     id,
     name,
-    emoji: "📚",
+    icon: "book",
     color: "Blue",
     metrics: [{ id: "m1", name: "Time", unit: "min" }],
     intensityMode: "total",
@@ -264,13 +264,13 @@ describe("reduce: groups", () => {
   const music: Group = {
     id: "g1",
     name: "Music",
-    emoji: "🎵",
+    icon: "music",
     collapsed: false,
   };
   const fitness: Group = {
     id: "g2",
     name: "Fitness",
-    emoji: "🏋️",
+    icon: "weightlifter",
     collapsed: false,
   };
   const inGroup = (id: string, groupId: string) => ({ ...habit(id), groupId });
@@ -301,15 +301,15 @@ describe("reduce: groups", () => {
     expect(out.habits[0].groupId).toBe("g1");
   });
 
-  it("renames a group, changes its emoji, or folds it shut", () => {
+  it("renames a group, changes its icon, or folds it shut", () => {
     const s = state({ groups: [music, fitness] });
     const out = run(s, {
       type: "group/update",
       id: "g1",
-      changes: { name: "Practice", emoji: "🎹", collapsed: true },
+      changes: { name: "Practice", icon: "piano", collapsed: true },
     });
     expect(out.groups).toEqual([
-      { id: "g1", name: "Practice", emoji: "🎹", collapsed: true },
+      { id: "g1", name: "Practice", icon: "piano", collapsed: true },
       fitness,
     ]);
   });
@@ -464,7 +464,7 @@ describe("reduce: replacing everything", () => {
     logs: { h9: { "2026-11-01": { m1: 2 } } },
     units: [],
     config: { ...DEFAULT_CONFIG, theme: "light" },
-    groups: [{ id: "g1", name: "Music", emoji: "🎵", collapsed: false }],
+    groups: [{ id: "g1", name: "Music", icon: "music", collapsed: false }],
     routines: [{ id: "r9", name: "Practice", rounds: 1, prep: 0, steps: [] }],
     timers: { "h9:m1": 1000 },
   };

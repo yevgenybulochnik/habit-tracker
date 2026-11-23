@@ -27,6 +27,12 @@ vi.mock("./lib/storage", async (importOriginal) => ({
 const mockLoad = vi.mocked(loadState);
 const mockSave = vi.mocked(saveState);
 
+/** In the open habit form, choose the group menu's option named `name`. */
+async function chooseGroup(name: string) {
+  await userEvent.click(screen.getByRole("button", { name: /^Group:/ }));
+  await userEvent.click(screen.getByRole("option", { name }));
+}
+
 beforeEach(() => {
   mockLoad.mockReset();
   mockSave.mockReset();
@@ -183,7 +189,7 @@ describe("App changes to habits", () => {
   const run: Habit = {
     id: "h1",
     name: "Run",
-    emoji: "🏃",
+    icon: "run",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",
@@ -302,10 +308,7 @@ describe("App changes to habits", () => {
       screen.getByPlaceholderText(/Morning Workout/i),
       "Spanish",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Group" }),
-      "+ New group…",
-    );
+    await chooseGroup("+ New group…");
     await userEvent.type(
       screen.getByRole("textbox", { name: "Group name" }),
       "Languages",
@@ -319,7 +322,7 @@ describe("App changes to habits", () => {
       {
         id: expect.any(String),
         name: "Languages",
-        emoji: "📁",
+        icon: "folder",
         collapsed: false,
       },
     ]);
@@ -350,8 +353,8 @@ describe("App changes to habits", () => {
       ...loaded,
       habits: [{ ...run, groupId: "g2" }],
       groups: [
-        { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
-        { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+        { id: "g1", name: "Music", icon: "music", collapsed: false },
+        { id: "g2", name: "Fitness", icon: "weightlifter", collapsed: false },
       ],
     });
     render(<App />);
@@ -361,18 +364,16 @@ describe("App changes to habits", () => {
     };
 
     await editRun();
-    const menu = screen.getByRole("combobox", { name: "Group" });
-    expect(menu).toHaveValue("g2");
-    await userEvent.selectOptions(menu, "🎵 Music");
+    expect(
+      screen.getByRole("button", { name: /^Group:/ }),
+    ).toHaveAccessibleName("Group: Fitness");
+    await chooseGroup("Music");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(lastSaved().habits[0].groupId).toBe("g1"));
 
     await waitFor(() => expect(screen.queryByText("Edit Habit")).toBeNull());
     await editRun();
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Group" }),
-      "None",
-    );
+    await chooseGroup("None");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(lastSaved().habits[0]).not.toHaveProperty("groupId"),
@@ -404,7 +405,7 @@ describe("App groups", () => {
   const habit = (id: string, name: string, groupId?: string): Habit => ({
     id,
     name,
-    emoji: "🎯",
+    icon: "target",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",
@@ -421,8 +422,8 @@ describe("App groups", () => {
     units: BUILTIN_UNITS,
     config: DEFAULT_CONFIG,
     groups: [
-      { id: "g1", name: "Music", emoji: "🎵", collapsed: false },
-      { id: "g2", name: "Fitness", emoji: "🏋️", collapsed: false },
+      { id: "g1", name: "Music", icon: "music", collapsed: false },
+      { id: "g2", name: "Fitness", icon: "weightlifter", collapsed: false },
     ],
     routines: [],
   };
@@ -599,7 +600,7 @@ describe("App at midnight", () => {
       {
         id: "h1",
         name: "Run",
-        emoji: "🏃",
+        icon: "run",
         color: "Green",
         metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
         intensityMode: "total",
@@ -712,6 +713,26 @@ describe("App backup import", () => {
   });
 });
 
+// Its own icons are drawn: an emoji, or a symbol the font lacks, comes out
+// as the phone's emoji.
+describe("App icons", () => {
+  it("names the Settings button, with its icon drawn", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    const settings = await screen.findByRole("button", { name: "Settings" });
+    expect(settings.textContent).toBe("");
+    expect(settings.querySelector("svg path")).not.toBeNull();
+  });
+
+  it("draws the picture over an empty list", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    const empty = (await screen.findByText(/No habits yet/i)).parentElement!;
+    expect(empty.querySelector("svg path")).not.toBeNull();
+    expect(empty.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+});
+
 describe("App save errors", () => {
   // Changing the theme in Settings is a save that needs no habit cards (and so
   // no ResizeObserver stub in jsdom).
@@ -733,7 +754,9 @@ describe("App save errors", () => {
     expect(
       await screen.findByText(/Changes aren't being saved/i),
     ).toBeInTheDocument();
-    expect(banner()).toHaveTextContent(/export a backup/i);
+    expect(banner()).toHaveTextContent(
+      /^Changes aren't being saved — export a backup from Settings$/,
+    );
     expect(mockSave).toHaveBeenCalled();
   });
 
@@ -758,7 +781,7 @@ describe("App routines", () => {
   const plank: Habit = {
     id: "h1",
     name: "Plank",
-    emoji: "🧘",
+    icon: "meditation",
     color: "Green",
     metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
     intensityMode: "total",

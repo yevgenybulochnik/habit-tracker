@@ -125,6 +125,9 @@
   margin-top: 8px;
 }
 .toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 12px;
   border-radius: 5px;
   font-size: 10px;

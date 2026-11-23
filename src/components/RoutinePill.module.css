@@ -16,9 +16,24 @@
   cursor: pointer;
   animation: fadeIn 0.2s ease;
 }
-.pillRing {
+/* The ring, with the step's icon in its middle, both in its colour */
+.dial {
+  position: relative;
   width: 40px;
   height: 40px;
+}
+.pillRing {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+.pillIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pill-c);
 }
 .pillTrack {
   fill: none;
@@ -27,6 +42,7 @@
 }
 .pillFill {
   fill: none;
+  stroke: var(--pill-c);
   stroke-width: 3;
   stroke-linecap: round;
 }

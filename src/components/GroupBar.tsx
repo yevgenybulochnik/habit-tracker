@@ -10,13 +10,15 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useSortSensors } from "./SortableHabits";
 import { useLongPress } from "../hooks/useLongPress";
+import HabitIcon from "./HabitIcon";
+import type { IconId } from "../lib/icons";
 import styles from "./GroupBar.module.css";
 
 /** One group's chip: its name and how many of its habits are done today. */
 export type GroupChip = {
   id: string;
   label: string;
-  emoji: string;
+  icon: IconId;
   done: number;
   total: number;
 };
@@ -147,7 +149,7 @@ function ChipButton({ chip: c, on, reorder, onPick, onEdit }: ChipProps) {
           ⠿
         </span>
       )}
-      <span className={styles.emoji}>{c.emoji}</span>
+      <HabitIcon icon={c.icon} size={14} />
       {c.label}
       <span
         className={`${styles.count}${c.total > 0 && c.done === c.total ? ` ${styles.full}` : ""}`}

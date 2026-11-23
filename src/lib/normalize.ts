@@ -1,4 +1,11 @@
-import { BUILTIN_UNITS, DEFAULT_CONFIG, DEFAULT_GROUP_EMOJI } from "./defaults";
+import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./defaults";
+import {
+  DEFAULT_GROUP_ICON,
+  DEFAULT_HABIT_ICON,
+  iconForEmoji,
+  isIconId,
+} from "./icons";
+import type { IconId } from "./icons";
 import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
 import { DEFAULT_COUNT, fitRoutine, PREP_SECONDS } from "./routines";
 import type { Result, Run } from "./routineRun";
@@ -26,8 +33,10 @@ import type {
  *   the groups the next time it saves.
  * - 4: routines (`routines`). Nothing is migrated; the bump is for the same
  *   reason as 3's.
+ * - 5: a habit and a group have an `icon` (an id from lib/icons) in place of
+ *   an `emoji`, which becomes the icon for it (see `iconForEmoji`).
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export type NormalizeResult =
   | { ok: true; state: PersistedState }
@@ -103,7 +112,7 @@ function normalizeHabit(
   version: number,
   groupIds: Set<string>,
 ): Habit {
-  const { groupId, ...h } = withId(raw, path);
+  const { groupId, emoji, icon, ...h } = withId(raw, path);
   const stored = list(h.metrics, `${path}.metrics`).map((m, i) =>
     normalizeMetric(m, `${path}.metrics[${i}]`),
   );
@@ -111,6 +120,7 @@ function normalizeHabit(
   const moved = metrics.some((m, i) => m !== stored[i]);
   return {
     ...h,
+    icon: iconOf(version, icon, emoji, DEFAULT_HABIT_ICON),
     metrics,
     // A habit the migration left with mixed units gets the mode the habit
     // form would give it: the form only allows "total" within one unit.
@@ -123,15 +133,26 @@ function normalizeHabit(
   } as Habit;
 }
 
+/** A habit's or group's icon: from before version 5, the one for its emoji;
+ *  since, the stored one if it's an icon there is. Otherwise `fallback`. */
+function iconOf(
+  version: number,
+  icon: unknown,
+  emoji: unknown,
+  fallback: IconId,
+): IconId {
+  if (version < 5) return iconForEmoji(emoji, fallback);
+  return isIconId(icon) ? icon : fallback;
+}
+
 /** Groups in their stored order, each open unless stored shut. */
-function normalizeGroups(raw: unknown): Group[] {
+function normalizeGroups(raw: unknown, version: number): Group[] {
   return list(raw, "groups").map((g, i) => {
-    const group = withId(g, `groups[${i}]`);
+    const { emoji, icon, ...group } = withId(g, `groups[${i}]`);
     return {
       ...group,
       name: typeof group.name === "string" ? group.name : "",
-      emoji:
-        typeof group.emoji === "string" ? group.emoji : DEFAULT_GROUP_EMOJI,
+      icon: iconOf(version, icon, emoji, DEFAULT_GROUP_ICON),
       collapsed: group.collapsed === true,
     };
   });
@@ -250,7 +271,7 @@ function normalize(raw: unknown): PersistedState {
     reject(`schema version ${version} is newer than this app understands`);
   if (raw.habits == null) reject("habits is missing");
   if (!Array.isArray(raw.habits)) reject("habits is not a list");
-  const groups = normalizeGroups(raw.groups);
+  const groups = normalizeGroups(raw.groups, version);
   const groupIds = new Set(groups.map((g) => g.id));
   const habits = raw.habits.map((h, i) =>
     normalizeHabit(h, `habits[${i}]`, version, groupIds),
@@ -273,7 +294,7 @@ function normalize(raw: unknown): PersistedState {
  *
  * Absent pieces get their defaults: a habit's `metrics` and `intensityMode`, a
  * sets metric's `setFields` and `setValue`, the config's settings, the
- * built-in units, the groups (none) with a group's name, emoji and
+ * built-in units, the groups (none) with a group's name, icon and
  * `collapsed`, and the routines (none) with a routine's name, rounds and
  * get-ready and a step's timing. A habit's `groupId` is dropped unless that
  * group exists, and a routine's step unless its habit and metric do (see

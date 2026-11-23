@@ -1,0 +1,115 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+/* The field: as a form's text box (shared `inp`), or smaller in a row. */
+.field {
+  composes: inp from "../styles/shared.module.css";
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.field.compact {
+  padding: 7px 8px;
+  font-size: 13px;
+  background: var(--c-surface);
+}
+.field[aria-expanded="true"] {
+  border-color: var(--c-accent);
+}
+.field:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.placeholder {
+  color: var(--c-muted);
+}
+.chev {
+  flex: none;
+  color: var(--c-muted);
+  transition: transform 0.2s;
+}
+.field[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+.mark {
+  flex: none;
+  width: 18px;
+  display: flex;
+  justify-content: center;
+  color: var(--ic, var(--c-text));
+}
+
+/* The list, in place under the field: it scrolls itself past six options,
+   showing half of the next so it's plain there are more. */
+.list {
+  box-sizing: border-box;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 290px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  animation: drop 0.16s ease-out;
+}
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.option {
+  box-sizing: border-box;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.option:hover {
+  background: var(--c-surface2);
+}
+.option:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -2px;
+}
+.option[aria-selected="true"] {
+  background: var(--c-accentDim);
+}
+.tick {
+  flex: none;
+  color: var(--c-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list {
+    animation: none;
+  }
+  .chev {
+    transition: none;
+  }
+}

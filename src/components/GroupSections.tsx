@@ -9,6 +9,7 @@ import type { CSSProperties, MutableRefObject, ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import GroupBar from "./GroupBar";
+import HabitIcon from "./HabitIcon";
 import SortableHabits from "./SortableHabits";
 import { useLongPress } from "../hooks/useLongPress";
 import type { GroupSection } from "../lib/groups";
@@ -123,7 +124,7 @@ export default function GroupSections({
         chips={sections.map(({ group, habits }) => ({
           id: group.id,
           label: group.name || "Untitled",
-          emoji: group.emoji,
+          icon: group.icon,
           done: doneOf(habits),
           total: habits.length,
         }))}
@@ -234,7 +235,7 @@ function Section({
             ▾
           </span>
         )}
-        <span>{group.emoji}</span>
+        <HabitIcon icon={group.icon} size={16} />
         <span className={styles.name}>{name}</span>
         <span className={styles.count}>
           {done}/{total}

@@ -1,7 +1,7 @@
 // The Routines page, slid over the habits from the header's stopwatch. It
 // lists the routines (each with a ring of one round, coloured by habit) to
 // start or edit, and has the editor as a page of its own.
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { byCount, findStep, stepName } from "../lib/routines";
 import {
   fmtCountdown,
@@ -11,6 +11,7 @@ import {
 } from "../lib/routineRun";
 import { slide } from "../slide";
 import type { Habit, Routine, ThemeName } from "../types";
+import HabitIcon from "./HabitIcon";
 import Icon from "./Icon";
 import PageShell, { PageHeader } from "./PageShell";
 import RoutineEditor, { newRoutine } from "./RoutineEditor";
@@ -61,6 +62,7 @@ export default function RoutinesView({
           routine={editing}
           isNew={isNew}
           habits={habits}
+          theme={theme}
           onCancel={doneEditing}
           onSave={(r) => {
             onSave(r);
@@ -153,8 +155,14 @@ function RoutineCard({
     if (s.kind !== "habit") return [];
     const f = findStep(habits, s);
     if (!f) return [];
-    const name = `${f.habit.emoji} ${stepName(f.habit, f.metric)}`;
-    return [s.by === "count" ? `${s.count} ${name}` : name];
+    const name = stepName(f.habit, f.metric);
+    return [
+      {
+        id: s.id,
+        icon: f.habit.icon,
+        text: s.by === "count" ? `${s.count} ${name}` : name,
+      },
+    ];
   });
   const r = 19;
   const c = 2 * Math.PI * r;
@@ -202,7 +210,17 @@ function RoutineCard({
               ? "at your pace"
               : fmtCountdown(runLength(schedule(routine)))}
           </span>
-          <span className={styles.cardSteps}>{names.join(" → ")}</span>
+          <span className={styles.cardSteps}>
+            {names.map((n, i) => (
+              <Fragment key={n.id}>
+                {i > 0 && " → "}
+                <span className={styles.stepIcon}>
+                  <HabitIcon icon={n.icon} size={11} />
+                </span>
+                {n.text}
+              </Fragment>
+            ))}
+          </span>
         </span>
       </button>
       {running ? (

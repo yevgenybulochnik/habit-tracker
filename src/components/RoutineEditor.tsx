@@ -39,8 +39,16 @@ import {
   schedule,
   timedSeconds,
 } from "../lib/routineRun";
-import type { Habit, HabitStep, Routine, RoutineStep } from "../types";
+import type {
+  Habit,
+  HabitStep,
+  Routine,
+  RoutineStep,
+  ThemeName,
+} from "../types";
 import Icon from "./Icon";
+import IconSelect, { type SelectOption } from "./IconSelect";
+import { stepColor } from "./routineColors";
 import actions from "./formActions.module.css";
 import styles from "./RoutineEditor.module.css";
 
@@ -75,6 +83,7 @@ type Props = {
   routine: Routine;
   isNew: boolean;
   habits: Habit[];
+  theme: ThemeName;
   onCancel: () => void;
   onSave: (r: Routine) => void;
   onDelete: (id: string) => void;
@@ -84,12 +93,21 @@ export default function RoutineEditor({
   routine,
   isNew,
   habits,
+  theme,
   onCancel,
   onSave,
   onDelete,
 }: Props) {
   const [draft, setDraft] = useState(routine);
   const choices = stepChoices(habits);
+  // The step menu's options: each choice by its place, with its icon in the
+  // colour its step will have.
+  const options: SelectOption[] = choices.map((x, j) => ({
+    value: String(j),
+    label: x.label,
+    icon: x.icon,
+    color: stepColor(findStep(habits, x)!, theme),
+  }));
   const setSteps = (steps: RoutineStep[]) => setDraft((d) => ({ ...d, steps }));
   const change = (i: number, step: RoutineStep) =>
     setSteps(draft.steps.map((s, j) => (j === i ? step : s)));
@@ -173,6 +191,7 @@ export default function RoutineEditor({
                 key={s.id}
                 step={s}
                 choices={choices}
+                options={options}
                 habits={habits}
                 onChange={(step) => change(i, step)}
                 onRemove={() => setSteps(draft.steps.filter((_, j) => j !== i))}
@@ -258,12 +277,14 @@ function useStepSensors() {
 function StepRow({
   step,
   choices,
+  options,
   habits,
   onChange,
   onRemove,
 }: {
   step: RoutineStep;
   choices: ReturnType<typeof stepChoices>;
+  options: SelectOption[];
   habits: Habit[];
   onChange: (step: RoutineStep) => void;
   onRemove: () => void;
@@ -330,7 +351,10 @@ function StepRow({
       <li ref={setNodeRef} style={style} className={className}>
         {grip}
         <div className={styles.stepSub}>
-          <span className={styles.breakLabel}>😮‍💨 Break</span>
+          <span className={styles.breakIcon}>
+            <Icon name="hourglass" size={16} />
+          </span>
+          <span className={styles.breakLabel}>Break</span>
           {time}
         </div>
         {remove}
@@ -345,10 +369,14 @@ function StepRow({
   return (
     <li ref={setNodeRef} style={style} className={className}>
       {grip}
-      <select
-        value={chosen}
-        onChange={(e) => {
-          const { habitId, metricId } = choices[Number(e.target.value)];
+      <IconSelect
+        label="Habit"
+        value={String(chosen)}
+        options={options}
+        placeholder="Choose a habit"
+        compact
+        onChange={(v) => {
+          const { habitId, metricId } = choices[Number(v)];
           const next = { ...step, habitId, metricId };
           const m = findStep(habits, next)?.metric;
           // Only a counted habit can be done for a count.
@@ -357,20 +385,7 @@ function StepRow({
             by: m && captureFor(m) === "count" ? step.by : "time",
           });
         }}
-        className={styles.sel}
-        aria-label="Habit"
-      >
-        {chosen === -1 && (
-          <option value={-1} disabled>
-            Choose a habit
-          </option>
-        )}
-        {choices.map((x, j) => (
-          <option key={`${x.habitId}:${x.metricId}`} value={j}>
-            {x.label}
-          </option>
-        ))}
-      </select>
+      />
       {remove}
       <div className={styles.stepSub}>
         {counted && (

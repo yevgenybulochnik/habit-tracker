@@ -123,6 +123,10 @@
 .work .stepSub {
   grid-column: 2 / 4;
 }
+/* Level with the habit's field, which grows down while its list is open */
+.work .remove {
+  align-self: start;
+}
 .sel {
   min-width: 0;
   padding: 7px 8px;
@@ -136,6 +140,10 @@
 .secs {
   flex: 0 0 auto;
   width: 78px;
+}
+.breakIcon {
+  flex: none;
+  color: var(--c-muted);
 }
 .breakLabel {
   flex: 1;

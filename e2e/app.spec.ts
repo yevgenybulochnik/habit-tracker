@@ -728,6 +728,7 @@ test("data stored by an older version loads, works, and is saved in the current 
   const stored = (await readStored(page, "habit-tracker-v3")) as {
     schemaVersion: number;
     habits: {
+      icon: string;
       intensityMode: string;
       metrics: {
         unit: string;
@@ -740,6 +741,8 @@ test("data stored by an older version loads, works, and is saved in the current 
   };
   expect(stored.schemaVersion).toBe(SCHEMA_VERSION);
   expect(stored.habits.map((h) => h.intensityMode)).toEqual(["total", "total"]);
+  // Each emoji is now its icon
+  expect(stored.habits.map((h) => h.icon)).toEqual(["weightlifter", "book"]);
   expect(stored.habits[0].metrics[0].setValue).toBe("volume");
   expect(stored.habits[0].metrics[0].unit).toBe("volume"); // was "reps"
   expect(stored.habits[0].metrics[0].setFields.map((f) => f.id)).toEqual([

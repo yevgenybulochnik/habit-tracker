@@ -21,7 +21,7 @@ const reps = (id: string, name: string): Metric => ({
 const pushUps: Habit = {
   id: "push",
   name: "Push-ups",
-  emoji: "💪",
+  icon: "flex",
   color: "Orange",
   metrics: [reps("r", "Reps")],
   intensityMode: "total",
@@ -29,7 +29,7 @@ const pushUps: Habit = {
 const pulls: Habit = {
   id: "pull",
   name: "Pull-ups",
-  emoji: "🏋️",
+  icon: "weightlifter",
   color: "Blue",
   metrics: [reps("p", "Pull-ups"), reps("c", "Chin-ups")],
   intensityMode: "total",
@@ -37,7 +37,7 @@ const pulls: Habit = {
 const reading: Habit = {
   id: "read",
   name: "Reading",
-  emoji: "📚",
+  icon: "book",
   color: "Purple",
   metrics: [{ id: "m", name: "Time", unit: "min" }],
   intensityMode: "total",
@@ -105,9 +105,19 @@ describe("naming and colouring a step", () => {
 
   it("offers each habit as a step, or each metric of one with several", () => {
     expect(stepChoices([pushUps, pulls])).toEqual([
-      { habitId: "push", metricId: "r", label: "💪 Push-ups" },
-      { habitId: "pull", metricId: "p", label: "🏋️ Pull-ups · Pull-ups" },
-      { habitId: "pull", metricId: "c", label: "🏋️ Pull-ups · Chin-ups" },
+      { habitId: "push", metricId: "r", label: "Push-ups", icon: "flex" },
+      {
+        habitId: "pull",
+        metricId: "p",
+        label: "Pull-ups · Pull-ups",
+        icon: "weightlifter",
+      },
+      {
+        habitId: "pull",
+        metricId: "c",
+        label: "Pull-ups · Chin-ups",
+        icon: "weightlifter",
+      },
     ]);
   });
 

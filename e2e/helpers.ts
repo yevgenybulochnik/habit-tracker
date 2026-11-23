@@ -50,13 +50,12 @@ export async function openQuickLog(page: Page, name: string) {
 
 /** In an open habit form, choose the group named `name`, making it if new. */
 async function chooseGroup(page: Page, name: string) {
-  const menu = page.getByRole("combobox", { name: "Group" });
-  const option = menu.locator("option").filter({ hasText: ` ${name}` });
+  await page.getByRole("button", { name: /^Group:/ }).click();
+  const option = page.getByRole("option", { name, exact: true });
   if (await option.count()) {
-    const label = (await option.first().textContent())!;
-    await menu.selectOption({ label });
+    await option.click();
   } else {
-    await menu.selectOption({ label: "+ New group…" });
+    await page.getByRole("option", { name: "+ New group…" }).click();
     await page.getByRole("textbox", { name: "Group name" }).fill(name);
     await page.getByRole("button", { name: "Add Group" }).click();
   }

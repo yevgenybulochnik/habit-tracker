@@ -14,7 +14,7 @@ const sample: PersistedState = {
     {
       id: "h1",
       name: "Run",
-      emoji: "🏃",
+      icon: "run",
       color: "Green",
       metrics: [{ id: "m1", name: "Min", unit: "min" }],
       intensityMode: "total",
@@ -108,7 +108,9 @@ describe("SettingsPage — Data backup", () => {
     const grouped: PersistedState = {
       ...sample,
       habits: [{ ...sample.habits[0], groupId: "g1" }],
-      groups: [{ id: "g1", name: "Fitness", emoji: "🏋️", collapsed: true }],
+      groups: [
+        { id: "g1", name: "Fitness", icon: "weightlifter", collapsed: true },
+      ],
     };
     renderPage(vi.fn(), grouped);
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
@@ -255,6 +257,13 @@ describe("SettingsPage — units", () => {
     await userEvent.click(panel.getByRole("button", { name: "Add Unit" }));
     expect(panel.getByRole("alert")).toHaveTextContent(/already a unit/);
     expect(onAddUnit).not.toHaveBeenCalled();
+  });
+
+  it("draws a unit's Edit icon", () => {
+    renderUnits();
+    const edit = screen.getByRole("button", { name: "Edit Reps" });
+    expect(edit.textContent).toBe("");
+    expect(edit.querySelector("svg path")).not.toBeNull();
   });
 
   it("edits a unit's thresholds", async () => {

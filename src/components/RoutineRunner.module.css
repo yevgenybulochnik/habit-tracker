@@ -66,9 +66,16 @@
   align-items: center;
   gap: 10px;
 }
-.emoji {
-  font-size: clamp(20px, 13cqw, 44px);
-  line-height: 1;
+/* The ring's picture, sized with the ring: a habit's icon in its colour. */
+.glyph {
+  display: flex;
+  width: clamp(20px, 13cqw, 44px);
+  height: clamp(20px, 13cqw, 44px);
+  color: var(--glyph-c, var(--c-text));
+}
+.glyph svg {
+  width: 100%;
+  height: 100%;
 }
 .dim {
   opacity: 0.45;
@@ -187,9 +194,22 @@
 .entryHead {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 10px;
+}
+.entryTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.entryTitle svg {
+  color: var(--entry-c);
+}
+.logIcon {
+  display: flex;
+  color: var(--entry-c);
 }
 .entryRound {
   color: var(--c-muted);

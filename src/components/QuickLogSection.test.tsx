@@ -10,7 +10,7 @@ import type { Habit, HabitLogs } from "../types";
 const minHabit: Habit = {
   id: "h1",
   name: "Run",
-  emoji: "🏃",
+  icon: "run",
   color: "Green",
   metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
   intensityMode: "total",
@@ -18,7 +18,7 @@ const minHabit: Habit = {
 const setHabit: Habit = {
   id: "h2",
   name: "Lift",
-  emoji: "🏋️",
+  icon: "weightlifter",
   color: "Blue",
   metrics: [
     { id: "m2", name: "Bench", mode: "sets", ...setsPreset("weighted", "lbs") },
@@ -28,7 +28,7 @@ const setHabit: Habit = {
 const doneHabit: Habit = {
   id: "h3",
   name: "Meditate",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Purple",
   intensityMode: "coverage",
   metrics: [{ id: "m3", name: "Completed", unit: "count", mode: "done" }],

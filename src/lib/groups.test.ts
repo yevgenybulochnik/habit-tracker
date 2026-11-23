@@ -6,7 +6,7 @@ function habit(id: string, groupId?: string): Habit {
   return {
     id,
     name: id,
-    emoji: "📚",
+    icon: "book",
     color: "Blue",
     metrics: [],
     intensityMode: "total",
@@ -15,7 +15,7 @@ function habit(id: string, groupId?: string): Habit {
 }
 
 function group(id: string): Group {
-  return { id, name: id, emoji: "📁", collapsed: false };
+  return { id, name: id, icon: "folder", collapsed: false };
 }
 
 const ids = (hs: Habit[]) => hs.map((h) => h.id);

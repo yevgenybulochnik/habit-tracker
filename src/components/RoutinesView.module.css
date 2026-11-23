@@ -108,6 +108,12 @@
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
+/* A step's icon, in the line of names */
+.stepIcon {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 3px;
+}
 .startBtn {
   flex: 0 0 auto;
   width: 44px;

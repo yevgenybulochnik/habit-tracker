@@ -7,10 +7,11 @@ test.use({ viewport: { width: 390, height: 844 } });
 
 const TODAY = "2026-05-24";
 
-/** Choose the habit named `name` in a step's menu. */
+/** Choose the habit named `name` in a step's menu: tap it open, then tap
+ *  the habit in its list. */
 async function chooseHabit(menu: Locator, name: string) {
-  const option = menu.locator("option").filter({ hasText: name });
-  await menu.selectOption({ label: (await option.first().textContent())! });
+  await menu.click();
+  await menu.page().getByRole("option", { name, exact: true }).click();
 }
 
 /** What's saved for the habit named `name` today, as a list of values. */
@@ -32,7 +33,7 @@ test("a routine is made, run through a reload, and logs to its habits", async ({
   await page.getByTitle("Routines").click();
   await page.getByRole("button", { name: /New Routine/ }).click();
   await page.getByLabel("Name").fill("Morning");
-  const habitMenu = page.getByRole("combobox", { name: "Habit" });
+  const habitMenu = page.getByRole("button", { name: /^Habit:/ });
   await page.getByRole("button", { name: "+ Habit" }).click();
   await chooseHabit(habitMenu.nth(0), "Push-ups");
   await page
@@ -89,7 +90,7 @@ test("a run goes on minimised, while the habits fill in", async ({ page }) => {
   await page.getByRole("button", { name: /New Routine/ }).click();
   await page.getByLabel("Name").fill("Quick plank");
   await page.getByRole("button", { name: "+ Habit" }).click();
-  await chooseHabit(page.getByRole("combobox", { name: "Habit" }), "Plank");
+  await chooseHabit(page.getByRole("button", { name: /^Habit:/ }), "Plank");
   await page.getByRole("button", { name: "Save" }).click();
   await page.getByRole("button", { name: "Start Quick plank" }).click();
 

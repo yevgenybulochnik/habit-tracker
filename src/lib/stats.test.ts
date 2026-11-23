@@ -8,7 +8,7 @@ import type { Habit, HabitLogs, SetEntry } from "../types";
 const minHabit: Habit = {
   id: "h1",
   name: "Run",
-  emoji: "🏃",
+  icon: "run",
   color: "Green",
   metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
   intensityMode: "total",
@@ -17,7 +17,7 @@ const minHabit: Habit = {
 const coverageHabit = (n: number): Habit => ({
   id: "h2",
   name: "Routine",
-  emoji: "🧘",
+  icon: "meditation",
   color: "Blue",
   intensityMode: "coverage",
   metrics: Array.from({ length: n }, (_, i) => ({
@@ -45,7 +45,7 @@ describe("logLevel (total mode)", () => {
     const doneH: Habit = {
       id: "hd",
       name: "Meditate",
-      emoji: "🧘",
+      icon: "meditation",
       color: "Green",
       intensityMode: "total",
       metrics: [{ id: "d", name: "Completed", unit: "count", mode: "done" }],
@@ -60,7 +60,7 @@ describe("logLevel (weighted sets)", () => {
   const liftHabit: Habit = {
     id: "h3",
     name: "Lift",
-    emoji: "🏋️",
+    icon: "weightlifter",
     color: "Red",
     intensityMode: "total",
     metrics: [
