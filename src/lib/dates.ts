@@ -16,6 +16,12 @@ export function addDays(key: string, n: number): string {
   return dk(d);
 }
 
+/** Whole days from the key `a` to the key `b` (negative when `b` is earlier).
+ *  Rounded, as a day where the clocks change is 23 or 25 hours long. */
+export function daysBetween(a: string, b: string): number {
+  return Math.round((parseKey(b).getTime() - parseKey(a).getTime()) / 864e5);
+}
+
 /** Milliseconds from `now` until the next local midnight (never 0). */
 export function msUntilMidnight(now: Date): number {
   const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
