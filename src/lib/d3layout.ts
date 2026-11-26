@@ -1,5 +1,6 @@
 import { MONTHS } from "./defaults";
 import { dk, parseKey } from "./dates";
+import type { CalendarView } from "./calendarNav";
 
 export type Cell = {
   key: string;
@@ -211,4 +212,100 @@ export function compactCalLayout(
     bx += bw + monthGap;
   }
   return { cells, mLabels };
+}
+
+/**
+ * One drawn piece of a block of days (what a log covers): its cells that sit
+ * next to each other. A block the week or the month cuts is drawn in more
+ * than one, open on the sides where it carries on.
+ */
+export type Piece = {
+  /** The block's id and the piece's place in it: `${block}#${n}`. */
+  key: string;
+  block: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Carries on from the piece before / into the next one. */
+  openStart: boolean;
+  openEnd: boolean;
+  /** Every day in it is still to come. */
+  future: boolean;
+};
+
+/**
+ * The cells (in day order) of each block, grouped into pieces of cells next
+ * to each other: down a heatmap column or along a calendar row, `gap` apart.
+ * `blockOf` names a day's block, or null for a day in none.
+ */
+export function blockPieces(
+  cells: Cell[],
+  blockOf: (key: string) => string | null,
+  gap: number,
+): Piece[] {
+  const pieces: Piece[] = [];
+  let last: Cell | null = null; // the cell before, when it was in a block
+  const count = new Map<string, number>(); // pieces so far per block
+  const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
+  const nextTo = (a: Cell, b: Cell) =>
+    (near(a.x, b.x) && b.y > a.y && b.y - (a.y + a.h) <= gap + 0.01) ||
+    (near(a.y, b.y) && b.x > a.x && b.x - (a.x + a.w) <= gap + 0.01);
+  for (const c of cells) {
+    const block = blockOf(c.key);
+    const cur = last ? pieces[pieces.length - 1] : undefined;
+    if (block === null) {
+      last = null;
+      continue;
+    }
+    if (cur && last && cur.block === block && nextTo(last, c)) {
+      cur.w = Math.max(cur.x + cur.w, c.x + c.w) - cur.x;
+      cur.h = Math.max(cur.y + cur.h, c.y + c.h) - cur.y;
+      cur.future = cur.future && c.future;
+      last = c;
+      continue;
+    }
+    const goesOn = cur?.block === block;
+    if (cur && goesOn) cur.openEnd = true;
+    const n = count.get(block) ?? 0;
+    count.set(block, n + 1);
+    pieces.push({
+      key: `${block}#${n}`,
+      block,
+      x: c.x,
+      y: c.y,
+      w: c.w,
+      h: c.h,
+      openStart: goesOn,
+      openEnd: false,
+      future: c.future,
+    });
+    last = c;
+  }
+  return pieces;
+}
+
+/**
+ * A piece's outline (an SVG path): rounded by `r`, but square on a side
+ * where its block carries on, the bottom or top in the heatmap (whose days
+ * run down a column) and the right or left in the calendar (along a row).
+ */
+export function piecePath(p: Piece, r: number, view: CalendarView): string {
+  const { x, y, w, h } = p;
+  const R = Math.min(r, w / 2, h / 2);
+  const s = p.openStart ? 0 : R,
+    e = p.openEnd ? 0 : R;
+  const [tl, tr, br, bl] = view === "heatmap" ? [s, s, e, e] : [s, e, e, s];
+  return [
+    `M${x + tl},${y}`,
+    `H${x + w - tr}`,
+    `A${tr},${tr} 0 0 1 ${x + w},${y + tr}`,
+    `V${y + h - br}`,
+    `A${br},${br} 0 0 1 ${x + w - br},${y + h}`,
+    `H${x + bl}`,
+    `A${bl},${bl} 0 0 1 ${x},${y + h - bl}`,
+    `V${y + tl}`,
+    `A${tl},${tl} 0 0 1 ${x + tl},${y}`,
+    "Z",
+  ].join(" ");
 }

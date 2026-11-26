@@ -2,7 +2,7 @@ import { useState, useEffect, useReducer, useRef } from "react";
 import { CSS } from "./globalCss";
 import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
-import { logActive } from "./lib/stats";
+import { isDone } from "./lib/cover";
 import { groupSections, ungroupedHabits } from "./lib/groups";
 import {
   InvalidDataError,
@@ -170,9 +170,9 @@ export default function App() {
       : undefined;
   // The habits make way for a page, unless it's a group that's gone.
   const away = !!page && (page.kind !== "editGroup" || !!editGroup);
-  const completed = habits.filter((h) =>
-    logActive(h, logs[h.id]?.[today], units),
-  ).length;
+  // Done for now: logged today, or a log still covers today.
+  const done = (h: Habit) => isDone(h, logs[h.id] ?? {}, units, today);
+  const completed = habits.filter(done).length;
 
   if (loading)
     return (
@@ -364,7 +364,7 @@ export default function App() {
                       sections={groupSections(habits, groups)}
                       ungrouped={ungroupedHabits(habits, groups)}
                       renderList={renderList}
-                      isDone={(h) => logActive(h, logs[h.id]?.[today], units)}
+                      isDone={done}
                       onToggle={(id, collapsed) =>
                         dispatch({
                           type: "group/update",

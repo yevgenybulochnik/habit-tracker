@@ -10,9 +10,10 @@ import {
 import { newId } from "../lib/ids";
 import type { SetPreset } from "../lib/metrics";
 import type { IconId } from "../lib/icons";
-import type { Group, IntensityMode, Metric, Unit } from "../types";
+import type { Group, IntensityMode, Metric, Period, Unit } from "../types";
 import UnitForm from "./UnitForm";
 import GroupField from "./GroupField";
+import PeriodField from "./PeriodField";
 import Icon from "./Icon";
 import IconPicker from "./IconPicker";
 import styles from "./HabitFormFields.module.css";
@@ -37,6 +38,9 @@ type Props = {
   setGroupId: Dispatch<SetStateAction<string>>;
   groups: Group[];
   onAddGroup: (g: Group) => void;
+  /** How often it's due; every day is `EVERY_DAY`, kept as no period. */
+  period: Period;
+  setPeriod: (p: Period) => void;
 };
 
 export default function HabitFormFields({
@@ -58,6 +62,8 @@ export default function HabitFormFields({
   setGroupId,
   groups,
   onAddGroup,
+  period,
+  setPeriod,
 }: Props) {
   const [newMN, setNewMN] = useState("");
   const [newMU, setNewMU] = useState("reps");
@@ -297,6 +303,8 @@ export default function HabitFormFields({
           </div>
         </div>
       )}
+
+      <PeriodField value={period} onChange={setPeriod} />
     </>
   );
 }

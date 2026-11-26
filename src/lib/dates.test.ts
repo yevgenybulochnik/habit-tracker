@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { addDays, dk, msUntilMidnight, parseKey, todayK } from "./dates";
+import {
+  addDays,
+  daysBetween,
+  dk,
+  msUntilMidnight,
+  parseKey,
+  todayK,
+} from "./dates";
 
 describe("dk", () => {
   it("formats a date as YYYY-MM-DD", () => {
@@ -21,6 +28,31 @@ describe("parseKey", () => {
   it("round-trips with dk", () => {
     expect(dk(parseKey("2026-01-03"))).toBe("2026-01-03");
     expect(dk(parseKey("2024-02-29"))).toBe("2024-02-29");
+  });
+});
+
+describe("daysBetween", () => {
+  it("counts the days from one key to another", () => {
+    expect(daysBetween("2026-05-24", "2026-05-26")).toBe(2);
+    expect(daysBetween("2026-05-26", "2026-05-24")).toBe(-2);
+    expect(daysBetween("2026-05-24", "2026-05-24")).toBe(0);
+  });
+
+  it("crosses months, years and leap days", () => {
+    expect(daysBetween("2026-01-31", "2026-03-01")).toBe(29);
+    expect(daysBetween("2025-12-31", "2026-01-01")).toBe(1);
+    expect(daysBetween("2024-02-28", "2024-03-01")).toBe(2);
+  });
+
+  it("counts whole days across a clock change", () => {
+    // A 23-hour and a 25-hour day where the clocks change; whole days anyway
+    expect(daysBetween("2026-03-07", "2026-03-10")).toBe(3);
+    expect(daysBetween("2026-10-24", "2026-10-27")).toBe(3);
+    expect(daysBetween("2026-10-31", "2026-11-03")).toBe(3);
+  });
+
+  it("undoes addDays", () => {
+    expect(daysBetween("2026-05-24", addDays("2026-05-24", 400))).toBe(400);
   });
 });
 

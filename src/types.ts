@@ -55,7 +55,15 @@ export type Habit = {
   thresholds?: number[];
   /** The group the habit is in; absent when it's in none. */
   groupId?: string;
+  /** How often it's due; absent when it's every day. */
+  period?: Period;
 };
+
+/**
+ * How often a habit is due: every `every` days or weeks. Its streak holds
+ * while its logs are no more than that far apart.
+ */
+export type Period = { every: number; unit: "day" | "week" };
 
 /** A named set of habits, shown as a section. A habit is in at most one. */
 export type Group = {

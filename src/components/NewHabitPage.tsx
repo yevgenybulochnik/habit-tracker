@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { doneMetric } from "../lib/metrics";
 import { DEFAULT_HABIT_ICON } from "../lib/icons";
+import { EVERY_DAY, isEveryDay } from "../lib/periods";
 import type { IconId } from "../lib/icons";
 import HabitFormFields from "./HabitFormFields";
 import PageShell, { type ClosePage } from "./PageShell";
-import type { Group, IntensityMode, Metric, Unit } from "../types";
+import type { Group, IntensityMode, Metric, Period, Unit } from "../types";
 import actions from "./formActions.module.css";
 
 export type NewHabit = {
@@ -16,6 +17,7 @@ export type NewHabit = {
   metrics: Metric[];
   intensityMode: IntensityMode;
   groupId?: string;
+  period?: Period;
 };
 
 type Props = {
@@ -42,6 +44,7 @@ export default function NewHabitPage({
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [intMode, setIntMode] = useState<IntensityMode>("total");
   const [groupId, setGroupId] = useState("");
+  const [period, setPeriod] = useState(EVERY_DAY);
   // Name is enough — a habit created without a metric defaults to a daily
   // check-off (one "done" metric). In total mode the count unit's thresholds
   // ([1,3,5]) put a marked day at the middle palette shade.
@@ -67,6 +70,8 @@ export default function NewHabitPage({
         setGroupId={setGroupId}
         groups={groups}
         onAddGroup={onAddGroup}
+        period={period}
+        setPeriod={setPeriod}
       />
       <div className={actions.footer}>
         <button onClick={() => onClose()} className={actions.cancelBtn}>
@@ -85,6 +90,7 @@ export default function NewHabitPage({
                 metrics: metrics.length === 0 ? [doneMetric()] : metrics,
                 intensityMode: intMode,
                 ...(groupId && { groupId }),
+                ...(!isEveryDay(period) && { period }),
               }),
             )
           }

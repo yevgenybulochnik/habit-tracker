@@ -217,6 +217,59 @@ describe("HabitCard", () => {
     });
   });
 
+  describe("a habit due less often than every day", () => {
+    const every2: Habit = { ...repsHabit, period: { every: 2, unit: "day" } };
+    /** The line under the name, as it reads. */
+    const cadence = (text: string) =>
+      screen.getByText(
+        (_, el) => el?.tagName === "P" && el.textContent === text,
+      );
+
+    it("says how often, and when the next log is due", () => {
+      renderCard(every2, false, { "2026-05-23": { m1: 5 } });
+      expect(cadence("Every 2 days · due tomorrow")).toBeInTheDocument();
+    });
+
+    it("makes a log due today stand out", () => {
+      renderCard(every2, false, { "2026-05-22": { m1: 5 } });
+      expect(cadence("Every 2 days · due today")).toBeInTheDocument();
+      expect(screen.getByText("due today").tagName).toBe("STRONG");
+    });
+
+    it("says only how often with no streak running", () => {
+      renderCard(every2, false, { "2026-05-01": { m1: 5 } });
+      expect(cadence("Every 2 days")).toBeInTheDocument();
+    });
+
+    it("says nothing of it for a habit due every day", () => {
+      renderCard(repsHabit, false, { "2026-05-23": { m1: 5 } });
+      expect(screen.queryByText(/Every day/)).toBeNull();
+      expect(screen.queryByText(/due/)).toBeNull();
+    });
+
+    it("counts its streak across the days between logs", () => {
+      renderCard(every2, false, {
+        "2026-05-20": { m1: 5 },
+        "2026-05-22": { m1: 5 },
+      });
+      expect(screen.getByText("3d")).toBeInTheDocument();
+    });
+
+    it("is done while a log still covers today", () => {
+      const { container } = renderCard(every2, false, {
+        "2026-05-23": { m1: 5 },
+      });
+      expect(container.firstChild).toHaveAttribute("data-done");
+    });
+
+    it("isn't once the next log is due", () => {
+      const { container } = renderCard(every2, false, {
+        "2026-05-22": { m1: 5 },
+      });
+      expect(container.firstChild).not.toHaveAttribute("data-done");
+    });
+  });
+
   describe("in Calendar view", () => {
     it("always shows its quick-log, and a tap on the card does nothing", async () => {
       const onToggleLog = vi.fn();

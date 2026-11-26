@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalendarPanel from "./CalendarPanel";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
@@ -34,8 +40,14 @@ function renderPanel(over: Partial<Parameters<typeof CalendarPanel>[0]> = {}) {
     onTapDay: vi.fn(),
     ...over,
   };
-  const { container } = render(<CalendarPanel {...props} />);
-  return { ...props, container };
+  const { container, rerender } = render(<CalendarPanel {...props} />);
+  return {
+    ...props,
+    container,
+    /** Render again with some props changed. */
+    rerender: (more: Partial<typeof props>) =>
+      rerender(<CalendarPanel {...props} {...more} />),
+  };
 }
 
 /** A drawn day cell, found through its d3 datum like the E2E helpers do. */
@@ -143,6 +155,93 @@ describe("CalendarPanel", () => {
 
       fireEvent.mouseLeave(cell(container, "2026-05-10"));
       expect(screen.queryByText("Sun, May 10, 2026")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("a habit due less often: each log ringed with the days it covers", () => {
+    const every2: Habit = { ...habit, period: { every: 2, unit: "day" } };
+    const logged = (...days: string[]): HabitLogs =>
+      Object.fromEntries(days.map((d) => [d, { m1: 5 }]));
+    const ringEls = (container: HTMLElement) => [
+      ...container.querySelectorAll<SVGPathElement>("path.ring"),
+    ];
+    /** Each ring's block (the day of its log) and its place in the block. */
+    const rings = (container: HTMLElement) =>
+      ringEls(container).map(
+        (r) => (r as unknown as { __data__: { key: string } }).__data__.key,
+      );
+
+    it("rings each log's days", () => {
+      const { container } = renderPanel({
+        expanded: true,
+        habit: every2,
+        logs: logged("2026-05-20", "2026-05-22"),
+      });
+      // Wed 20–Thu 21 and Fri 22–Sat 23, each down one heatmap column
+      expect(rings(container)).toEqual(["2026-05-20#0", "2026-05-22#0"]);
+      for (const r of ringEls(container)) {
+        expect(r.getAttribute("stroke")).toBe(pal.shades[4]);
+        expect(r.getAttribute("fill")).toBe("none");
+      }
+    });
+
+    it("rings nothing for a habit due every day", () => {
+      const { container } = renderPanel({
+        expanded: true,
+        logs: logged("2026-05-20", "2026-05-22"),
+      });
+      expect(rings(container)).toEqual([]);
+    });
+
+    it("fades the rings in once the cells are in", async () => {
+      const { container } = renderPanel({
+        expanded: true,
+        habit: every2,
+        logs: logged("2026-05-24"), // Sun 24, then Mon 25 in the next column
+      });
+      const [past, toCome] = ringEls(container);
+      expect(past.style.opacity).toBe("0");
+      await waitFor(() => expect(past.style.opacity).toBe("1"), {
+        timeout: 3000,
+      });
+      expect(toCome.style.opacity).toBe("0.25"); // all still to come
+    });
+
+    it("follows a log, and one taken back", async () => {
+      const { container, rerender } = renderPanel({
+        expanded: true,
+        habit: every2,
+        logs: logged("2026-05-20"),
+      });
+      rerender({ logs: logged("2026-05-20", "2026-05-22") });
+      expect(rings(container)).toEqual(["2026-05-20#0", "2026-05-22#0"]);
+      rerender({ logs: logged("2026-05-22") });
+      await waitFor(() => expect(rings(container)).toEqual(["2026-05-22#0"]));
+    });
+
+    it("says in the tooltip how far a log carries the streak", () => {
+      const { container } = renderPanel({
+        expanded: true,
+        habit: every2,
+        logs: logged("2026-05-20"),
+      });
+      fireEvent.mouseEnter(cell(container, "2026-05-20"));
+      expect(
+        screen.getByText("Wed, May 20, 2026 · covers to May 21"),
+      ).toBeInTheDocument();
+    });
+
+    it("says which log covers a day without one", () => {
+      const { container } = renderPanel({
+        expanded: true,
+        habit: every2,
+        logs: logged("2026-05-20"),
+      });
+      fireEvent.mouseEnter(cell(container, "2026-05-21"));
+      expect(
+        screen.getByText("Thu, May 21, 2026 · covered by May 20"),
+      ).toBeInTheDocument();
+      expect(screen.getByText("No entry")).toBeInTheDocument();
     });
   });
 });

@@ -75,7 +75,10 @@ The codebase is layered so the core logic is framework-agnostic and unit-tested:
 **`src/lib/` — pure logic, no React/DOM.** This is where the real behavior lives and where
 most tests are. `dates` (date keys and date arithmetic), `metrics` (unit resolution, sets aggregation, per-metric
 values), `stats` (intensity `logLevel`, `logSummary`, `habitStats` incl. streaks), `format`,
-`d3layout` (calendar/heatmap cell+label coordinate math), `storage` (IndexedDB via
+`periods` (a habit's period: `periodDays`, `periodLabel`, `isEveryDay`), `cover` (what each
+log covers, below: `coverBlocks`, `nextDue`, `isDone`, `dueLabel`, `blockNote`),
+`d3layout` (calendar/heatmap cell+label coordinate math, and `blockPieces`/`piecePath` for
+the rings round what a log covers), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
 current-format state), `state` (the app's reducer, below), `groups` (habits split into group
 sections: `groupSections`, `ungroupedHabits`, and `setMembers` for a group's habits),
@@ -115,8 +118,19 @@ reps), so the weighted preset gives it the built-in `volume` unit, not `reps`. M
 modes per habit (`intensityMode`): `total` (sum vs `thresholds`) or `coverage` (fraction of
 metrics done), both producing a level 0–4 that maps to a palette shade. `total` only makes
 sense within one unit: the habit form switches a habit to `coverage` when `hasMixedUnits` says
-its metrics differ. The current streak in `habitStats` counts back from today, or from
-yesterday while today has nothing logged, so an unfinished day doesn't break it.
+its metrics differ.
+
+**How often: a habit's `period` (schema v6).** A habit can be due every N days or weeks
+(`Period`, `{ every, unit }`); absent means every day, and `normalizeState` keeps no period
+for every day. A streak holds while the habit's logs are no more than a period apart, and is
+counted in days from its first log to its last (`habitStats`); the current one runs while
+today is within a period of the last log, so a period that isn't over doesn't break it. For a
+habit due every day that's today or yesterday, as streaks always were. So each log carries
+the streak for a period from its day: its **block** (`lib/cover`'s `coverBlocks`, up to the
+next log if that's sooner; a day in none is where a streak broke). From the last log follow
+`nextDue` (the day the next log is due by) and `isDone`, **done for now**: a log still covers
+today. That's what "done" means everywhere (a card's shading, the header's count, a group's
+chip); for a habit due every day it's logged today.
 
 **Groups.** `PersistedState.groups` lists the `Group`s (`id`, `name`, `icon`, `collapsed`)
 in display order, and a habit names its group with an optional `groupId`: absent means it's in
@@ -224,8 +238,10 @@ to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-r
 its quick-log shows only while `logOpen` or a timer of its runs (`isTiming`, so a running timer
 stays in sight), and a tap anywhere on the card outside it calls
 `onToggleLog`; the name is then a button inside the `h3` (the accordion pattern, so the card
-stays a heading), and a shut quick-log is `inert` and `aria-hidden`. A collapsed card logged
-today (`data-done`) is shaded in its colour. The card
+stays a heading), and a shut quick-log is `inert` and `aria-hidden`. A collapsed card done for
+now (`data-done`, `isDone`) is shaded in its colour. Under the name of a habit due less often
+than every day is how often and when the next log is due ("Every 2 days · due Sat", "due
+today" in its colour). The card
 owns the calendar's navigation (`useReducer` over `navigate` from `lib/calendarNav`) rather than
 the panel, because logging from quick-log zooms the calendar in to this month as well as the
 arrows. It also owns the selected day: tapping a calendar day opens the inline `DayEditor` for
@@ -242,11 +258,17 @@ correctness is mostly covered by E2E render checks; `CalendarPanel.test.tsx` che
 collapsed. Selection highlight and `pal` are kept out of the main build (separate effect /
 `useMemo`) so a tap doesn't re-ripple the heatmap. A cell outlives a change of `today`, so
 anything in the build that depends on `today` or on the selection must be set on the merged
-(enter + update) selection, not only on enter.
+(enter + update) selection, not only on enter. A habit due less often than every day gets a
+ring round each log's block, over the cells (`g.rings`, `.ring` paths from `blockPieces`, in
+pieces where the week or a month cuts a block). The rings have their own effect, so a log
+moves them without re-running the build; the build hands them the layout (`geomRef`). While
+cells come in or move, the rings keep out of the way and fade in together once the cells
+have settled (`cellsInRef`); and the hover tooltip says what a day's block says of it.
 
 **Forms.** Units are added and edited through the shared `UnitForm` (Settings and the habit form's
 "+ Custom..." unit), which validates with `buildUnit` and shows why it can't submit. The
 habit form's Group menu (`GroupField`) makes a group the same way, with "+ New group…".
+The form ends with "How often" (`PeriodField`): every [N] [days|weeks], up to `MAX_EVERY`.
 Icons are picked from a grid, the shared `IconPicker` (the habit form's, and a group's in
 `GroupField` and `GroupEditPage`). A menu of habits or groups (a routine step's habit, the
 habit form's Group) is an `IconSelect`, not a `<select>`, whose menu can only be text: a field
@@ -299,7 +321,7 @@ Three layers. Unit/component tests are colocated as `*.test.ts(x)` next to their
 so the real service worker is active (see the red–green workflow above for how tests drive
 development). Date-dependent E2E specs set the time with Playwright's `page.clock`, and read
 how a day is drawn with the `dayCell` and `dayFill` helpers (cells are found through their d3
-datum). The routines spec moves the clock with `page.clock.fastForward`: a run works from
+datum), and the rings round what each log covers with `rings`. The routines spec moves the clock with `page.clock.fastForward`: a run works from
 timestamps, and `runFor` replays every animation frame, which is slow over minutes.
 Vitest doesn't build CSS Modules, so a broken `composes:` path only shows in `npm run build`
 (which the E2E run does first).

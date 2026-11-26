@@ -93,8 +93,8 @@ const v2Normalized: PersistedState = {
 };
 
 describe("normalizeState", () => {
-  it("is at schema version 5", () => {
-    expect(SCHEMA_VERSION).toBe(5);
+  it("is at schema version 6", () => {
+    expect(SCHEMA_VERSION).toBe(6);
   });
 
   it("brings v2-shaped data up to the current format", () => {
@@ -569,6 +569,59 @@ describe("normalizeState — groups", () => {
         { id: "h2", name: "Run", groupId: "gone" },
       ],
       groups: [music, { id: "g2" }],
+    });
+    expect(accept(once)).toEqual(once);
+  });
+});
+
+describe("normalizeState — a habit's period", () => {
+  const periodOf = (period: unknown) =>
+    accept({ habits: [{ id: "h1", name: "Run", period }] }).habits[0];
+
+  it("keeps a period of whole days or weeks", () => {
+    expect(periodOf({ every: 2, unit: "day" }).period).toEqual({
+      every: 2,
+      unit: "day",
+    });
+    expect(periodOf({ every: 3, unit: "week" }).period).toEqual({
+      every: 3,
+      unit: "week",
+    });
+  });
+
+  it("leaves a daily habit without one: none means every day", () => {
+    expect(accept({ habits: [{ id: "h1" }] }).habits[0]).not.toHaveProperty(
+      "period",
+    );
+    expect(periodOf({ every: 1, unit: "day" })).not.toHaveProperty("period");
+  });
+
+  it("drops a period it can't read", () => {
+    for (const bad of [
+      7,
+      null,
+      { every: 0, unit: "day" },
+      { every: 1.5, unit: "day" },
+      { every: "2", unit: "day" },
+      { every: 2, unit: "month" },
+      { every: 2 },
+    ])
+      expect(periodOf(bad)).not.toHaveProperty("period");
+  });
+
+  it("keeps only what a period is", () => {
+    expect(periodOf({ every: 2, unit: "day", times: 3 }).period).toEqual({
+      every: 2,
+      unit: "day",
+    });
+  });
+
+  it("gives the same result when run twice", () => {
+    const once = accept({
+      habits: [
+        { id: "h1", period: { every: 2, unit: "week" } },
+        { id: "h2", period: { every: 1, unit: "day" } },
+      ],
     });
     expect(accept(once)).toEqual(once);
   });

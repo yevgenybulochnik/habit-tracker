@@ -8,6 +8,7 @@ import {
   metricVal,
 } from "./metrics";
 import { fmtSets, fmtVal } from "./format";
+import { periodDays } from "./periods";
 
 /** Intensity level 0–4 for a habit on a given day. */
 export function logLevel(
@@ -67,10 +68,12 @@ export type HabitStats = {
 };
 
 /**
- * Totals over every logged day, plus the streaks. The current streak counts
- * back from `today` (a date key), or from the day before while today has
- * nothing logged: a day that isn't over yet doesn't break a streak. The
- * longest is the best run in the year up to `today`.
+ * Totals over every logged day, plus the streaks. A streak holds while the
+ * habit's logs are no more than its period apart (a day apart for one due
+ * every day), and is counted in days, from its first log to its last. The
+ * current streak is still running while `today` (a date key) is within a
+ * period of its last log: a period that isn't over yet doesn't break it. It
+ * looks back a year; the longest is the best run in the year up to `today`.
  */
 export function habitStats(
   h: Habit,
@@ -86,19 +89,24 @@ export function habitStats(
     if (logActive(h, l, u)) td++;
     tv += ms.reduce((s, m) => s + metricVal(m, l), 0);
   });
+  const gap = periodDays(h.period);
+  // How many days ago each day in the last year was logged, latest first.
+  const ago: number[] = [];
+  for (let i = 0; i <= 365; i++)
+    if (logActive(h, logs[addDays(today, -i)], u)) ago.push(i);
   let cs2 = 0;
-  const from = logActive(h, logs[today], u) ? 0 : 1;
-  for (let i = from; i <= 365; i++) {
-    if (logActive(h, logs[addDays(today, -i)], u)) cs2++;
-    else break;
+  if (ago.length && ago[0] <= gap) {
+    let j = 0;
+    while (j + 1 < ago.length && ago[j + 1] - ago[j] <= gap) j++;
+    cs2 = ago[j] - ago[0] + 1;
   }
-  let ls = 0,
-    cc = 0;
-  for (let i = 364; i >= 0; i--) {
-    if (logActive(h, logs[addDays(today, -i)], u)) {
-      cc++;
-      ls = Math.max(ls, cc);
-    } else cc = 0;
+  let ls = 0;
+  const inYear = ago.filter((i) => i <= 364);
+  for (let a = 0; a < inYear.length; ) {
+    let b = a;
+    while (b + 1 < inYear.length && inYear[b + 1] - inYear[b] <= gap) b++;
+    ls = Math.max(ls, inYear[b] - inYear[a] + 1);
+    a = b + 1;
   }
   return { totalDays: td, totalVal: tv, curStreak: cs2, lonStreak: ls };
 }

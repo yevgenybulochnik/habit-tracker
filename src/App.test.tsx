@@ -295,6 +295,68 @@ describe("App changes to habits", () => {
     const id = habits[1].id;
     expect(id).toMatch(/^h_/);
     expect(logs).toEqual({ ...loaded.logs, [id]: {} });
+    expect(habits[1]).not.toHaveProperty("period"); // due every day
+  });
+
+  it("counts a habit a log still covers as completed today", async () => {
+    // Logged yesterday, due every 2 days: nothing's due until tomorrow
+    mockLoad.mockResolvedValue({
+      ...loaded,
+      habits: [{ ...run, period: { every: 2, unit: "day" } }],
+    });
+    render(<App />);
+    expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
+  });
+
+  it("adds a habit due every 2 days", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /New Habit/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/Morning Workout/i),
+      "Gym",
+    );
+    const often = screen.getByRole("spinbutton", { name: "How often" });
+    await userEvent.clear(often);
+    await userEvent.type(often, "2");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(lastSaved().habits).toHaveLength(2));
+    expect(lastSaved().habits[1].period).toEqual({ every: 2, unit: "day" });
+  });
+
+  it("changes how often a habit is due from its editor", async () => {
+    mockLoad.mockResolvedValue(loaded);
+    render(<App />);
+    const editRun = async () => {
+      fireEvent.mouseDown(await screen.findByText("Run"));
+      await screen.findByText("Edit Habit", undefined, { timeout: 2000 });
+    };
+
+    await editRun();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Days or weeks" }),
+      "week",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(lastSaved().habits[0].period).toEqual({ every: 1, unit: "week" }),
+    );
+
+    // Back to every day: a habit due every day keeps no period
+    await waitFor(() => expect(screen.queryByText("Edit Habit")).toBeNull());
+    await editRun();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Days or weeks" }),
+      "day",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(lastSaved().habits[0]).not.toHaveProperty("period"),
+    );
   });
 
   it("adds a habit into a group made in its form", async () => {
