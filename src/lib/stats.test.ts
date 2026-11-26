@@ -227,3 +227,61 @@ describe("habitStats", () => {
     expect(s.lonStreak).toBe(1);
   });
 });
+
+describe("habitStats — streaks for a habit due less often", () => {
+  const today = "2026-05-24";
+  const every = (n: number, unit: "day" | "week" = "day"): Habit => ({
+    ...minHabit,
+    period: { every: n, unit },
+  });
+  const active = (...days: string[]): HabitLogs =>
+    Object.fromEntries(days.map((d) => [d, { m1: 30 }]));
+  const stats = (h: Habit, l: HabitLogs, on = today) =>
+    habitStats(h, l, BUILTIN_UNITS, on);
+
+  it("holds while logs are no more than a period apart", () => {
+    const l = active("2026-05-18", "2026-05-20", "2026-05-22", "2026-05-24");
+    expect(stats(every(2), l).curStreak).toBe(7); // the 18th to the 24th
+    expect(stats(minHabit, l).curStreak).toBe(1); // every day: only today
+  });
+
+  it("counts the days from its first log to its last", () => {
+    expect(stats(every(3), active("2026-05-24")).curStreak).toBe(1);
+    expect(stats(every(3), active("2026-05-21", "2026-05-24")).curStreak).toBe(
+      4,
+    );
+  });
+
+  it("is still running while today is within a period of the last log", () => {
+    const l = active("2026-05-18", "2026-05-20", "2026-05-22");
+    expect(stats(every(2), l).curStreak).toBe(5); // due today, not yet over
+    expect(stats(every(2), l, "2026-05-25").curStreak).toBe(0); // too late
+  });
+
+  it("breaks where two logs are more than a period apart", () => {
+    const l = active("2026-05-14", "2026-05-15", "2026-05-18", "2026-05-20");
+    const s = stats(every(2), l, "2026-05-21");
+    expect(s.curStreak).toBe(3); // the 18th to the 20th
+    expect(s.lonStreak).toBe(3);
+  });
+
+  it("measures a period in weeks as seven days each", () => {
+    const l = active("2026-05-03", "2026-05-10", "2026-05-17", "2026-05-24");
+    expect(stats(every(1, "week"), l).curStreak).toBe(22);
+    const late = active("2026-05-02", "2026-05-10", "2026-05-17");
+    expect(stats(every(1, "week"), late).curStreak).toBe(8); // the 10th on
+    expect(stats(every(1, "week"), late).lonStreak).toBe(8);
+  });
+
+  it("finds the longest in the year up to today", () => {
+    const l = active(
+      "2025-05-24", // 365 days back: outside the window
+      "2025-05-26",
+      "2025-05-28",
+      "2026-05-20",
+    );
+    const s = stats(every(2), l);
+    expect(s.lonStreak).toBe(3); // the 26th to the 28th, a year back
+    expect(s.curStreak).toBe(0);
+  });
+});
