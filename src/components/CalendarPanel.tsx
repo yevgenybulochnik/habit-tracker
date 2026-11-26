@@ -8,7 +8,12 @@ import {
   fitCellSize,
   compactHeatLayout,
   compactCalLayout,
+  blockPieces,
+  piecePath,
 } from "../lib/d3layout";
+import type { Cell } from "../lib/d3layout";
+import { blockNote, coverBlocks } from "../lib/cover";
+import { isEveryDay } from "../lib/periods";
 import type { CalendarNav, CalendarView, NavAction } from "../lib/calendarNav";
 import { useElementWidth } from "../hooks/useElementWidth";
 import styles from "./CalendarPanel.module.css";
@@ -37,6 +42,18 @@ type Tip = { label: string; date: string };
 
 // Shared easing for every d3 transition in the panel.
 const D3E = d3.easeCubicInOut;
+// The build's animation: a cell takes DUR * 0.6, the last starting 350 ms in.
+const DUR = 700;
+const CELLS_IN = 350 + DUR * 0.6;
+
+/** Where the cells are, for the rings round what each log covers. */
+type Geometry = {
+  layout: Cell[];
+  cellR: number;
+  view: CalendarView;
+  zoomed: boolean;
+  gap: number;
+};
 
 /**
  * A habit's heatmap/calendar: the view and month controls, the d3-drawn SVG,
@@ -68,6 +85,11 @@ export default function CalendarPanel({
   selectedDateRef.current = selectedDate;
   const logsRef = useRef(logs); // the build doesn't re-run on logs
   logsRef.current = logs;
+  // For the rings: the cells as the build last laid them out, the layout's
+  // signature, and when (performance.now()) its cells will have settled.
+  const geomRef = useRef<Geometry | null>(null);
+  const layoutSigRef = useRef("");
+  const cellsInRef = useRef(0);
 
   const numM = zoomed ? 1 : cfg.numMonths;
   const days = useMemo(
@@ -100,8 +122,7 @@ export default function CalendarPanel({
     // d3 sets SVG presentation attributes, where CSS vars don't resolve — use
     // concrete theme hex here. The empty (level-0) cell is theme-specific.
     const Tc = THEMES[cfg.theme];
-    const sh = pal.shades,
-      DUR = 700; // pal.shades[0] is the theme's empty cell
+    const sh = pal.shades; // pal.shades[0] is the theme's empty cell
     svg.selectAll("*").interrupt();
 
     const { cells: layout, mLabels } =
@@ -191,18 +212,21 @@ export default function CalendarPanel({
       .on("mouseenter", (ev: any, d: any) => {
         if (d.future) return;
         const label = logSummary(habit, logsRef.current[d.key]);
+        // A habit due less often: what the day's block says of it
+        const block = isEveryDay(habit.period)
+          ? undefined
+          : coverBlocks(habit, logsRef.current, units).get(d.key);
+        const note = block ? blockNote(block, d.key) : null;
+        const date = d.date.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
         setTip(
-          label === "No entry"
+          label === "No entry" && !note
             ? null
-            : {
-                label,
-                date: d.date.toLocaleDateString("en-US", {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
-              },
+            : { label, date: note ? `${date} · ${note}` : date },
         );
         d3.select(ev.currentTarget)
           .attr("stroke", sh[4])
@@ -416,11 +440,103 @@ export default function CalendarPanel({
       .attr("y", (d: any) => d.y)
       .style("opacity", 1);
     /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    // The rings wait for cells coming in or moving (a first draw, a new
+    // width, another month or view) to settle.
+    const sig = layout
+      .map((c) => `${c.key}@${c.x.toFixed(1)},${c.y.toFixed(1)},${c.w}`)
+      .join("|");
+    if (sig !== layoutSigRef.current) {
+      layoutSigRef.current = sig;
+      cellsInRef.current = performance.now() + CELLS_IN;
+    }
+    geomRef.current = { layout, cellR, view, zoomed, gap: cg };
+    drawRings();
     // NOTE: `logs` is intentionally NOT a dependency — a live edit must not
     // re-run this heavy build (layout + ripple). Cell/day-number fills are
-    // recolored by the cheap effect below; the hover tooltip reads logs via
-    // logsRef.
+    // recolored by the cheap effect below, and the rings by their own; the
+    // hover tooltip reads logs via logsRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, view, offset, zoomed, cw, days, habit, pal, units, today, cfg]);
+
+  /**
+   * A habit due less often than every day: a ring round the days each log
+   * covers (see coverBlocks), over the cells, in the habit's colour; faint
+   * where the days are still to come. While the cells come in or move, the
+   * rings keep out of the way, then fade in together once they've settled;
+   * a log alone moves them straight away.
+   */
+  function drawRings() {
+    const g = geomRef.current;
+    if (!svgRef.current || !g) return;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const svg: any = d3.select(svgRef.current);
+    let layer = svg.select("g.rings");
+    if (layer.empty()) layer = svg.append("g").attr("class", "rings");
+    layer.raise(); // over cells the build has added since
+    const blocks = isEveryDay(habit.period)
+      ? null
+      : coverBlocks(habit, logsRef.current, units);
+    const pieces = blocks
+      ? blockPieces(g.layout, (k) => blocks.get(k)?.start ?? null, g.gap)
+      : [];
+    // A ring on its way out that's wanted again mustn't be removed.
+    layer.selectAll(".ring").interrupt("ringx");
+    const rings = layer.selectAll(".ring").data(pieces, (d: any) => d.key);
+    rings
+      .exit()
+      .interrupt("ring") // or a fade-in still to come keeps it
+      .transition("ringx")
+      .duration(DUR * 0.2)
+      .style("opacity", 0)
+      .remove();
+    const enter = rings
+      .enter()
+      .append("path")
+      .attr("class", "ring")
+      .attr("fill", "none")
+      .style("pointer-events", "none")
+      .attr("d", (d: any) => piecePath(d, g.cellR, g.view))
+      .style("opacity", 0);
+    const wait = Math.max(0, cellsInRef.current - performance.now());
+    rings.merge(enter).each(function (this: any, d: any) {
+      const path = piecePath(d, g.cellR, g.view);
+      const opacity = d.future ? 0.25 : 1;
+      const ring = d3
+        .select(this)
+        .attr("stroke", pal.shades[4])
+        .attr("stroke-width", g.zoomed ? 2 : 1.25);
+      if (wait > 0) {
+        // Out of the way, then in place and in, once the cells are
+        const out = Math.min(DUR * 0.2, wait);
+        ring
+          .transition("ring")
+          .duration(out)
+          .style("opacity", 0)
+          .transition()
+          .delay(wait - out)
+          .duration(DUR * 0.6)
+          .ease(D3E)
+          .on("start", function (this: any) {
+            d3.select(this).attr("d", path);
+          })
+          .style("opacity", opacity);
+      } else
+        ring
+          .transition("ring")
+          .duration(DUR * 0.4)
+          .ease(D3E)
+          .attr("d", path)
+          .style("opacity", opacity);
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+  }
+
+  // The rings follow the logs without a rebuild.
+  useEffect(() => {
+    if (expanded) drawRings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logs, habit, units, pal, expanded]);
 
   // Cheap recolor: update only cell + day-number fills when the logs (or
   // palette/theme) change, without re-running the heavy build. Leaves stroke
