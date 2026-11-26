@@ -298,6 +298,16 @@ describe("App changes to habits", () => {
     expect(habits[1]).not.toHaveProperty("period"); // due every day
   });
 
+  it("counts a habit a log still covers as completed today", async () => {
+    // Logged yesterday, due every 2 days: nothing's due until tomorrow
+    mockLoad.mockResolvedValue({
+      ...loaded,
+      habits: [{ ...run, period: { every: 2, unit: "day" } }],
+    });
+    render(<App />);
+    expect(await screen.findByText("1/1 completed today")).toBeInTheDocument();
+  });
+
   it("adds a habit due every 2 days", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);

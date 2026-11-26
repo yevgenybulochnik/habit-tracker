@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo, useReducer, useRef } from "react";
 import type { CSSProperties } from "react";
 import { resolvePalette } from "../theme";
 import { getUnit } from "../lib/metrics";
-import { habitStats, logActive } from "../lib/stats";
+import { habitStats } from "../lib/stats";
+import { dueLabel, isDone, nextDue } from "../lib/cover";
+import { isEveryDay, periodLabel } from "../lib/periods";
 import { INITIAL_NAV, navigate } from "../lib/calendarNav";
 import { isTiming } from "../lib/state";
 import CalendarPanel from "./CalendarPanel";
@@ -132,8 +134,13 @@ export default function HabitCard({
     () => habitStats(habit, logs, units, today),
     [habit, logs, units, today],
   );
-  // Logged today: a card down to its header is shaded in its colour.
-  const done = logActive(habit, logs[today], units);
+  // Done for now (logged today, or a log still covers today): a card down to
+  // its header is shaded in its colour.
+  const done = isDone(habit, logs, units, today);
+  // When the next log is due, for a habit due less often than every day
+  const due = isEveryDay(habit.period)
+    ? null
+    : nextDue(habit, logs, units, today);
   const pu = habit.metrics[0]?.unit || "count";
   const sLabel = pu === "min" ? "Hours" : getUnit(pu, units).label || "Total";
   const sVal =
@@ -170,6 +177,20 @@ export default function HabitCard({
         </h3>
         {habit.description && (
           <p className={styles.desc}>{habit.description}</p>
+        )}
+        {!isEveryDay(habit.period) && (
+          <p className={styles.cadence}>
+            {periodLabel(habit.period)}
+            {due &&
+              (due === today ? (
+                <>
+                  {" · "}
+                  <strong className={styles.dueToday}>due today</strong>
+                </>
+              ) : (
+                ` · due ${dueLabel(due, today)}`
+              ))}
+          </p>
         )}
         <div className={styles.holdHint}>hold to edit...</div>
       </div>

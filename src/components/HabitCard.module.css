@@ -123,6 +123,16 @@
   font-size: 10px;
   color: var(--c-muted);
 }
+/* How often, and when the next log is due */
+.cadence {
+  margin: 1px 0 0;
+  font-size: 10px;
+  color: var(--c-muted);
+}
+.dueToday {
+  color: var(--p4);
+  font-weight: 600;
+}
 .holdHint {
   font-size: 8px;
   color: var(--c-dim);
