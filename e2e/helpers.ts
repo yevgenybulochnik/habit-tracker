@@ -7,7 +7,8 @@ import { expect, type Page } from "@playwright/test";
 /**
  * Create a single-metric habit via the New Habit page.
  * Defaults to a "Reps" metric; pass `unit` (e.g. "min") to pick a different unit,
- * and `group` to put it in the group with that name, made if it doesn't exist.
+ * `group` to put it in the group with that name, made if it doesn't exist,
+ * and `every` for how often it's due (every day otherwise).
  */
 export async function createHabit(
   page: Page,
@@ -16,7 +17,13 @@ export async function createHabit(
     metricName = "Reps",
     unit,
     group,
-  }: { metricName?: string; unit?: string; group?: string } = {},
+    every,
+  }: {
+    metricName?: string;
+    unit?: string;
+    group?: string;
+    every?: { n: number; unit: "day" | "week" };
+  } = {},
 ) {
   await page.getByRole("button", { name: /New Habit/i }).click();
   await page.getByPlaceholder(/Morning Workout/i).fill(name);
@@ -25,6 +32,7 @@ export async function createHabit(
   if (unit)
     await page.getByRole("combobox", { name: "Unit" }).selectOption(unit);
   await page.getByRole("button", { name: /^\+ Add$/ }).click();
+  if (every) await setHowOften(page, every.n, every.unit);
   await page.getByRole("button", { name: /^Create$/ }).click();
   await expect(page.getByRole("heading", { name, level: 3 })).toBeVisible();
   await slideDone(page);
@@ -46,6 +54,29 @@ export async function openQuickLog(page: Page, name: string) {
   const card = page.getByRole("button", { name, exact: true });
   await card.click();
   await expect(card).toHaveAttribute("aria-expanded", "true");
+}
+
+/** In an open habit form, set how often the habit is due. */
+export async function setHowOften(page: Page, n: number, unit: "day" | "week") {
+  await page
+    .getByRole("combobox", { name: "Days or weeks" })
+    .selectOption(unit);
+  await page.getByRole("spinbutton", { name: "How often" }).fill(String(n));
+}
+
+/**
+ * The rings round what each log covers, once they've faded in: each one's
+ * block (the day of its log) and its place in it, `${day}#${n}`, in order.
+ * Assumes a single habit card.
+ */
+export function rings(page: Page) {
+  return page.locator("path.ring").evaluateAll((els) =>
+    els
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      .map((el) => ({ key: (el as any).__data__?.key, o: el.style.opacity }))
+      .filter((r) => r.o !== "0")
+      .map((r) => r.key),
+  );
 }
 
 /** In an open habit form, choose the group named `name`, making it if new. */
