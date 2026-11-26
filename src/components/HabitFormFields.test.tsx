@@ -6,7 +6,7 @@ import HabitFormFields from "./HabitFormFields";
 import { ICON_IDS, ICON_NAMES } from "../lib/icons";
 import type { IconId } from "../lib/icons";
 import { BUILTIN_UNITS } from "../lib/defaults";
-import type { Group, IntensityMode, Metric, Unit } from "../types";
+import type { Group, IntensityMode, Metric, Period, Unit } from "../types";
 
 const MUSIC: Group = {
   id: "g1",
@@ -40,6 +40,7 @@ function Harness({
   const [units, setUnits] = useState(BUILTIN_UNITS);
   const [groupId, setGroupId] = useState("");
   const [groups, setGroups] = useState(initialGroups);
+  const [period, setPeriod] = useState<Period>({ every: 1, unit: "day" });
   const form = (
     <HabitFormFields
       name={name}
@@ -66,12 +67,15 @@ function Harness({
         onAddGroup(g);
         setGroups((p) => [...p, g]);
       }}
+      period={period}
+      setPeriod={setPeriod}
     />
   );
   return (
     <>
       <output data-testid="intensity-mode">{intensityMode}</output>
       <output data-testid="group">{groupId}</output>
+      <output data-testid="period">{JSON.stringify(period)}</output>
       {form}
     </>
   );
@@ -82,6 +86,17 @@ afterEach(() => {
 });
 
 describe("HabitFormFields", () => {
+  it("asks how often the habit is due, every day to start with", async () => {
+    render(<Harness />);
+    const often = screen.getByRole("spinbutton", { name: "How often" });
+    expect(often).toHaveValue(1);
+    await userEvent.clear(often);
+    await userEvent.type(often, "2");
+    expect(screen.getByTestId("period")).toHaveTextContent(
+      JSON.stringify({ every: 2, unit: "day" }),
+    );
+  });
+
   it("draws the sets mode toggle's mark, off and on", async () => {
     const user = userEvent.setup();
     render(<Harness />);

@@ -7,6 +7,7 @@ import {
 } from "./icons";
 import type { IconId } from "./icons";
 import { hasMixedUnits, isSetMetric, weightedFields } from "./metrics";
+import { isEveryDay } from "./periods";
 import { DEFAULT_COUNT, fitRoutine, PREP_SECONDS } from "./routines";
 import type { Result, Run } from "./routineRun";
 import type {
@@ -146,8 +147,7 @@ function readPeriod(v: unknown): Period | undefined {
   if (typeof every !== "number" || !Number.isInteger(every) || every < 1)
     return undefined;
   if (unit !== "day" && unit !== "week") return undefined;
-  if (every === 1 && unit === "day") return undefined;
-  return { every, unit };
+  return isEveryDay({ every, unit }) ? undefined : { every, unit };
 }
 
 /** A habit's or group's icon: from before version 5, the one for its emoji;

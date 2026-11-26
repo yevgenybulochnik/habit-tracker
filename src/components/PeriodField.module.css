@@ -1,0 +1,23 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.num {
+  composes: inp from "../styles/shared.module.css";
+  /* flex-basis (not width) so it wins over the composed .inp width:100% */
+  flex: 0 0 72px;
+}
+.unit {
+  composes: inp from "../styles/shared.module.css";
+  flex: 0 0 104px;
+  cursor: pointer;
+}
+.hint {
+  font-size: 10px;
+  color: var(--c-dim);
+  margin-top: 6px;
+  line-height: 1.4;
+}

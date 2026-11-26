@@ -1,5 +1,6 @@
 // A habit's form, on a page slid over the habits: opened by holding its card.
 import { useState } from "react";
+import { EVERY_DAY, isEveryDay } from "../lib/periods";
 import HabitFormFields from "./HabitFormFields";
 import PageShell, { type ClosePage } from "./PageShell";
 import type { Group, Habit, IntensityMode, Metric, Unit } from "../types";
@@ -34,6 +35,7 @@ export default function EditHabitPage({
   const [metrics, setMetrics] = useState<Metric[]>([...habit.metrics]);
   const [intMode, setIntMode] = useState<IntensityMode>(habit.intensityMode);
   const [groupId, setGroupId] = useState(habit.groupId ?? "");
+  const [period, setPeriod] = useState(habit.period ?? EVERY_DAY);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const canSave = !!name.trim() && metrics.length > 0;
   return (
@@ -57,6 +59,8 @@ export default function EditHabitPage({
         setGroupId={setGroupId}
         groups={groups}
         onAddGroup={onAddGroup}
+        period={period}
+        setPeriod={setPeriod}
       />
 
       {/* Danger zone */}
@@ -107,7 +111,7 @@ export default function EditHabitPage({
         <button
           disabled={!canSave}
           onClick={() => {
-            const { groupId: _, ...rest } = habit;
+            const { groupId: _g, period: _p, ...rest } = habit;
             onClose(() =>
               onSave({
                 ...rest,
@@ -118,6 +122,7 @@ export default function EditHabitPage({
                 metrics,
                 intensityMode: intMode,
                 ...(groupId && { groupId }),
+                ...(!isEveryDay(period) && { period }),
               }),
             );
           }}
