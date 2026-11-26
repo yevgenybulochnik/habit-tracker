@@ -15,6 +15,7 @@ import type {
   Habit,
   Logs,
   Metric,
+  Period,
   PersistedState,
   Routine,
   RoutineStep,
@@ -35,8 +36,10 @@ import type {
  *   reason as 3's.
  * - 5: a habit and a group have an `icon` (an id from lib/icons) in place of
  *   an `emoji`, which becomes the icon for it (see `iconForEmoji`).
+ * - 6: a habit can have a `period`, how often it's due. Nothing is migrated;
+ *   the bump is for the same reason as 3's.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export type NormalizeResult =
   | { ok: true; state: PersistedState }
@@ -112,7 +115,8 @@ function normalizeHabit(
   version: number,
   groupIds: Set<string>,
 ): Habit {
-  const { groupId, emoji, icon, ...h } = withId(raw, path);
+  const { groupId, emoji, icon, period, ...h } = withId(raw, path);
+  const every = readPeriod(period);
   const stored = list(h.metrics, `${path}.metrics`).map((m, i) =>
     normalizeMetric(m, `${path}.metrics[${i}]`),
   );
@@ -130,7 +134,20 @@ function normalizeHabit(
         : "total",
     // Only a group that exists; otherwise the habit is in none.
     ...(typeof groupId === "string" && groupIds.has(groupId) && { groupId }),
+    ...(every && { period: every }),
   } as Habit;
+}
+
+/** A period of whole days or weeks, or undefined for none: every day, or
+ *  one it can't read. */
+function readPeriod(v: unknown): Period | undefined {
+  if (!isObj(v)) return undefined;
+  const { every, unit } = v;
+  if (typeof every !== "number" || !Number.isInteger(every) || every < 1)
+    return undefined;
+  if (unit !== "day" && unit !== "week") return undefined;
+  if (every === 1 && unit === "day") return undefined;
+  return { every, unit };
 }
 
 /** A habit's or group's icon: from before version 5, the one for its emoji;
@@ -297,7 +314,9 @@ function normalize(raw: unknown): PersistedState {
  * built-in units, the groups (none) with a group's name, icon and
  * `collapsed`, and the routines (none) with a routine's name, rounds and
  * get-ready and a step's timing. A habit's `groupId` is dropped unless that
- * group exists, and a routine's step unless its habit and metric do (see
+ * group exists, its `period` unless it's a whole number (above zero) of days
+ * or weeks other than every day, and a routine's step unless its habit and
+ * metric do (see
  * `fitRoutine`). Data from an older `schemaVersion` is migrated (see
  * `SCHEMA_VERSION`). Data whose structure can't be read is rejected with a
  * reason: a container of the wrong type, a habit, metric, set field, unit,
