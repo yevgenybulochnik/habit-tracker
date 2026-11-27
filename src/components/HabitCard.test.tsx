@@ -45,7 +45,7 @@ function renderCard(
   props: Partial<ComponentProps<typeof HabitCard>> = {},
 ) {
   const dispatch = vi.fn();
-  const view = render(
+  const card = (more: Partial<ComponentProps<typeof HabitCard>> = {}) => (
     <DispatchContext.Provider value={dispatch}>
       <HabitCard
         habit={habit}
@@ -56,13 +56,25 @@ function renderCard(
         today={today}
         expanded={expanded}
         {...props}
+        {...more}
       />
-    </DispatchContext.Provider>,
+    </DispatchContext.Provider>
   );
-  return { dispatch, container: view.container };
+  const view = render(card());
+  return {
+    dispatch,
+    container: view.container,
+    /** Render it again with some props changed. */
+    rerender: (more: Partial<ComponentProps<typeof HabitCard>>) =>
+      view.rerender(card(more)),
+  };
 }
 
 const quickAdd = () => screen.queryByRole("button", { name: "+5" });
+/** The calendar's Heat/Cal switch: there while the calendar shows. */
+const calendar = () => screen.queryByRole("button", { name: "Heat" });
+const chevron = (name: "Show calendar" | "Hide calendar") =>
+  screen.queryByRole("button", { name });
 
 beforeEach(() => {
   // The calendar measures its width, which jsdom can't do
@@ -201,6 +213,88 @@ describe("HabitCard", () => {
     });
   });
 
+  describe("its calendar, in Compact view", () => {
+    it("is hidden, with a chevron under the open quick-log to show it", () => {
+      renderCard(repsHabit, false, {}, { logOpen: true });
+      expect(calendar()).not.toBeInTheDocument();
+      expect(chevron("Show calendar")).toBeInTheDocument();
+    });
+
+    it("has no chevron while the quick-log is shut", () => {
+      renderCard(repsHabit, false);
+      expect(chevron("Show calendar")).not.toBeInTheDocument();
+    });
+
+    it("shows above the quick-log from the chevron, and hides again", async () => {
+      const onToggleLog = vi.fn();
+      renderCard(repsHabit, false, {}, { logOpen: true, onToggleLog });
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show calendar" }),
+      );
+      expect(calendar()).toBeInTheDocument();
+      expect(quickAdd()).toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Hide calendar" }),
+      );
+      expect(calendar()).not.toBeInTheDocument();
+      // The chevron isn't a tap on the card
+      expect(onToggleLog).not.toHaveBeenCalled();
+    });
+
+    it("takes taps in it as its own, not the card's", async () => {
+      const onToggleLog = vi.fn();
+      renderCard(repsHabit, false, {}, { logOpen: true, onToggleLog });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show calendar" }),
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "‹" }));
+      await userEvent.click(screen.getByRole("button", { name: "Heat" }));
+      expect(onToggleLog).not.toHaveBeenCalled();
+    });
+
+    it("goes away when the quick-log shuts, and stays away when it opens", async () => {
+      const { rerender } = renderCard(repsHabit, false, {}, { logOpen: true });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show calendar" }),
+      );
+
+      rerender({ logOpen: false });
+      expect(calendar()).not.toBeInTheDocument();
+      rerender({ logOpen: true });
+      expect(calendar()).not.toBeInTheDocument();
+      expect(chevron("Show calendar")).toBeInTheDocument();
+    });
+
+    it("comes in to this month when today is logged", async () => {
+      renderCard(repsHabit, false, {}, { logOpen: true });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show calendar" }),
+      );
+      await userEvent.click(screen.getByRole("button", { name: "+5" }));
+      expect(screen.getByText(THIS_MONTH)).toBeInTheDocument();
+    });
+
+    it("can be shown for a card a timer keeps open", async () => {
+      renderCard(minHabit, false, {}, { timers: { "h3:m3": Date.now() } });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show calendar" }),
+      );
+      expect(calendar()).toBeInTheDocument();
+    });
+
+    it("has no chevron while reordering", () => {
+      renderCard(
+        minHabit,
+        false,
+        {},
+        { timers: { "h3:m3": Date.now() }, reorderMode: true },
+      );
+      expect(chevron("Show calendar")).not.toBeInTheDocument();
+    });
+  });
+
   describe("done today", () => {
     it("is marked, to be shaded in its colour, once today is logged", () => {
       const { container } = renderCard(repsHabit, false, {
@@ -280,6 +374,13 @@ describe("HabitCard", () => {
       ).not.toBeInTheDocument();
       await userEvent.click(screen.getByText("Streak"));
       expect(onToggleLog).not.toHaveBeenCalled();
+    });
+
+    it("shows its calendar, with no chevron", () => {
+      renderCard(repsHabit, true);
+      expect(calendar()).toBeInTheDocument();
+      expect(chevron("Show calendar")).not.toBeInTheDocument();
+      expect(chevron("Hide calendar")).not.toBeInTheDocument();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useReducer, useRef } from "react";
+import { useEffect, useId, useMemo, useReducer, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { resolvePalette } from "../theme";
 import { getUnit } from "../lib/metrics";
@@ -41,6 +41,23 @@ type Props = {
   onToggleLog?: () => void;
 };
 
+/** The chevron under an open quick-log, pointing down to the calendar. */
+const Chevron = () => (
+  <svg
+    width="20"
+    height="10"
+    viewBox="0 0 16 10"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 3l5 4 5-4" />
+  </svg>
+);
+
 export default function HabitCard({
   habit,
   logs,
@@ -56,9 +73,25 @@ export default function HabitCard({
   onToggleLog,
 }: Props) {
   const actions = useHabitActions(habit.id, today);
-  // In reorder mode the card shows its header only — collapse the heatmap body
-  // and quick-log, and reuse the existing expand/collapse animation.
-  const effExpanded = expanded && !reorderMode;
+  // In Compact view a tap on the card shows or hides its quick-log, and it
+  // stays open while a timer runs, so the timer stays in sight.
+  const tappable = !expanded && !reorderMode;
+  const logShown = logOpen || isTiming(habit, timers);
+  // Compact view: the calendar, asked for from the chevron under the open
+  // quick-log. Shutting the quick-log puts it away (set as the card renders,
+  // not in an effect, so it never shows on its own for a frame).
+  const [calAsked, setCalAsked] = useState(false);
+  const [logWasShown, setLogWasShown] = useState(logShown);
+  if (logShown !== logWasShown) {
+    setLogWasShown(logShown);
+    if (!logShown) setCalAsked(false);
+  }
+  const chevronShown = tappable && logShown;
+  // The calendar shows in Calendar view, or asked for in Compact. In reorder
+  // mode the card shows its header only — collapse the heatmap body and
+  // quick-log, and reuse the existing expand/collapse animation.
+  const effExpanded = (expanded || (calAsked && logShown)) && !reorderMode;
+  const bodyId = useId();
   // The calendar's months and view. Kept here, not in CalendarPanel, because
   // quick-log zooms it in too.
   const [nav, dispatchNav] = useReducer(navigate, INITIAL_NAV);
@@ -69,12 +102,11 @@ export default function HabitCard({
   const [editorDate, setEditorDate] = useState<string | null>(null); // kept mounted through the close animation
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const quicklogRef = useRef<HTMLDivElement>(null);
-  // In Compact view a tap on the card shows or hides its quick-log, and it
-  // stays open while a timer runs, so the timer stays in sight. The quick-log
-  // is shut while reordering, while a day is being edited, and in Compact
-  // view otherwise.
-  const tappable = !expanded && !reorderMode;
-  const logShown = logOpen || isTiming(habit, timers);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const chevronRef = useRef<HTMLDivElement>(null);
+  // The quick-log is shut while reordering, while a day is being edited, and
+  // in Compact view until it's opened.
   const logShut = reorderMode || !!selectedDate || (!expanded && !logShown);
 
   const closeEditor = () => {
@@ -82,12 +114,12 @@ export default function HabitCard({
     setSelectedDate(null);
     closeTimerRef.current = setTimeout(() => setEditorDate(null), 450); // unmount after it collapses
   };
-  // Wraps a quick-log action so that logging today also brings the expanded
-  // calendar to this month, with the new entry in view.
+  // Wraps a quick-log action so that logging today also brings the calendar,
+  // if it shows, to this month, with the new entry in view.
   const showingToday =
     <A extends unknown[]>(log: (...args: A) => void) =>
     (...args: A) => {
-      if (expanded) dispatchNav({ type: "zoomToday" });
+      if (effExpanded) dispatchNav({ type: "zoomToday" });
       log(...args);
     };
   const tapDay = (k: string) => {
@@ -108,7 +140,8 @@ export default function HabitCard({
   }, [reorderMode]);
 
   useEffect(() => {
-    // collapsing the card (Quick view or reorder mode) closes the editor
+    // collapsing the card (Compact view, its calendar put away, or reorder
+    // mode) closes the editor
     if (!effExpanded) {
       setSelectedDate(null);
       setEditorDate(null);
@@ -208,8 +241,10 @@ export default function HabitCard({
       onClick={
         tappable
           ? (e) => {
-              // Logging in the quick-log isn't a tap on the card.
-              if (!quicklogRef.current?.contains(e.target as Node))
+              // Logging in the quick-log, using the calendar or the day's
+              // editor, and the chevron aren't taps on the card.
+              const inside = [quicklogRef, bodyRef, editorRef, chevronRef];
+              if (!inside.some((r) => r.current?.contains(e.target as Node)))
                 onToggleLog?.();
             }
           : undefined
@@ -283,8 +318,15 @@ export default function HabitCard({
       </div>
 
       {/* Calendar body animates open/closed via grid-template-rows 0fr↔1fr
-          (stays mounted so both directions transition; avoids the iOS reveal-flash). */}
-      <div className={`${styles.body}${effExpanded ? ` ${styles.open}` : ""}`}>
+          (stays mounted so both directions transition; avoids the iOS
+          reveal-flash). Shut, it's inert, as the quick-log is. */}
+      <div
+        ref={bodyRef}
+        id={bodyId}
+        className={`${styles.body}${effExpanded ? ` ${styles.open}` : ""}`}
+        aria-hidden={!effExpanded || undefined}
+        {...(effExpanded ? {} : { inert: "" })}
+      >
         <div className={styles.inner}>
           <CalendarPanel
             habit={habit}
@@ -306,6 +348,7 @@ export default function HabitCard({
           It and the quick-log both stay mounted and cross-swap heights so
           selecting/closing animates smoothly; editorDate lingers through close. */}
       <div
+        ref={editorRef}
         className={`${styles.editor}${selectedDate ? ` ${styles.open}` : ""}`}
       >
         <div className={styles.inner}>
@@ -350,6 +393,28 @@ export default function HabitCard({
             onStopTimer={actions.stopTimer}
             today={today}
           />
+        </div>
+      </div>
+
+      {/* Compact view: under the open quick-log, a chevron that shows the
+          calendar above it, and turns up to hide it again */}
+      <div
+        ref={chevronRef}
+        className={`${styles.chevronRow}${chevronShown ? ` ${styles.show}` : ""}`}
+        aria-hidden={!chevronShown || undefined}
+        {...(chevronShown ? {} : { inert: "" })}
+      >
+        <div className={styles.inner}>
+          <button
+            type="button"
+            aria-controls={bodyId}
+            aria-label={effExpanded ? "Hide calendar" : "Show calendar"}
+            title={effExpanded ? "Hide calendar" : "Show calendar"}
+            onClick={() => setCalAsked((asked) => !asked)}
+            className={`${styles.chevron}${effExpanded ? ` ${styles.up}` : ""}`}
+          >
+            <Chevron />
+          </button>
         </div>
       </div>
     </div>

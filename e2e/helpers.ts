@@ -113,7 +113,11 @@ export async function openSettings(page: Page) {
 /** Switch the dashboard view via the Compact/Calendar toggle. */
 export async function setDashView(page: Page, view: "compact" | "calendar") {
   await page
-    .getByRole("button", { name: view === "calendar" ? "Calendar" : "Compact" })
+    .getByRole("button", {
+      name: view === "calendar" ? "Calendar" : "Compact",
+      // Not an open card's "Show calendar"
+      exact: true,
+    })
     .click();
 }
 

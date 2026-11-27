@@ -203,3 +203,46 @@
 .quicklog.closed {
   grid-template-rows: 0fr;
 }
+
+/* Compact view: under the open quick-log, the chevron that shows the
+   calendar (and hides it, turned up, in the habit's colour) */
+.chevronRow {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+.chevronRow.show {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 26px;
+  margin: 2px auto 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--c-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.chevron svg {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.chevron.up {
+  color: var(--p4);
+}
+.chevron.up svg {
+  transform: rotate(180deg);
+}
+.chevron:focus-visible {
+  outline: 2px solid var(--p4);
+  outline-offset: -2px;
+}

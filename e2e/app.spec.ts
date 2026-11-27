@@ -196,6 +196,37 @@ test("Compact view: a tapped card opens its quick-log, one at a time, and is sha
   await expect(quickAdds).toHaveCount(0);
 });
 
+test("Compact view: the chevron under a quick-log shows the card's calendar, to edit a day in", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Reading");
+  const cells = page.locator("svg rect.dc");
+  // The calendar's controls are there only while it shows
+  const heat = page.getByRole("button", { name: "Heat" });
+  await openQuickLog(page, "Reading");
+  await expect(heat).toHaveCount(0);
+  await expect(cells).toHaveCount(0); // not drawn while it's shut
+
+  await page.getByRole("button", { name: "Show calendar" }).click();
+  await expect(heat).toBeVisible();
+  await expect(cells.first()).toBeVisible();
+
+  // A day's editor opens in it, and the card stays open
+  await cells.nth(20).click();
+  await expect(page.getByText(/^Edit/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Reading", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
+
+  // The chevron, turned up, puts the calendar and the editor away, and the
+  // quick-log is back
+  await page.getByRole("button", { name: "Hide calendar" }).click();
+  await expect(heat).toHaveCount(0);
+  await expect(page.getByText(/^Edit/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "+10" })).toBeVisible();
+});
+
 test("tapping a calendar day opens the editor; the entered value persists live", async ({
   page,
 }) => {
