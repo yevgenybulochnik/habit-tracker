@@ -35,6 +35,9 @@ import { cardAnchor, sectionAnchor } from "./anchors";
 import type { DashView, Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
 
+/** How long a group's section takes to unfold (GroupSections.module.css). */
+const UNFOLD_MS = 450;
+
 /** A page slid over the habits, in their place. */
 type Page =
   | { kind: "routines" }
@@ -206,15 +209,21 @@ export default function App() {
       return;
     }
     if (j.kind === "group") {
-      if (j.group.collapsed)
+      const scroll = () =>
+        document
+          .getElementById(sectionAnchor(j.group.id))
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      scroll();
+      if (j.group.collapsed) {
         dispatch({
           type: "group/update",
           id: j.group.id,
           changes: { collapsed: false },
         });
-      document
-        .getElementById(sectionAnchor(j.group.id))
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Again once it has unfolded: near the end of the page, there may
+        // only be room to scroll it up then.
+        window.setTimeout(scroll, UNFOLD_MS);
+      }
       return;
     }
     if (dashView === "compact") setOpenLog(j.habit.id);
