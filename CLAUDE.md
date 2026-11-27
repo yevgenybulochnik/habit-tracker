@@ -201,7 +201,7 @@ normalized, `loadState` copies it to the `habit-tracker-recovery` key and reject
 is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`compact` |
 `calendar`) toggle. Compact (the default; it replaced a Quick view, and a stored `quick` reads
 as it) shows each card down to its header, as reordering does: tapping a card opens its
-quick-log, and `App` keeps one open at a time (`openLog`, shut again for reordering or a change
+quick-log (and a chevron under that its calendar), and `App` keeps one open at a time (`openLog`, shut again for reordering or a change
 of view). With no groups it's one list of cards. Once there are groups it's
 `GroupSections`: a pinned `GroupBar` (a scroll-to-top button and a chip per group, with its
 count done today), the habits in no group, then a collapsible section per group; a chip jumps
@@ -236,9 +236,11 @@ in the header.
 `CalendarPanel`, an inline `DayEditor` and the quick-log. A card collapses (Compact) or expands
 to its heatmap (Calendar) via an `expanded` prop, animated with `grid-template-rows`. Collapsed,
 its quick-log shows only while `logOpen` or a timer of its runs (`isTiming`, so a running timer
-stays in sight), and a tap anywhere on the card outside it calls
-`onToggleLog`; the name is then a button inside the `h3` (the accordion pattern, so the card
-stays a heading), and a shut quick-log is `inert` and `aria-hidden`. A collapsed card done for
+stays in sight), and a tap anywhere on the card outside it (or the calendar, the day editor and
+the chevron) calls `onToggleLog`; the name is then a button inside the `h3` (the accordion
+pattern, so the card stays a heading). Under an open quick-log a chevron shows the calendar
+above it, and turns up to hide it again; shutting the quick-log puts the calendar away. A shut
+quick-log or calendar is `inert` and `aria-hidden`. A collapsed card done for
 now (`data-done`, `isDone`) is shaded in its colour. Under the name of a habit due less often
 than every day is how often and when the next log is due ("Every 2 days · due Sat", "due
 today" in its colour). The card
