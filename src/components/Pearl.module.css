@@ -1,0 +1,386 @@
+/* The pearl, in the bottom-right corner clear of the home indicator, and the
+   panel it opens out into. */
+
+/* Its colours, flat, one for each theme: in the dark a slate a little
+   lighter than the cards, with a light glyph */
+.pearl,
+.tint {
+  --pearl-fill: #363b48;
+  --pearl-rim: rgba(255, 255, 255, 0.1);
+  --pearl-ink: #e8eaf0;
+  --pearl-drop: rgba(0, 0, 0, 0.45);
+  --pearl-track: rgba(255, 255, 255, 0.14);
+}
+/* In the light a pale grey, its shadow lighter on the light page */
+:global([data-theme="light"]) .pearl,
+:global([data-theme="light"]) .tint {
+  --pearl-fill: #e3e5ec;
+  --pearl-rim: rgba(31, 35, 40, 0.08);
+  --pearl-ink: #2b2f38;
+  --pearl-drop: rgba(31, 35, 40, 0.2);
+  --pearl-track: rgba(0, 0, 0, 0.1);
+}
+
+.pearl {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 700;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 16px;
+  border: 1px solid var(--pearl-rim);
+  background: var(--pearl-fill);
+  color: var(--pearl-ink);
+  box-shadow: 0 4px 14px var(--pearl-drop);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+  animation: pearlIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  /* Its own layer in a page's slide: it stays put, its face cross-fading */
+  view-transition-name: pearl;
+}
+.pearl:active {
+  transform: scale(0.92);
+}
+.pearl:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 3px;
+}
+/* What it turns into in the panel: a key like the actions beside it */
+.pearl::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--c-bg);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+/* Over the scrim and the panel (and a minimised routine's pill) */
+.pearl.lifted {
+  z-index: 850;
+  transition:
+    transform 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.34s ease,
+    color 0.34s ease,
+    box-shadow 0.34s ease;
+}
+/* In the panel's corner, inside its border and padding */
+.pearl.docked {
+  transform: translate(-9px, -9px);
+  border-radius: 10px;
+  border-color: var(--c-border);
+  color: var(--c-text);
+  box-shadow: none;
+}
+.pearl.docked::before {
+  opacity: 1;
+}
+.pearl.docked:active {
+  transform: translate(-9px, -9px) scale(0.94);
+}
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.count {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ringTrack {
+  fill: none;
+  stroke: var(--pearl-track);
+  stroke-width: 3;
+}
+.ringFill {
+  fill: none;
+  stroke: var(--c-green4);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+@keyframes pearlIn {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fadeAway {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes riseIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+/* The panel opening out of the pearl, its bottom-right corner */
+@keyframes morphIn {
+  from {
+    clip-path: inset(calc(100% - 56px) 0 0 calc(100% - 56px) round 16px);
+  }
+  to {
+    clip-path: inset(0 round 16px);
+  }
+}
+@keyframes morphOut {
+  from {
+    clip-path: inset(0 round 16px);
+  }
+  to {
+    clip-path: inset(calc(100% - 56px) 0 0 calc(100% - 56px) round 16px);
+  }
+}
+
+/* Reordering: how, above the pearl */
+.hint {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: riseIn 0.2s ease both;
+}
+.hint svg {
+  margin: 0 !important;
+}
+
+/* Over everything else while the panel is open, a minimised routine's pill
+   included */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 840;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeIn 0.15s ease;
+}
+.scrim.out {
+  animation: fadeAway 0.26s ease both;
+  pointer-events: none;
+}
+
+/* The panel, opened out of the pearl, which stays in its bottom-right
+   corner: the view and Reorder, the places to jump to, then three actions */
+.panel {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 845;
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(
+    100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  overflow: hidden;
+  animation: morphIn 0.34s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.panel.out {
+  animation: morphOut 0.26s cubic-bezier(0.32, 0.72, 0, 1) both;
+  pointer-events: none;
+}
+/* The pearl's colour over it, fading as it opens and back as it shuts */
+.tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--pearl-fill);
+  animation: fadeAway 0.24s ease both;
+}
+.panel.out .tint {
+  animation: fadeIn 0.2s ease 0.06s both;
+}
+
+.top {
+  display: flex;
+  gap: 6px;
+  margin: 8px 8px 0;
+}
+.views {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+}
+.view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--c-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.view.on {
+  background: var(--c-surfaceLight);
+  color: var(--c-text);
+  font-weight: 600;
+}
+.reorder {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.view svg,
+.reorder svg,
+.rowIcon svg {
+  margin: 0 !important;
+}
+.view:focus-visible,
+.reorder:hover,
+.reorder:focus-visible {
+  outline: none;
+  border-color: var(--c-accent);
+  color: var(--c-text);
+}
+
+.label {
+  padding: 12px 14px 4px;
+  font-size: 10px;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 6px 6px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.row:hover,
+.row:focus-visible {
+  background: var(--c-surfaceLight);
+  outline: none;
+}
+.rowIcon {
+  flex: 0 0 18px;
+  display: flex;
+  justify-content: center;
+  color: var(--c-muted);
+}
+.rowName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.rowNote {
+  display: flex;
+  font-size: 11px;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+.rowNote.full {
+  color: var(--c-success);
+  font-weight: 600;
+}
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 56px;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--c-border);
+}
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 56px;
+  padding: 0 4px;
+  white-space: nowrap;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.action:hover,
+.action:focus-visible {
+  border-color: var(--c-accent);
+  outline: none;
+}
+.actionIcon {
+  display: flex;
+  height: 20px;
+  align-items: center;
+  color: var(--c-accent);
+}
