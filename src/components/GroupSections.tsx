@@ -12,6 +12,7 @@ import GroupBar from "./GroupBar";
 import HabitIcon from "./HabitIcon";
 import SortableHabits from "./SortableHabits";
 import { useLongPress } from "../hooks/useLongPress";
+import { sectionAnchor } from "../anchors";
 import type { GroupSection } from "../lib/groups";
 import type { Group, Habit } from "../types";
 import styles from "./GroupSections.module.css";
@@ -212,6 +213,7 @@ function Section({
   return (
     <section
       ref={ref}
+      id={sectionAnchor(group.id)}
       aria-label={name}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`${styles.section}${isDragging ? ` ${styles.dragging}` : ""}`}

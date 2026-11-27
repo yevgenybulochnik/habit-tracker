@@ -1,5 +1,5 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { createHabit, readStored } from "./helpers";
+import { createHabit, fromPearl, readStored } from "./helpers";
 import type { PersistedState } from "../src/types";
 
 // A phone's screen: the runner and the editor are laid out for one.
@@ -30,7 +30,7 @@ test("a routine is made, run through a reload, and logs to its habits", async ({
   await createHabit(page, "Plank", { metricName: "Minutes", unit: "min" });
 
   // Made: 12 push-ups at your own pace, a 30 s break, a minute of plank.
-  await page.getByTitle("Routines").click();
+  await fromPearl(page, "Routines");
   await page.getByRole("button", { name: /New Routine/ }).click();
   await page.getByLabel("Name").fill("Morning");
   const habitMenu = page.getByRole("button", { name: /^Habit:/ });
@@ -86,7 +86,7 @@ test("a run goes on minimised, while the habits fill in", async ({ page }) => {
   await page.clock.install({ time: new Date(2026, 4, 24, 9, 0) });
   await page.goto("/");
   await createHabit(page, "Plank", { metricName: "Minutes", unit: "min" });
-  await page.getByTitle("Routines").click();
+  await fromPearl(page, "Routines");
   await page.getByRole("button", { name: /New Routine/ }).click();
   await page.getByLabel("Name").fill("Quick plank");
   await page.getByRole("button", { name: "+ Habit" }).click();

@@ -4,6 +4,7 @@ import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
 import { isDone } from "./lib/cover";
 import { groupSections, ungroupedHabits } from "./lib/groups";
+import { jumps, type Jump } from "./lib/jumps";
 import {
   InvalidDataError,
   loadState,
@@ -26,10 +27,12 @@ import EditHabitPage from "./components/EditHabitPage";
 import SettingsPage from "./components/SettingsPage";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
+import Pearl from "./components/Pearl";
 import type { ClosePage } from "./components/PageShell";
 import Routines from "./components/Routines";
 import { slide } from "./slide";
-import type { Group, Habit, Unit } from "./types";
+import { cardAnchor, sectionAnchor } from "./anchors";
+import type { DashView, Group, Habit, Unit } from "./types";
 import styles from "./App.module.css";
 
 /** A page slid over the habits, in their place. */
@@ -173,6 +176,40 @@ export default function App() {
   // Done for now: logged today, or a log still covers today.
   const done = (h: Habit) => isDone(h, logs[h.id] ?? {}, units, today);
   const completed = habits.filter(done).length;
+  const canReorder = habits.length > 1 || groups.length > 1;
+
+  const setView = (view: DashView) => {
+    setOpenLog(null);
+    dispatch({ type: "config/update", changes: { dashView: view } });
+  };
+  const toggleReorder = () => {
+    setOpenLog(null);
+    setReorder((r) => !r);
+  };
+  // The pearl's jumps: to the top, to a group's section (unfolding it), or
+  // with no groups to a habit's card, its quick-log opened in Compact view.
+  const jumpTo = (j: Jump) => {
+    if (j.kind === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (j.kind === "group") {
+      if (j.group.collapsed)
+        dispatch({
+          type: "group/update",
+          id: j.group.id,
+          changes: { collapsed: false },
+        });
+      document
+        .getElementById(sectionAnchor(j.group.id))
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (dashView === "compact") setOpenLog(j.habit.id);
+    document
+      .getElementById(cardAnchor(j.habit.id))
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   if (loading)
     return (
@@ -278,29 +315,6 @@ export default function App() {
                   : "Start tracking"}
               </p>
             </div>
-            <div className={styles.headerActions}>
-              <button
-                onClick={() => openPage({ kind: "routines" })}
-                title="Routines"
-                className={styles.iconBtn}
-              >
-                <Icon name="stopwatch" size={18} />
-              </button>
-              <button
-                onClick={() => openPage({ kind: "settings" })}
-                title="Settings"
-                className={styles.iconBtn}
-              >
-                <Icon name="settings" size={18} />
-              </button>
-              <button
-                onClick={() => openPage({ kind: "newHabit" })}
-                className={styles.newBtn}
-              >
-                <span className={styles.newBtnPlus}>+</span>
-                <span className={styles.newBtnLabel}>New Habit</span>
-              </button>
-            </div>
           </div>
 
           {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}
@@ -312,52 +326,11 @@ export default function App() {
                 </div>
                 <div className={styles.emptyTitle}>No habits yet</div>
                 <div className={styles.emptyHint}>
-                  Click "New Habit" to start
+                  Tap the button in the corner, then New habit
                 </div>
               </div>
             ) : (
               <>
-                <div className={styles.controls}>
-                  {reorder ? (
-                    <span key="hint" className={styles.reorderHint}>
-                      Drag the ⠿ handles to reorder
-                    </span>
-                  ) : (
-                    <div key="views" className={styles.viewSeg}>
-                      {(
-                        [
-                          { id: "compact", label: "Compact" },
-                          { id: "calendar", label: "Calendar" },
-                        ] as const
-                      ).map((v) => (
-                        <button
-                          key={v.id}
-                          onClick={() => {
-                            setOpenLog(null);
-                            dispatch({
-                              type: "config/update",
-                              changes: { dashView: v.id },
-                            });
-                          }}
-                          className={`${styles.viewBtn}${dashView === v.id ? ` ${styles.on}` : ""}`}
-                        >
-                          {v.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {(habits.length > 1 || groups.length > 1) && (
-                    <button
-                      onClick={() => {
-                        setOpenLog(null);
-                        setReorder((r) => !r);
-                      }}
-                      className={`${styles.reorderBtn}${reorder ? ` ${styles.on}` : ""}`}
-                    >
-                      {reorder ? "Done" : "⠿ Reorder"}
-                    </button>
-                  )}
-                </div>
                 <DispatchContext.Provider value={dispatch}>
                   {groups.length > 0 ? (
                     <GroupSections
@@ -468,6 +441,27 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* The way to everything else, in the corner */}
+      {!away && (
+        <Pearl
+          done={completed}
+          total={habits.length}
+          jumps={jumps(habits, groups, done)}
+          onJump={jumpTo}
+          view={dashView}
+          onView={setView}
+          canReorder={canReorder}
+          reordering={reorder}
+          onReorder={toggleReorder}
+          onNewHabit={() => openPage({ kind: "newHabit" })}
+          onRoutines={() => openPage({ kind: "routines" })}
+          onSettings={() => openPage({ kind: "settings" })}
+          onPage={false}
+          onBack={() => closePage()}
+          theme={theme}
+        />
+      )}
     </div>
   );
 }

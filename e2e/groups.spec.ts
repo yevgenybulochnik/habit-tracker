@@ -1,5 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
-import { createHabit, groupChip, sectionNames, slideDone } from "./helpers";
+import {
+  createHabit,
+  fromPearl,
+  groupChip,
+  sectionNames,
+  slideDone,
+} from "./helpers";
 
 /** Hold `name`'s chip (or a section header) long enough to edit its group. */
 async function holdToEdit(page: Page, target: ReturnType<Page["locator"]>) {
@@ -48,7 +54,7 @@ test("groups reorder from a chip with the keyboard, and the order persists", asy
   await createHabit(page, "Run", { group: "Fitness" });
   expect(await sectionNames(page)).toEqual(["Music", "Fitness"]);
 
-  await page.getByRole("button", { name: /Reorder/ }).click();
+  await fromPearl(page, "Reorder");
   // The keyboard sensor, the accessible path: pick Fitness up, move it left.
   // Small waits between keys: dnd-kit measures layout asynchronously.
   await groupChip(page, "Fitness").focus();
@@ -164,7 +170,7 @@ test("the icon grids fit their form on an iPhone 13's screen", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByRole("button", { name: /^Group:/ }).click();
   await page.getByRole("option", { name: "+ New group…" }).click();
 
