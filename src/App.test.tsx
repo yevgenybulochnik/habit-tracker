@@ -520,9 +520,8 @@ describe("App groups", () => {
     expect(
       water.compareDocumentPosition(music) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      screen.getByRole("navigation", { name: "Groups" }),
-    ).toBeInTheDocument();
+    // No bar of chips above them: the pearl jumps to the groups
+    expect(screen.queryByRole("navigation", { name: "Groups" })).toBeNull();
   });
 
   it("shows one habit's quick-log at a time, in a group or not", async () => {
@@ -577,7 +576,7 @@ describe("App groups", () => {
     );
   });
 
-  it("shows the plain list, with no group bar, while there are no groups", async () => {
+  it("shows the plain list, with no sections, while there are no groups", async () => {
     mockLoad.mockResolvedValue({
       ...grouped,
       habits: grouped.habits.map(({ groupId: _, ...h }) => h),
@@ -612,8 +611,8 @@ describe("App groups", () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);
 
-    const nav = await screen.findByRole("navigation", { name: "Groups" });
-    await holdToEdit(within(nav).getByRole("button", { name: /Music/ }));
+    const music = await screen.findByRole("region", { name: "Music" });
+    await holdToEdit(within(music).getByRole("button", { name: /Music/ }));
     const name = screen.getByRole("textbox", { name: "Group name" });
     await userEvent.clear(name);
     await userEvent.type(name, "Practice");

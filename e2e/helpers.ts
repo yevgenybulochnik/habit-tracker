@@ -103,10 +103,10 @@ async function chooseGroup(page: Page, name: string) {
   }
 }
 
-/** The group bar's chip for the group named `name`. */
-export function groupChip(page: Page, name: string) {
+/** The header of the section for the group named `name`. */
+export function sectionHead(page: Page, name: string) {
   return page
-    .getByRole("navigation", { name: "Groups" })
+    .getByRole("region", { name })
     .getByRole("button", { name: new RegExp(name) });
 }
 

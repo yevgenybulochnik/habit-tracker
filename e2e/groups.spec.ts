@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   createHabit,
   fromPearl,
-  groupChip,
+  sectionHead,
   sectionNames,
   slideDone,
 } from "./helpers";
@@ -31,7 +31,7 @@ test("a habit made in a new group shows in its section, also after a reload", as
     "Piano",
     "Guitar",
   ]);
-  await expect(groupChip(page, "Music")).toContainText("0/2");
+  await expect(sectionHead(page, "Music")).toContainText("0/2");
   // Water is in no group: above the sections, not in one.
   await expect(
     page.getByRole("region").getByRole("heading", { name: "Water" }),
@@ -46,7 +46,7 @@ test("a habit made in a new group shows in its section, also after a reload", as
   ).toHaveText(["Piano", "Guitar"]);
 });
 
-test("groups reorder from a chip with the keyboard, and the order persists", async ({
+test("groups reorder from a section's header with the keyboard, and the order persists", async ({
   page,
 }) => {
   await page.goto("/");
@@ -55,12 +55,12 @@ test("groups reorder from a chip with the keyboard, and the order persists", asy
   expect(await sectionNames(page)).toEqual(["Music", "Fitness"]);
 
   await fromPearl(page, "Reorder");
-  // The keyboard sensor, the accessible path: pick Fitness up, move it left.
+  // The keyboard sensor, the accessible path: pick Fitness up, move it up.
   // Small waits between keys: dnd-kit measures layout asynchronously.
-  await groupChip(page, "Fitness").focus();
+  await sectionHead(page, "Fitness").focus();
   await page.keyboard.press("Space");
   await page.waitForTimeout(150);
-  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowUp");
   await page.waitForTimeout(150);
   await page.keyboard.press("Space");
 
@@ -72,14 +72,14 @@ test("groups reorder from a chip with the keyboard, and the order persists", asy
   await expect.poll(() => sectionNames(page)).toEqual(["Fitness", "Music"]);
 });
 
-test("holding a chip edits its group; deleting the group keeps its habits", async ({
+test("holding a section's header edits its group; deleting the group keeps its habits", async ({
   page,
 }) => {
   await page.goto("/");
   await createHabit(page, "Piano", { group: "Music" });
   await createHabit(page, "Water");
 
-  await holdToEdit(page, groupChip(page, "Music"));
+  await holdToEdit(page, sectionHead(page, "Music"));
   await page.getByRole("textbox", { name: "Group name" }).fill("Practice");
   await page.getByRole("checkbox", { name: /Water/ }).check();
   await page.getByRole("button", { name: "Save" }).click();
@@ -93,7 +93,6 @@ test("holding a chip edits its group; deleting the group keeps its habits", asyn
   await page.getByRole("button", { name: "Delete group" }).click();
   await page.getByRole("button", { name: "Delete Group" }).click();
   await expect(page.getByRole("region")).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Groups" })).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 3 })).toHaveText([
     "Piano",
     "Water",
@@ -155,9 +154,9 @@ test("releasing a touch hold doesn't tap the editor it opened", async ({
   );
   await slideDone(page);
 
-  // A group chip
+  // A group's section header
   const before = await clicks();
-  await touchHold((await groupChip(page, "Music").boundingBox())!);
+  await touchHold((await sectionHead(page, "Music").boundingBox())!);
   await expect(
     page.getByRole("heading", { name: "Edit Group", level: 1 }),
   ).toBeVisible();

@@ -1,7 +1,7 @@
 .section {
   position: relative;
-  /* A chip jump lands the header just under the pinned bar. */
-  scroll-margin-top: calc(var(--bar-h, 52px) + env(safe-area-inset-top));
+  /* A jump from the pearl lands the header a little below the top. */
+  scroll-margin-top: calc(12px + env(safe-area-inset-top));
   margin-bottom: 6px;
   /* Opaque, so a dragged section covers the ones it passes. */
   background: var(--c-bg);
