@@ -324,19 +324,17 @@ export default function App() {
           )}
 
           <div className={away ? styles.away : undefined}>
-            {/* Header */}
+            {/* Header: the title, and today's count on the same line */}
             <div className={`stagger-child ${styles.header}`}>
-              <div>
-                <h1 className={styles.title}>
-                  <BrandMark />
-                  Habits
-                </h1>
-                <p className={styles.subtitle}>
-                  {habits.length > 0
-                    ? `${completed}/${habits.length} completed today`
-                    : "Start tracking"}
-                </p>
-              </div>
+              <h1 className={styles.title}>
+                <BrandMark />
+                Habits
+              </h1>
+              <p className={styles.subtitle}>
+                {habits.length > 0
+                  ? `${completed}/${habits.length} completed today`
+                  : "Start tracking"}
+              </p>
             </div>
 
             {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}

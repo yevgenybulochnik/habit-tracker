@@ -128,3 +128,18 @@ test("reordering from the pearl, it's Done, with how to reorder above it", async
   await expect(hint).toHaveCount(0);
   await expect(pearl(page, "Menu")).toBeVisible();
 });
+
+test("the header has today's count on the title's line, now it has no buttons", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await createHabit(page, "Water");
+  const title = (await page
+    .getByRole("heading", { name: "Habits", level: 1 })
+    .boundingBox())!;
+  const count = (await page.getByText("0/1 completed today").boundingBox())!;
+  // Level with the title, to its right
+  expect(count.y + count.height / 2).toBeGreaterThan(title.y);
+  expect(count.y + count.height / 2).toBeLessThan(title.y + title.height);
+  expect(count.x).toBeGreaterThan(title.x + title.width);
+});
