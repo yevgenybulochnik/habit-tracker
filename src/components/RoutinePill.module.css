@@ -1,6 +1,7 @@
 .pill {
   position: fixed;
-  right: calc(16px + env(safe-area-inset-right));
+  /* Beside the pearl */
+  right: calc(84px + env(safe-area-inset-right));
   bottom: calc(16px + env(safe-area-inset-bottom));
   z-index: 800;
   display: flex;

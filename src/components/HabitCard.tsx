@@ -12,6 +12,7 @@ import QuickLogSection from "./QuickLogSection";
 import DayEditor from "./DayEditor";
 import { useHabitActions } from "../hooks/useHabitActions";
 import { useLongPress } from "../hooks/useLongPress";
+import { cardAnchor } from "../anchors";
 import type { DragActivator } from "./SortableHabitCard";
 import styles from "./HabitCard.module.css";
 import HabitIcon from "./HabitIcon";
@@ -235,6 +236,7 @@ export default function HabitCard({
 
   return (
     <div
+      id={cardAnchor(habit.id)}
       className={`${styles.card}${effExpanded ? "" : ` ${styles.compact}`}${tappable ? ` ${styles.tappable}` : ""}${dragging ? ` ${styles.dragging}` : ""}`}
       style={palVars}
       data-done={done || undefined}

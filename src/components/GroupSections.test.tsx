@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import GroupSections from "./GroupSections";
 import { groupSections, ungroupedHabits } from "../lib/groups";
+import { sectionAnchor } from "../anchors";
 import type { Group, Habit } from "../types";
 
 function habit(id: string, groupId?: string): Habit {
@@ -73,37 +74,30 @@ function renderSections(
 const draggables = (container: HTMLElement) =>
   Array.from(container.querySelectorAll('[aria-roledescription="sortable"]'));
 
-const chip = (name: RegExp) =>
-  within(screen.getByRole("navigation", { name: "Groups" })).getByRole(
-    "button",
-    { name },
-  );
 /** A section's header: the button inside the section named `name`. */
 const header = (name: string) =>
   within(screen.getByRole("region", { name })).getByRole("button", {
     name: new RegExp(name),
   });
 
-beforeEach(() => {
-  // jsdom doesn't scroll
-  Element.prototype.scrollIntoView = vi.fn();
-  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe("GroupSections", () => {
-  it("shows the bar, then the ungrouped habits, then each group's section", () => {
+  it("shows the ungrouped habits, then each group's section, with no bar", () => {
     const { container } = renderSections();
     const text = container.textContent ?? "";
     const at = (s: string) => text.indexOf(s);
-    expect(at("Water")).toBeGreaterThan(-1);
-    // The bar's chips come first, then Water, then the Music section.
-    expect(at("Water")).toBeGreaterThan(at("Fitness"));
-    expect(at("Piano")).toBeGreaterThan(at("Water"));
+    expect(at("Water")).toBe(0);
+    expect(at("Music")).toBeGreaterThan(at("Water"));
+    expect(at("Piano")).toBeGreaterThan(at("Music"));
     expect(at("Run")).toBeGreaterThan(at("Guitar"));
+    expect(screen.queryByRole("navigation")).toBeNull();
+  });
+
+  it("gives each section an id, for the pearl to jump to", () => {
+    renderSections();
+    expect(screen.getByRole("region", { name: "Fitness" })).toHaveAttribute(
+      "id",
+      sectionAnchor("g2"),
+    );
   });
 
   it("puts each habit under its group's header", () => {
@@ -125,11 +119,10 @@ describe("GroupSections", () => {
     ).toEqual(["Run"]);
   });
 
-  it("counts each group's habits done today, on its chip and its header", () => {
+  it("counts each group's habits done today, on its header", () => {
     renderSections();
-    expect(chip(/Music/)).toHaveTextContent("1/2");
-    expect(chip(/Fitness/)).toHaveTextContent("1/1");
     expect(header("Music")).toHaveTextContent("1/2");
+    expect(header("Fitness")).toHaveTextContent("1/1");
   });
 
   it("says when a group has no habits yet", () => {
@@ -152,47 +145,17 @@ describe("GroupSections", () => {
     expect(onToggle).toHaveBeenCalledWith("g2", false);
   });
 
-  it("jumps to a group's section from its chip, opening it if shut", async () => {
-    const { onToggle } = renderSections([
-      music,
-      { ...fitness, collapsed: true },
-    ]);
-    await userEvent.click(chip(/Fitness/));
-    expect(onToggle).toHaveBeenCalledWith("g2", false);
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
-    expect(chip(/Fitness/)).toHaveAttribute("aria-current", "true");
-  });
-
-  it("doesn't fold an open section when its chip is tapped", async () => {
-    const { onToggle } = renderSections();
-    await userEvent.click(chip(/Music/));
-    expect(onToggle).not.toHaveBeenCalled();
-  });
-
-  it("scrolls back to the top from the ↑ button", async () => {
-    renderSections();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Scroll to top" }),
-    );
-    expect(window.scrollTo).toHaveBeenCalledWith({
-      top: 0,
-      behavior: "smooth",
-    });
-  });
-
   describe("reorder mode", () => {
     it("has nothing to drag outside it", () => {
       const { container } = renderSections();
       expect(draggables(container)).toEqual([]);
     });
 
-    it("picks a group up by its chip or its section's header", () => {
+    it("picks a group up by its section's header", () => {
       const { container } = renderSections([music, fitness], habits, {
         reorder: true,
       });
       expect(draggables(container)).toEqual([
-        chip(/Music/),
-        chip(/Fitness/),
         header("Music"),
         header("Fitness"),
       ]);
@@ -202,12 +165,6 @@ describe("GroupSections", () => {
       renderSections([music, fitness], habits, { reorder: true });
       expect(header("Music")).toHaveTextContent("⠿");
       expect(header("Music")).not.toHaveTextContent("▾");
-    });
-
-    it("still jumps to a section from its chip", async () => {
-      renderSections([music, fitness], habits, { reorder: true });
-      await userEvent.click(chip(/Fitness/));
-      expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
     });
   });
 
@@ -221,12 +178,6 @@ describe("GroupSections", () => {
       fireEvent.mouseUp(el);
     };
 
-    it("edits a group when its chip is held", () => {
-      const { onEditGroup } = renderSections();
-      hold(chip(/Fitness/));
-      expect(onEditGroup).toHaveBeenCalledWith("g2");
-    });
-
     it("edits a group when its section header is held", () => {
       const { onEditGroup, onToggle } = renderSections();
       hold(header("Music"));
@@ -236,9 +187,9 @@ describe("GroupSections", () => {
 
     it("doesn't edit on a short press", () => {
       const { onEditGroup } = renderSections();
-      fireEvent.mouseDown(chip(/Music/));
+      fireEvent.mouseDown(header("Music"));
       act(() => vi.advanceTimersByTime(300));
-      fireEvent.mouseUp(chip(/Music/));
+      fireEvent.mouseUp(header("Music"));
       act(() => vi.advanceTimersByTime(500));
       expect(onEditGroup).not.toHaveBeenCalled();
     });
@@ -247,7 +198,6 @@ describe("GroupSections", () => {
       const { onEditGroup } = renderSections([music, fitness], habits, {
         reorder: true,
       });
-      hold(chip(/Music/));
       hold(header("Music"));
       expect(onEditGroup).not.toHaveBeenCalled();
     });

@@ -4,6 +4,26 @@
 const PATHS = {
   down: <path d="M6 9l6 6 6-6" fill="none" />,
   left: <path d="M15 5l-7 7 7 7" fill="none" />,
+  arrowLeft: <path d="M19 12H5M11 6l-6 6 6 6" fill="none" />,
+  up: <path d="M12 19V5M6 11l6-6 6 6" fill="none" />,
+  plus: <path d="M12 5v14M5 12h14" fill="none" />,
+  close: <path d="M6 6l12 12M18 6L6 18" fill="none" />,
+  // Four dots: the pearl's menu
+  menu: (
+    <g stroke="none">
+      {[7, 17].map((x) =>
+        [7, 17].map((y) => <circle key={`${x}${y}`} cx={x} cy={y} r="2.4" />),
+      )}
+    </g>
+  ),
+  // The habits' views: Compact, its cards down to their headers, and Calendar
+  list: <path d="M5 7h14M5 12h14M5 17h14" fill="none" />,
+  calendar: (
+    <g fill="none">
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M4 10h16M9 3v4M15 3v4" />
+    </g>
+  ),
   grip: (
     <g stroke="none">
       {[6, 12, 18].map((y) => (

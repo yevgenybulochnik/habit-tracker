@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { PageBackWrapper, back } from "../test/pageBack";
 import SettingsPage from "./SettingsPage";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "../lib/defaults";
 import { SCHEMA_VERSION } from "../lib/normalize";
@@ -60,6 +61,7 @@ function renderPage(onImportState = vi.fn(), state = sample) {
       onImportState={onImportState}
       onClose={onClose}
     />,
+    { wrapper: PageBackWrapper },
   );
   return { onImportState, onClose };
 }
@@ -88,7 +90,7 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    back();
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 });

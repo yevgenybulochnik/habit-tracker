@@ -82,7 +82,8 @@ the rings round what a log covers), `storage` (IndexedDB via
 `idb-keyval`), `normalize` (`normalizeState`: any stored or imported data → complete,
 current-format state), `state` (the app's reducer, below), `groups` (habits split into group
 sections: `groupSections`, `ungroupedHabits`, and `setMembers` for a group's habits),
-`calendarNav` (a card's calendar
+`jumps` (where the pearl's menu jumps to: the top, then each group with its count done, or
+with no groups each habit), `calendarNav` (a card's calendar
 navigation, `navigate` over `{ offset, zoomed, view }`), `units` (parsing and validating a
 unit form: `buildUnit`), `ids` (`newId`), `icons` (the icons a habit or group can have, by
 id, in the pickers' sections, and `iconForEmoji` for data from before them), the routines' three (below: `routines`,
@@ -96,8 +97,9 @@ enforces the purity: a lib module may import only other lib modules, `../types`,
 CSS-variable tokens, `THEME_CSS`, the palettes + `resolvePalette`, the font `F`) and
 `src/globalCss.ts` (`CSS`). `src/download.ts` (`downloadJson`) is the shared file-download
 helper; it needs the DOM, so it isn't in lib, and so are `src/slide.ts` (`slide`, the
-sideways page change, a view transition whose keyframes are in `globalCss`) and `src/cues.ts`
-(a routine's sounds and buzzes). Anything used by a single component sits with
+sideways page change, a view transition whose keyframes are in `globalCss`), `src/cues.ts`
+(a routine's sounds and buzzes) and `src/anchors.ts` (the ids the pearl jumps to: a group's
+section, a habit's card). Anything used by a single component sits with
 it (the d3 easing `D3E` inside `CalendarPanel`).
 
 **Icons are drawn, not emoji:** an emoji, or a symbol the font may lack (⚙ ▶ ✎), comes out
@@ -129,8 +131,9 @@ habit due every day that's today or yesterday, as streaks always were. So each l
 the streak for a period from its day: its **block** (`lib/cover`'s `coverBlocks`, up to the
 next log if that's sooner; a day in none is where a streak broke). From the last log follow
 `nextDue` (the day the next log is due by) and `isDone`, **done for now**: a log still covers
-today. That's what "done" means everywhere (a card's shading, the header's count, a group's
-chip); for a habit due every day it's logged today.
+today. That's what "done" means everywhere (a card's shading, the header's count and the
+pearl's, a group's in its header and the pearl's menu); for a habit due every day it's logged
+today.
 
 **Groups.** `PersistedState.groups` lists the `Group`s (`id`, `name`, `icon`, `collapsed`)
 in display order, and a habit names its group with an optional `groupId`: absent means it's in
@@ -199,37 +202,51 @@ normalized, `loadState` copies it to the `habit-tracker-recovery` key and reject
 `InvalidDataError`; `App` then shows its load-error screen (where saving is blocked) with a
 "Download raw data" button. There is no external state library and no backend. The dashboard
 is a **single view** (no Log Entry tab) with a persisted `appConfig.dashView` (`compact` |
-`calendar`) toggle. Compact (the default; it replaced a Quick view, and a stored `quick` reads
+`calendar`), switched in the pearl's menu. Compact (the default; it replaced a Quick view, and a stored `quick` reads
 as it) shows each card down to its header, as reordering does: tapping a card opens its
 quick-log (and a chevron under that its calendar), and `App` keeps one open at a time (`openLog`, shut again for reordering or a change
 of view). With no groups it's one list of cards. Once there are groups it's
-`GroupSections`: a pinned `GroupBar` (a scroll-to-top button and a chip per group, with its
-count done today), the habits in no group, then a collapsible section per group; a chip jumps
-to its section and the chip of the section under the bar is highlighted. Each list of cards
+`GroupSections`: the habits in no group, then a collapsible section per group (its header
+says how many are done today). Each list of cards
 (`renderList` in `App`) is its own `SortableHabits` drag context, so reorder mode moves a card
-within its list, and a group by its chip (sideways) or its section's header. Holding a chip or
-a header opens `GroupEditPage` (name, icon, its habits as a checklist, delete).
+within its list, and a group by its section's header. Holding a section's header opens
+`GroupEditPage` (name, icon, its habits as a checklist, delete).
+
+**The pearl (`Pearl`).** A square button in the bottom-right corner, over everything but a
+routine's run, in a flat colour for each theme, with today's progress on its face (a count and
+a ring round its edge). It's the way to everything besides the habits: the header has only the
+title and today's count. A tap opens it out into its panel (a `clip-path` animation from its
+corner, the panel taking the pearl's colour as it grows): the habits' view (Compact or
+Calendar) and Reorder, the places to jump to (`lib/jumps`, through `App`'s `jumpTo`: the top,
+a group's section, unfolded if folded and scrolled to again once it has, or with no groups a
+habit's card, its quick-log opened in Compact), then New habit, Routines and Settings. The
+pearl stays in the panel's corner as the key that shuts it; a tap outside or Escape shuts it
+too. While reordering it's Done (a check), with how to reorder above it rather than in the
+page, so nothing moves. On a page it's the back arrow, staying put through the slide
+(`view-transition-name`). The habits leave room at their end to scroll above it, and a
+minimised routine's pill sits beside it.
 
 **Pages.** Every screen besides the habits is a page that slides in over them (`slide`, a view
 transition); the app has no dialogs. `App` holds the open `page` (the Routines page,
-`NewHabitPage`, `EditHabitPage` held from a card, `GroupEditPage` held from a chip or section
-header, or `SettingsPage` from the header's ⚙), and
+`NewHabitPage` and `SettingsPage` from the pearl, `EditHabitPage` held from a card, or
+`GroupEditPage` held from a section header), and
 `openPage`/`closePage` do the slide and the scroll. The habits stay mounted underneath with the
 `.away` class (hidden and taking no height, not `display: none`, so cards keep their state) and
 get their scroll position back on the way back. A page is a `PageShell` (`PageHeader`, with the
-way back and the title as the page's `h1`, then a panel); a form closes through
+title as the page's `h1`, then a panel). It has no back button: `PageHeader` gives its `onBack`
+to the pearl through `PageBackContext`, and the pearl takes the latest given, the page on top
+(a routine's editor over the routines). A form closes through
 `ClosePage(then?)`, where `then` (the save, delete or import) runs as the page slides back, so
 the habits come back already showing it. A form's footer and its buttons come from
 `formActions.module.css`.
 
-**The Routines page.** The header's stopwatch opens the Routines page (`RoutinesView`: the
+**The Routines page.** The pearl's Routines opens the Routines page (`RoutinesView`: the
 list, and `RoutineEditor` as a page of its own). `Routines`, mounted for as long as
 `App` is, holds the engine (`useRoutineRun`) and shows the page while it's open and a run over
 everything: `RoutineRunner` full screen (the `RoutineRing` timeline ring, the controls, and the
 log, a section per habit as the run reaches it: a counted one asks for its count, the others
 show what they logged, to change or take back; at the end a Done button closes the run), or
-minimised to `RoutinePill` in the corner. Under 440px New Habit shrinks to its "+" to make room
-in the header.
+minimised to `RoutinePill` in the corner, beside the pearl.
 
 **The habit card (`HabitCard`).** Each habit is a `HabitCard`: a header (hold-to-edit via
 `useLongPress`, the drag region in reorder mode, stats), a collapsible body holding its
@@ -276,11 +293,13 @@ Icons are picked from a grid, the shared `IconPicker` (the habit form's, and a g
 habit form's Group) is an `IconSelect`, not a `<select>`, whose menu can only be text: a field
 that opens its list in place under it (the listbox pattern), each option with its icon. The
 other menus (units, times) stay native.
-Hold-to-edit (`useLongPress`, on cards, group chips and section headers) is cancelled by a
+Hold-to-edit (`useLongPress`, on cards and section headers) is cancelled by a
 finger moving more than 10px, and after a hold fires it prevents the release's click (a touch's,
 and a mouse's, which would also open a Compact card's quick-log): the editor it opened is under
 the finger. While a slide runs, a touch or click lands on the page as a
-whole, so E2E specs wait for it with `slideDone` (`createHabit` does).
+whole, so E2E specs wait for it with `slideDone` (`createHabit` does). E2E specs reach the
+pages, the view and Reorder through the pearl (`fromPearl`, `pearlMenu`); a component test
+goes back from a page as the pearl does (`test/pageBack`).
 Components send edits up from their **event handlers, not from effects** watching local state:
 `DayEditor` writes each edit as it's made (mounting writes nothing, even under StrictMode's
 double effects), and `SetInput` derives its carried-over weight from the latest set instead of

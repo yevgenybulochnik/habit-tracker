@@ -4,6 +4,17 @@ import { expect, type Page } from "@playwright/test";
 // reusable by any screenshot/automation script), so the navigation logic lives
 // in one place.
 
+/** The pearl's menu, open. */
+export function pearlMenu(page: Page) {
+  return page.getByRole("group", { name: "Menu", exact: true });
+}
+
+/** Open the pearl's menu, then pick `name` in it. */
+export async function fromPearl(page: Page, name: string) {
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await pearlMenu(page).getByRole("button", { name, exact: true }).click();
+}
+
 /**
  * Create a single-metric habit via the New Habit page.
  * Defaults to a "Reps" metric; pass `unit` (e.g. "min") to pick a different unit,
@@ -25,7 +36,7 @@ export async function createHabit(
     every?: { n: number; unit: "day" | "week" };
   } = {},
 ) {
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByPlaceholder(/Morning Workout/i).fill(name);
   if (group) await chooseGroup(page, group);
   await page.getByPlaceholder(/Metric name/i).fill(metricName);
@@ -92,10 +103,10 @@ async function chooseGroup(page: Page, name: string) {
   }
 }
 
-/** The group bar's chip for the group named `name`. */
-export function groupChip(page: Page, name: string) {
+/** The header of the section for the group named `name`. */
+export function sectionHead(page: Page, name: string) {
   return page
-    .getByRole("navigation", { name: "Groups" })
+    .getByRole("region", { name })
     .getByRole("button", { name: new RegExp(name) });
 }
 
@@ -107,18 +118,19 @@ export function sectionNames(page: Page) {
 }
 
 export async function openSettings(page: Page) {
-  await page.getByTitle("Settings").click();
+  await fromPearl(page, "Settings");
 }
 
-/** Switch the dashboard view via the Compact/Calendar toggle. */
+/** Switch the dashboard view from the pearl's menu, then shut it. */
 export async function setDashView(page: Page, view: "compact" | "calendar") {
-  await page
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await pearlMenu(page)
     .getByRole("button", {
       name: view === "calendar" ? "Calendar" : "Compact",
-      // Not an open card's "Show calendar"
       exact: true,
     })
     .click();
+  await page.getByRole("button", { name: "Close menu" }).click();
 }
 
 export async function setTheme(page: Page, theme: "dark" | "light") {

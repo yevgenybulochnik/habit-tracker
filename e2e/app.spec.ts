@@ -7,6 +7,8 @@ import {
   setTheme,
   deleteHabit,
   setDashView,
+  fromPearl,
+  pearlMenu,
   writeStored,
   readStored,
   dayCell,
@@ -54,7 +56,7 @@ test("a form's disabled button stays readable in both themes", async ({
   await page.goto("/");
   for (const theme of ["dark", "light"] as const) {
     await setTheme(page, theme);
-    await page.getByRole("button", { name: /New Habit/i }).click();
+    await fromPearl(page, "New habit");
     // Nothing named yet, so Create can't be pressed.
     const create = page.getByRole("button", { name: /^Create$/ });
     await expect(create).toBeDisabled();
@@ -86,7 +88,9 @@ test("smoke: app shell and PWA assets load", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: /habits/i, level: 1 }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: /New Habit/i })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Menu", exact: true }),
+  ).toBeVisible();
 
   // Manifest is served
   const manifest = await page.request.get("/manifest.webmanifest");
@@ -291,7 +295,7 @@ test("reordering a habit card persists the new order", async ({ page }) => {
 
   // Enter reorder mode → the draggable header regions appear (cards condense;
   // the collapse is an overflow-clip animation Playwright can't assert hidden).
-  await page.getByRole("button", { name: /Reorder/ }).click();
+  await fromPearl(page, "Reorder");
   await expect(handles).toHaveCount(2);
 
   // Reorder via the keyboard sensor (also the accessible path): focus Beta's
@@ -329,7 +333,7 @@ test("touch-dragging a card by its name (not the grip) reorders", async ({
   await page.goto("/");
   await createHabit(page, "Alpha");
   await createHabit(page, "Beta");
-  await page.getByRole("button", { name: /Reorder/ }).click();
+  await fromPearl(page, "Reorder");
 
   const beta = await page
     .getByRole("heading", { name: "Beta", level: 3 })
@@ -378,7 +382,7 @@ test("a habit created without a metric is a daily check-off that persists", asyn
 }) => {
   await page.goto("/");
   // Create with just a name — no metric added.
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByPlaceholder(/Morning Workout/i).fill("Meditate");
   await page.getByRole("button", { name: /^Create$/ }).click();
   await expect(
@@ -475,14 +479,18 @@ test("reorder edge cases: toggle hidden with 1 habit; long-press inert in reorde
 }) => {
   await page.goto("/");
   await createHabit(page, "Alpha");
-  // With only one habit, there's nothing to reorder — toggle isn't shown.
-  await expect(page.getByRole("button", { name: /Reorder/ })).toHaveCount(0);
+  // With only one habit, there's nothing to reorder — the pearl offers none.
+  const reorder = pearlMenu(page).getByRole("button", { name: "Reorder" });
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(reorder).toHaveCount(0);
+  await page.getByRole("button", { name: "Close menu" }).click();
 
   await createHabit(page, "Beta");
-  await expect(page.getByRole("button", { name: /Reorder/ })).toBeVisible();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(reorder).toBeVisible();
 
   // Enter reorder mode and confirm hold-to-edit is disabled (no Edit Habit page).
-  await page.getByRole("button", { name: /Reorder/ }).click();
+  await reorder.click();
   await page
     .getByRole("heading", { name: "Alpha", level: 3 })
     .dispatchEvent("mousedown");
@@ -496,7 +504,7 @@ test("sets-mode habit: create, log a set, persists across reload", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByPlaceholder(/Morning Workout/i).fill("Bench");
   await page.getByPlaceholder(/Metric name/i).fill("Press");
   // Flip the metric to sets mode (Weighted preset is the default).
@@ -528,7 +536,7 @@ test("a weighted-sets day is shaded by its volume, from light to heavy", async (
 }) => {
   await page.clock.install({ time: new Date(2026, 4, 24, 12, 0) });
   await page.goto("/");
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByPlaceholder(/Morning Workout/i).fill("Bench");
   await page.getByPlaceholder(/Metric name/i).fill("Press");
   await page.getByRole("button", { name: /Enable sets mode/i }).click();
@@ -614,7 +622,7 @@ test("custom unit in Settings is usable by a new habit", async ({ page }) => {
   await page.getByRole("button", { name: "Done" }).click();
 
   // Create a habit that uses the custom unit.
-  await page.getByRole("button", { name: /New Habit/i }).click();
+  await fromPearl(page, "New habit");
   await page.getByPlaceholder(/Morning Workout/i).fill("Weighty");
   await page.getByPlaceholder(/Metric name/i).fill("Weight");
   await page.getByRole("combobox", { name: "Unit" }).selectOption("lbs2");
@@ -686,7 +694,9 @@ test("unreadable stored data: the error screen offers it as a download and a rec
 
   // The error screen replaces the dashboard, so nothing can save over the data
   await expect(page.getByText(/Couldn't open your data/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: /New Habit/i })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Menu", exact: true }),
+  ).toHaveCount(0);
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download raw data" }).click();

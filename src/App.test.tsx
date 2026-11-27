@@ -27,6 +27,15 @@ vi.mock("./lib/storage", async (importOriginal) => ({
 const mockLoad = vi.mocked(loadState);
 const mockSave = vi.mocked(saveState);
 
+/** The pearl's menu, open. */
+const pearlMenu = () => within(screen.getByRole("group", { name: "Menu" }));
+
+/** Open the pearl's menu, then pick `name` in it. */
+async function fromPearl(name: string) {
+  await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+  await userEvent.click(pearlMenu().getByRole("button", { name }));
+}
+
 /** In the open habit form, choose the group menu's option named `name`. */
 async function chooseGroup(name: string) {
   await userEvent.click(screen.getByRole("button", { name: /^Group:/ }));
@@ -57,7 +66,7 @@ describe("App load errors", () => {
     // save an empty state over the real data.
     expect(screen.queryByText(/No habits yet/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /New Habit/i }),
+      screen.queryByRole("button", { name: "Menu" }),
     ).not.toBeInTheDocument();
     expect(mockSave).not.toHaveBeenCalled();
   });
@@ -161,7 +170,7 @@ describe("App saves", () => {
   };
 
   async function switchToTheme(theme: "Light" | "Dark") {
-    await userEvent.click(await screen.findByTitle("Settings"));
+    await fromPearl("Settings");
     await userEvent.click(screen.getByRole("button", { name: theme }));
     await waitFor(() => expect(mockSave).toHaveBeenCalled());
     return mockSave.mock.lastCall![0];
@@ -249,7 +258,7 @@ describe("App changes to habits", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    await userEvent.click(await screen.findByTitle("Settings"));
+    await fromPearl("Settings");
     expect(
       screen.getByRole("heading", { name: "Settings", level: 1 }),
     ).toBeInTheDocument();
@@ -262,14 +271,12 @@ describe("App changes to habits", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: /New Habit/i }),
-    );
+    await fromPearl("New habit");
     expect(
       screen.getByRole("heading", { name: "New Habit", level: 1 }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "New Habit" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Run", level: 3 }),
@@ -280,9 +287,7 @@ describe("App changes to habits", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: /New Habit/i }),
-    );
+    await fromPearl("New habit");
     await userEvent.type(
       screen.getByPlaceholderText(/Morning Workout/i),
       "Read",
@@ -312,9 +317,7 @@ describe("App changes to habits", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: /New Habit/i }),
-    );
+    await fromPearl("New habit");
     await userEvent.type(
       screen.getByPlaceholderText(/Morning Workout/i),
       "Gym",
@@ -363,9 +366,7 @@ describe("App changes to habits", () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: /New Habit/i }),
-    );
+    await fromPearl("New habit");
     await userEvent.type(
       screen.getByPlaceholderText(/Morning Workout/i),
       "Spanish",
@@ -519,9 +520,8 @@ describe("App groups", () => {
     expect(
       water.compareDocumentPosition(music) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      screen.getByRole("navigation", { name: "Groups" }),
-    ).toBeInTheDocument();
+    // No bar of chips above them: the pearl jumps to the groups
+    expect(screen.queryByRole("navigation", { name: "Groups" })).toBeNull();
   });
 
   it("shows one habit's quick-log at a time, in a group or not", async () => {
@@ -568,7 +568,7 @@ describe("App groups", () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: "Piano" }));
-    await userEvent.click(screen.getByRole("button", { name: "⠿ Reorder" }));
+    await fromPearl("Reorder");
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(screen.getByRole("button", { name: "Piano" })).toHaveAttribute(
       "aria-expanded",
@@ -576,7 +576,7 @@ describe("App groups", () => {
     );
   });
 
-  it("shows the plain list, with no group bar, while there are no groups", async () => {
+  it("shows the plain list, with no sections, while there are no groups", async () => {
     mockLoad.mockResolvedValue({
       ...grouped,
       habits: grouped.habits.map(({ groupId: _, ...h }) => h),
@@ -595,8 +595,9 @@ describe("App groups", () => {
       habits: [habit("h1", "Piano", "g1")],
     });
     render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
     expect(
-      await screen.findByRole("button", { name: /Reorder/ }),
+      pearlMenu().getByRole("button", { name: "Reorder" }),
     ).toBeInTheDocument();
   });
 
@@ -610,8 +611,8 @@ describe("App groups", () => {
     mockLoad.mockResolvedValue(grouped);
     render(<App />);
 
-    const nav = await screen.findByRole("navigation", { name: "Groups" });
-    await holdToEdit(within(nav).getByRole("button", { name: /Music/ }));
+    const music = await screen.findByRole("region", { name: "Music" });
+    await holdToEdit(within(music).getByRole("button", { name: /Music/ }));
     const name = screen.getByRole("textbox", { name: "Group name" });
     await userEvent.clear(name);
     await userEvent.type(name, "Practice");
@@ -652,6 +653,191 @@ describe("App groups", () => {
     await userEvent.click(within(music).getByRole("button", { name: /Music/ }));
     await waitFor(() => expect(mockSave).toHaveBeenCalled());
     expect(mockSave.mock.lastCall![0].groups[0].collapsed).toBe(true);
+  });
+});
+
+describe("App pearl", () => {
+  const habit = (id: string, name: string, groupId?: string): Habit => ({
+    id,
+    name,
+    icon: "target",
+    color: "Green",
+    metrics: [{ id: "m1", name: "Minutes", unit: "min" }],
+    intensityMode: "total",
+    ...(groupId && { groupId }),
+  });
+  const plain: PersistedState = {
+    schemaVersion: SCHEMA_VERSION,
+    habits: [habit("h1", "Piano"), habit("h2", "Water")],
+    logs: { h2: { "2026-05-24": { m1: 10 } } },
+    units: BUILTIN_UNITS,
+    config: DEFAULT_CONFIG,
+    groups: [],
+    routines: [],
+  };
+  const grouped: PersistedState = {
+    ...plain,
+    habits: [habit("h1", "Piano", "g1"), habit("h2", "Water")],
+    groups: [{ id: "g1", name: "Music", icon: "music", collapsed: true }],
+  };
+  const lastSaved = () => mockSave.mock.lastCall![0];
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 4, 24, 9));
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("is where the header's buttons were, showing today's progress", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    const pearl = await screen.findByRole("button", { name: "Menu" });
+    expect(pearl).toHaveTextContent("1/2");
+    expect(screen.queryByTitle("Settings")).toBeNull();
+    expect(screen.queryByTitle("Routines")).toBeNull();
+    expect(screen.queryByRole("button", { name: /New Habit/i })).toBeNull();
+    // Nor is the view switch or Reorder above the habits
+    expect(screen.queryByRole("button", { name: "Calendar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Reorder/ })).toBeNull();
+  });
+
+  it("switches the habits' view, and it's saved", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(
+      pearlMenu().getByRole("button", { name: "Calendar" }),
+    );
+    await waitFor(() => expect(lastSaved().config.dashView).toBe("calendar"));
+    expect(
+      pearlMenu().getByRole("button", { name: "Calendar" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("jumps to a folded group, unfolding it", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(
+      pearlMenu().getByRole("button", { name: "Music, 0 of 1 done" }),
+    );
+    await waitFor(() => expect(lastSaved().groups[0].collapsed).toBe(false));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "start" }),
+    );
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
+      screen.getByRole("region", { name: "Music" }),
+    );
+  });
+
+  it("jumps to the top", async () => {
+    mockLoad.mockResolvedValue(grouped);
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(pearlMenu().getByRole("button", { name: "Top" }));
+    expect(window.scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ top: 0 }),
+    );
+  });
+
+  it("with no groups, jumps to a habit, opening its quick-log", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(pearlMenu().getByRole("button", { name: "Piano" }));
+    expect(screen.getByRole("button", { name: "Piano" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0],
+    ).toContainElement(screen.getByRole("button", { name: "Piano" }));
+  });
+
+  it("starts reordering, and is then Done", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    await fromPearl("Reorder");
+    // The cards are down to their headers, with their handles
+    expect(screen.queryByRole("button", { name: "Piano" })).toBeNull();
+    expect(screen.getAllByTitle("Drag to reorder")).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByRole("button", { name: "Piano" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+  });
+
+  it("is the way back from a page, which has no back button of its own", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    await fromPearl("Settings");
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle(/Back to/)).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.queryByRole("heading", { name: "Settings" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+  });
+
+  it("goes back from a routine's editor to the routines, then to the habits", async () => {
+    mockLoad.mockResolvedValue({
+      ...plain,
+      routines: [
+        {
+          id: "r1",
+          name: "Morning",
+          rounds: 1,
+          prep: 0,
+          steps: [
+            {
+              kind: "habit",
+              id: "s1",
+              habitId: "h1",
+              metricId: "m1",
+              by: "time",
+              seconds: 60,
+              count: 10,
+            },
+          ],
+        },
+      ],
+    });
+    render(<App />);
+    await fromPearl("Routines");
+    await userEvent.click(screen.getByRole("button", { name: "Edit Morning" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(
+      screen.getByRole("heading", { name: "Routines", level: 1 }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.queryByRole("heading", { name: "Routines" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Piano", level: 3 }),
+    ).toBeInTheDocument();
+  });
+
+  it("points the way to a first habit", async () => {
+    mockLoad.mockResolvedValue(null);
+    render(<App />);
+    expect(
+      await screen.findByText("Tap the button in the corner, then New habit"),
+    ).toBeInTheDocument();
   });
 });
 
@@ -750,7 +936,7 @@ describe("App backup import", () => {
   it("replaces the state with the backup, in the current format", async () => {
     mockLoad.mockResolvedValue(null);
     render(<App />);
-    await userEvent.click(await screen.findByTitle("Settings"));
+    await fromPearl("Settings");
 
     // A backup from an older version: no schema version, units or config
     const backup = { habits: [], logs: { gone: { "2026-05-24": { m1: 30 } } } };
@@ -778,11 +964,15 @@ describe("App backup import", () => {
 // Its own icons are drawn: an emoji, or a symbol the font lacks, comes out
 // as the phone's emoji.
 describe("App icons", () => {
-  it("names the Settings button, with its icon drawn", async () => {
+  it("names the pearl and its Settings, with their icons drawn", async () => {
     mockLoad.mockResolvedValue(null);
     render(<App />);
-    const settings = await screen.findByRole("button", { name: "Settings" });
-    expect(settings.textContent).toBe("");
+    const pearl = await screen.findByRole("button", { name: "Menu" });
+    expect(pearl.textContent).toBe("");
+    expect(pearl.querySelector("svg circle")).not.toBeNull();
+    await userEvent.click(pearl);
+    const settings = pearlMenu().getByRole("button", { name: "Settings" });
+    expect(settings.textContent).toBe("Settings");
     expect(settings.querySelector("svg path")).not.toBeNull();
   });
 
@@ -808,7 +998,7 @@ describe("App save errors", () => {
     mockLoad.mockResolvedValue(null);
     mockSave.mockRejectedValue(new Error("QuotaExceededError"));
     render(<App />);
-    await userEvent.click(await screen.findByTitle("Settings"));
+    await fromPearl("Settings");
 
     expect(banner()).not.toBeInTheDocument();
     await changeTheme("Light");
@@ -826,7 +1016,7 @@ describe("App save errors", () => {
     mockLoad.mockResolvedValue(null);
     mockSave.mockRejectedValueOnce(new Error("QuotaExceededError"));
     render(<App />);
-    await userEvent.click(await screen.findByTitle("Settings"));
+    await fromPearl("Settings");
 
     await changeTheme("Light");
     expect(
@@ -892,15 +1082,15 @@ describe("App routines", () => {
     vi.unstubAllGlobals();
   });
 
-  it("opens the Routines page from the header, over the habits, and back", async () => {
+  it("opens the Routines page from the pearl, over the habits, and back", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
-    await userEvent.click(await screen.findByTitle("Routines"));
+    await fromPearl("Routines");
     expect(
       screen.getByRole("heading", { name: "Routines" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Morning" })).toBeVisible();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "Routines" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Plank", level: 3 }),
@@ -910,7 +1100,7 @@ describe("App routines", () => {
   it("saves a routine with the rest of the data", async () => {
     mockLoad.mockResolvedValue(loaded);
     render(<App />);
-    await userEvent.click(await screen.findByTitle("Routines"));
+    await fromPearl("Routines");
     await userEvent.click(screen.getByRole("button", { name: "Edit Morning" }));
     await userEvent.click(screen.getByRole("button", { name: "More rounds" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));

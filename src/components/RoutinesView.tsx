@@ -55,7 +55,6 @@ export default function RoutinesView({
       <PageShell
         title={isNew ? "New routine" : "Edit routine"}
         subtitle="Each step logs to its habit"
-        backTo="routines"
         onBack={doneEditing}
       >
         <RoutineEditor

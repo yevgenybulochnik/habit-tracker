@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { PageBackWrapper, back } from "../test/pageBack";
 import RoutinesView from "./RoutinesView";
 import { setsPreset } from "../lib/metrics";
 import type { Habit, Routine } from "../types";
@@ -70,7 +71,7 @@ function view(over: Partial<Parameters<typeof RoutinesView>[0]> = {}) {
     onOpenRun: vi.fn(),
     onBack: vi.fn(),
   };
-  render(<RoutinesView {...props} {...over} />);
+  render(<RoutinesView {...props} {...over} />, { wrapper: PageBackWrapper });
   return props;
 }
 
@@ -159,11 +160,12 @@ describe("RoutinesView", () => {
   it("goes back from the editor to the list, and from the list to the habits", async () => {
     const { onBack } = view();
     await userEvent.click(screen.getByRole("button", { name: "Edit Morning" }));
-    await userEvent.click(screen.getByTitle("Back to routines"));
+    back();
     expect(
       screen.getByRole("heading", { name: "Routines" }),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    expect(onBack).not.toHaveBeenCalled();
+    back();
     expect(onBack).toHaveBeenCalled();
   });
 
