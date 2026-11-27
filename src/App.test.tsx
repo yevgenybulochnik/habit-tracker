@@ -276,7 +276,7 @@ describe("App changes to habits", () => {
       screen.getByRole("heading", { name: "New Habit", level: 1 }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "New Habit" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Run", level: 3 }),
@@ -782,6 +782,57 @@ describe("App pearl", () => {
     expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
   });
 
+  it("is the way back from a page, which has no back button of its own", async () => {
+    mockLoad.mockResolvedValue(plain);
+    render(<App />);
+    await fromPearl("Settings");
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle(/Back to/)).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.queryByRole("heading", { name: "Settings" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+  });
+
+  it("goes back from a routine's editor to the routines, then to the habits", async () => {
+    mockLoad.mockResolvedValue({
+      ...plain,
+      routines: [
+        {
+          id: "r1",
+          name: "Morning",
+          rounds: 1,
+          prep: 0,
+          steps: [
+            {
+              kind: "habit",
+              id: "s1",
+              habitId: "h1",
+              metricId: "m1",
+              by: "time",
+              seconds: 60,
+              count: 10,
+            },
+          ],
+        },
+      ],
+    });
+    render(<App />);
+    await fromPearl("Routines");
+    await userEvent.click(screen.getByRole("button", { name: "Edit Morning" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(
+      screen.getByRole("heading", { name: "Routines", level: 1 }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.queryByRole("heading", { name: "Routines" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Piano", level: 3 }),
+    ).toBeInTheDocument();
+  });
+
   it("points the way to a first habit", async () => {
     mockLoad.mockResolvedValue(null);
     render(<App />);
@@ -1040,7 +1091,7 @@ describe("App routines", () => {
       screen.getByRole("heading", { name: "Routines" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Morning" })).toBeVisible();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "Routines" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Plank", level: 3 }),

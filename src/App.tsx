@@ -1,4 +1,4 @@
-import { useState, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { CSS } from "./globalCss";
 import { THEME_CSS, THEMES } from "./theme";
 import { BUILTIN_UNITS, DEFAULT_CONFIG } from "./lib/defaults";
@@ -28,7 +28,7 @@ import SettingsPage from "./components/SettingsPage";
 import BrandMark from "./components/BrandMark";
 import Icon from "./components/Icon";
 import Pearl from "./components/Pearl";
-import type { ClosePage } from "./components/PageShell";
+import { PageBackContext, type ClosePage } from "./components/PageShell";
 import Routines from "./components/Routines";
 import { slide } from "./slide";
 import { cardAnchor, sectionAnchor } from "./anchors";
@@ -103,6 +103,18 @@ export default function App() {
       },
       () => window.scrollTo(0, habitsScroll.current),
     );
+
+  // The way back from the page that's up, which the pearl takes: each page's
+  // header gives its way, and the latest given is the page on top (a
+  // routine's editor over the routines).
+  const backs = useRef<(() => void)[]>([]);
+  const giveBack = useCallback((back: () => void) => {
+    backs.current.push(back);
+    return () => {
+      backs.current = backs.current.filter((b) => b !== back);
+    };
+  }, []);
+  const goBack = () => backs.current.at(-1)?.();
 
   // Keep the page background and iOS status-bar color in sync with the theme
   // (body and the <meta> tag live outside the themed root element).
@@ -293,175 +305,178 @@ export default function App() {
   return (
     <div data-theme={theme} className={styles.root}>
       <style>{CSS + THEME_CSS}</style>
-      <div className={styles.container}>
-        {/* Stays up until a later save succeeds */}
-        {saveFailed && (
-          <div role="alert" className={styles.saveError}>
-            Changes aren't being saved — export a backup from Settings
-          </div>
-        )}
+      <PageBackContext.Provider value={giveBack}>
+        <div className={styles.container}>
+          {/* Stays up until a later save succeeds */}
+          {saveFailed && (
+            <div role="alert" className={styles.saveError}>
+              Changes aren't being saved — export a backup from Settings
+            </div>
+          )}
 
-        <div className={away ? styles.away : undefined}>
-          {/* Header */}
-          <div className={`stagger-child ${styles.header}`}>
-            <div>
-              <h1 className={styles.title}>
-                <BrandMark />
-                Habits
-              </h1>
-              <p className={styles.subtitle}>
-                {habits.length > 0
-                  ? `${completed}/${habits.length} completed today`
-                  : "Start tracking"}
-              </p>
+          <div className={away ? styles.away : undefined}>
+            {/* Header */}
+            <div className={`stagger-child ${styles.header}`}>
+              <div>
+                <h1 className={styles.title}>
+                  <BrandMark />
+                  Habits
+                </h1>
+                <p className={styles.subtitle}>
+                  {habits.length > 0
+                    ? `${completed}/${habits.length} completed today`
+                    : "Start tracking"}
+                </p>
+              </div>
+            </div>
+
+            {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}
+            <div className={styles.content}>
+              {habits.length === 0 ? (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>
+                    <Icon name="chart" size={40} />
+                  </div>
+                  <div className={styles.emptyTitle}>No habits yet</div>
+                  <div className={styles.emptyHint}>
+                    Tap the button in the corner, then New habit
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <DispatchContext.Provider value={dispatch}>
+                    {groups.length > 0 ? (
+                      <GroupSections
+                        sections={groupSections(habits, groups)}
+                        ungrouped={ungroupedHabits(habits, groups)}
+                        renderList={renderList}
+                        isDone={done}
+                        onToggle={(id, collapsed) =>
+                          dispatch({
+                            type: "group/update",
+                            id,
+                            changes: { collapsed },
+                          })
+                        }
+                        reorder={reorder}
+                        onReorderGroups={(activeId, overId) =>
+                          dispatch({ type: "group/reorder", activeId, overId })
+                        }
+                        onEditGroup={(id) =>
+                          openPage({ kind: "editGroup", id })
+                        }
+                      />
+                    ) : (
+                      renderList(habits)
+                    )}
+                  </DispatchContext.Provider>
+                </>
+              )}
+            </div>
+
+            <div className={`stagger-child ${styles.footer}`}>
+              {dashView === "compact"
+                ? "tap a habit to log it · long-press a habit to edit"
+                : "tap a day to log it · long-press a habit to edit · ‹› to navigate"}
             </div>
           </div>
 
-          {/* Content — single view; Compact (headers) ⟷ Calendar (expanded heatmaps) */}
-          <div className={styles.content}>
-            {habits.length === 0 ? (
-              <div className={styles.empty}>
-                <div className={styles.emptyIcon}>
-                  <Icon name="chart" size={40} />
-                </div>
-                <div className={styles.emptyTitle}>No habits yet</div>
-                <div className={styles.emptyHint}>
-                  Tap the button in the corner, then New habit
-                </div>
-              </div>
-            ) : (
-              <>
-                <DispatchContext.Provider value={dispatch}>
-                  {groups.length > 0 ? (
-                    <GroupSections
-                      sections={groupSections(habits, groups)}
-                      ungrouped={ungroupedHabits(habits, groups)}
-                      renderList={renderList}
-                      isDone={done}
-                      onToggle={(id, collapsed) =>
-                        dispatch({
-                          type: "group/update",
-                          id,
-                          changes: { collapsed },
-                        })
-                      }
-                      reorder={reorder}
-                      onReorderGroups={(activeId, overId) =>
-                        dispatch({ type: "group/reorder", activeId, overId })
-                      }
-                      onEditGroup={(id) => openPage({ kind: "editGroup", id })}
-                    />
-                  ) : (
-                    renderList(habits)
-                  )}
-                </DispatchContext.Provider>
-              </>
-            )}
-          </div>
-
-          <div className={`stagger-child ${styles.footer}`}>
-            {dashView === "compact"
-              ? "tap a habit to log it · long-press a habit to edit"
-              : "tap a day to log it · long-press a habit to edit · ‹› to navigate"}
-          </div>
-        </div>
-
-        <Routines
-          habits={habits}
-          logs={logs}
-          routines={routines}
-          theme={theme}
-          today={today}
-          dispatch={dispatch}
-          open={page?.kind === "routines"}
-          onBack={() => closePage()}
-        />
-        {page?.kind === "newHabit" && (
-          <NewHabitPage
-            onAdd={(habit) =>
-              dispatch({ type: "habit/add", id: newId("h"), habit })
-            }
-            onClose={closePage}
-            units={units}
-            onAddUnit={addUnit}
-            groups={groups}
-            onAddGroup={addGroup}
-          />
-        )}
-        {editGroup && (
-          <GroupEditPage
-            group={editGroup}
-            groups={groups}
-            habits={habits}
-            onSave={(changes, habitIds) => {
-              dispatch({ type: "group/update", id: editGroup.id, changes });
-              dispatch({
-                type: "group/setMembers",
-                id: editGroup.id,
-                habitIds,
-              });
-            }}
-            onDelete={(id) => dispatch({ type: "group/delete", id })}
-            onClose={closePage}
-          />
-        )}
-        {page?.kind === "settings" && (
-          <SettingsPage
-            units={units}
+          <Routines
             habits={habits}
             logs={logs}
-            groups={groups}
             routines={routines}
-            onUpdateUnit={(id, changes) =>
-              dispatch({ type: "unit/update", id, changes })
-            }
-            onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
-            onAddUnit={addUnit}
-            appConfig={appConfig}
-            onUpdateConfig={(config) =>
-              dispatch({ type: "config/update", changes: config })
-            }
-            // SettingsPage has already normalized the backup
-            onImportState={(imported) =>
-              dispatch({ type: "state/import", state: imported })
-            }
-            onClose={closePage}
+            theme={theme}
+            today={today}
+            dispatch={dispatch}
+            open={page?.kind === "routines"}
+            onBack={() => closePage()}
           />
-        )}
-        {page?.kind === "editHabit" && (
-          <EditHabitPage
-            habit={page.habit}
-            onSave={(habit) => dispatch({ type: "habit/update", habit })}
-            onDelete={(id) => dispatch({ type: "habit/delete", id })}
-            onClose={closePage}
-            units={units}
-            onAddUnit={addUnit}
-            groups={groups}
-            onAddGroup={addGroup}
-          />
-        )}
-      </div>
+          {page?.kind === "newHabit" && (
+            <NewHabitPage
+              onAdd={(habit) =>
+                dispatch({ type: "habit/add", id: newId("h"), habit })
+              }
+              onClose={closePage}
+              units={units}
+              onAddUnit={addUnit}
+              groups={groups}
+              onAddGroup={addGroup}
+            />
+          )}
+          {editGroup && (
+            <GroupEditPage
+              group={editGroup}
+              groups={groups}
+              habits={habits}
+              onSave={(changes, habitIds) => {
+                dispatch({ type: "group/update", id: editGroup.id, changes });
+                dispatch({
+                  type: "group/setMembers",
+                  id: editGroup.id,
+                  habitIds,
+                });
+              }}
+              onDelete={(id) => dispatch({ type: "group/delete", id })}
+              onClose={closePage}
+            />
+          )}
+          {page?.kind === "settings" && (
+            <SettingsPage
+              units={units}
+              habits={habits}
+              logs={logs}
+              groups={groups}
+              routines={routines}
+              onUpdateUnit={(id, changes) =>
+                dispatch({ type: "unit/update", id, changes })
+              }
+              onDeleteUnit={(id) => dispatch({ type: "unit/delete", id })}
+              onAddUnit={addUnit}
+              appConfig={appConfig}
+              onUpdateConfig={(config) =>
+                dispatch({ type: "config/update", changes: config })
+              }
+              // SettingsPage has already normalized the backup
+              onImportState={(imported) =>
+                dispatch({ type: "state/import", state: imported })
+              }
+              onClose={closePage}
+            />
+          )}
+          {page?.kind === "editHabit" && (
+            <EditHabitPage
+              habit={page.habit}
+              onSave={(habit) => dispatch({ type: "habit/update", habit })}
+              onDelete={(id) => dispatch({ type: "habit/delete", id })}
+              onClose={closePage}
+              units={units}
+              onAddUnit={addUnit}
+              groups={groups}
+              onAddGroup={addGroup}
+            />
+          )}
+        </div>
+      </PageBackContext.Provider>
 
-      {/* The way to everything else, in the corner */}
-      {!away && (
-        <Pearl
-          done={completed}
-          total={habits.length}
-          jumps={jumps(habits, groups, done)}
-          onJump={jumpTo}
-          view={dashView}
-          onView={setView}
-          canReorder={canReorder}
-          reordering={reorder}
-          onReorder={toggleReorder}
-          onNewHabit={() => openPage({ kind: "newHabit" })}
-          onRoutines={() => openPage({ kind: "routines" })}
-          onSettings={() => openPage({ kind: "settings" })}
-          onPage={false}
-          onBack={() => closePage()}
-          theme={theme}
-        />
-      )}
+      {/* The way to everything else, in the corner, and on a page the way
+          back */}
+      <Pearl
+        done={completed}
+        total={habits.length}
+        jumps={jumps(habits, groups, done)}
+        onJump={jumpTo}
+        view={dashView}
+        onView={setView}
+        canReorder={canReorder}
+        reordering={reorder}
+        onReorder={toggleReorder}
+        onNewHabit={() => openPage({ kind: "newHabit" })}
+        onRoutines={() => openPage({ kind: "routines" })}
+        onSettings={() => openPage({ kind: "settings" })}
+        onPage={away}
+        onBack={goBack}
+        theme={theme}
+      />
     </div>
   );
 }

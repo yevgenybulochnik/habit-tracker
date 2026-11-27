@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { PageBackWrapper, back } from "../test/pageBack";
 import Routines from "./Routines";
 import type { Action } from "../lib/state";
 import type { Habit, Routine } from "../types";
@@ -45,6 +46,7 @@ function show(open = true) {
       open={open}
       onBack={onBack}
     />,
+    { wrapper: PageBackWrapper },
   );
   return { dispatch, onBack };
 }
@@ -114,7 +116,7 @@ describe("Routines", () => {
 
   it("goes back to the habits", async () => {
     const { onBack } = show();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    back();
     expect(onBack).toHaveBeenCalled();
   });
 });

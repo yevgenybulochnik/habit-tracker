@@ -95,7 +95,7 @@ test("a run goes on minimised, while the habits fill in", async ({ page }) => {
   await page.getByRole("button", { name: "Start Quick plank" }).click();
 
   await page.getByTitle(/Minimise/).click();
-  await page.getByTitle("Back to habits").click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   const pill = page.getByTitle("Back to the routine");
   await expect(pill).toBeVisible();
   await page.clock.fastForward(5_000 + 61_000);

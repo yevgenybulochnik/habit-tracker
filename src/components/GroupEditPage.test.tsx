@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { PageBackWrapper, back } from "../test/pageBack";
 import GroupEditPage from "./GroupEditPage";
 import { ICON_IDS, ICON_NAMES } from "../lib/icons";
 import type { Group, Habit } from "../types";
@@ -50,6 +51,7 @@ function renderPage(group = music) {
       onDelete={onDelete}
       onClose={onClose}
     />,
+    { wrapper: PageBackWrapper },
   );
   return { onSave, onDelete, onClose };
 }
@@ -74,7 +76,7 @@ describe("GroupEditPage", () => {
     expect(
       screen.getByRole("heading", { name: "Edit Group", level: 1 }),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByTitle("Back to habits"));
+    back();
     expect(onClose).toHaveBeenCalledOnce();
     expect(onSave).not.toHaveBeenCalled();
   });
